@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: knee_oa_api_dev
+    ports:
+      - "8000:8000"
+    volumes:
+      # This is the magic line for local development. 
+      # It mounts your local project folder to the /code folder inside the container.
+      - .:/code
+    env_file:
+      # Loads your Neon DB URL and other secrets
+      - .env
+    # We override the Dockerfile CMD here to add the --reload flag
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
