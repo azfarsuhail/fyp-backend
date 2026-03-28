@@ -170,6 +170,13 @@ def seed_report(db, seed_image, seed_patient):
         confidence=0.87,
         diagnosis_summary="Grade 2 — Minimal OA",
         recommendation="Test recommendation text",
+        lifestyle_plan=json.dumps([
+            {"id": "EX-001", "category": "exercise", "action": "Walk daily",
+             "evidence_level": "strong", "source": "OARSI 2019"}
+        ]),
+        warnings=json.dumps([
+            {"level": "caution", "message": "Avoid high-impact activities."}
+        ]),
         exercise_video_urls=json.dumps(["https://s3.amazonaws.com/videos/v1.mp4"]),
     )
     db.add(report)

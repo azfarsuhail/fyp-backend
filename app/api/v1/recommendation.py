@@ -56,6 +56,9 @@ def get_recommendation(
         raise HTTPException(status_code=500, detail=f"Recommendation generation failed: {e}")
 
     return RecommendationResult(
+        lifestyle_plan=result["lifestyle_plan"],
+        warnings=result["warnings"],
+        exercise_videos=result["exercise_videos"],
         recommendation=result["recommendation"],
         exercise_video_urls=result["exercise_video_urls"],
     )

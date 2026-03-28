@@ -34,9 +34,17 @@ class TestAnalyzeXray:
         # Mock S3 upload of processed image
         mock_s3.return_value = "https://bucket.s3.amazonaws.com/processed/1_processed.png"
 
-        # Mock recommendation agent
+        # Mock recommendation agent (parametric RAG output)
         mock_rec.return_value = {
             "recommendation": "Stay active with low-impact exercises.",
+            "lifestyle_plan": [
+                {"id": "EX-001", "category": "exercise", "action": "Walk daily",
+                 "evidence_level": "strong", "source": "OARSI 2019"}
+            ],
+            "warnings": [
+                {"level": "caution", "message": "Avoid high-impact activities."}
+            ],
+            "exercise_videos": [],
             "exercise_video_urls": ["https://s3.amazonaws.com/videos/v1.mp4"],
         }
 
@@ -53,6 +61,12 @@ class TestAnalyzeXray:
         assert "Stay active" in data["recommendation"]
         assert len(data["exercise_video_urls"]) == 1
         assert data["image_id"] == seed_image.image_id
+        # Verify parametric fields
+        assert len(data["lifestyle_plan"]) == 1
+        assert data["lifestyle_plan"][0]["id"] == "EX-001"
+        assert data["lifestyle_plan"][0]["evidence_level"] == "strong"
+        assert len(data["warnings"]) == 1
+        assert data["warnings"][0]["level"] == "caution"
 
     def test_analyze_image_not_found(self, client, patient_headers, seed_patient):
         response = client.post(
@@ -144,6 +158,10 @@ class TestGetReports:
         assert len(data) == 1
         assert data[0]["kl_grade"] == 2
         assert data[0]["confidence"] == 0.87
+        # Verify parametric fields are returned from stored report
+        assert len(data[0]["lifestyle_plan"]) == 1
+        assert data[0]["lifestyle_plan"][0]["id"] == "EX-001"
+        assert len(data[0]["warnings"]) == 1
 
     def test_get_reports_no_auth(self, client):
         response = client.get("/api/v1/diagnostic/reports")

@@ -16,8 +16,10 @@ class Report(Base):
     confidence = Column(Float, nullable=False)           # Model confidence score
     diagnosis_summary = Column(Text, nullable=True)      # Human-readable diagnosis
 
-    # Recommendation Agent outputs
-    recommendation = Column(Text, nullable=True)         # RAG-generated lifestyle advice
+    # Recommendation Agent outputs (Parametric RAG)
+    recommendation = Column(Text, nullable=True)         # Legacy text summary
+    lifestyle_plan = Column(Text, nullable=True)         # JSON: structured parametric recommendations
+    warnings = Column(Text, nullable=True)               # JSON: grade-specific warnings
     exercise_video_urls = Column(Text, nullable=True)    # JSON string of S3 video URLs
 
     created_at = Column(DateTime, default=datetime.utcnow)

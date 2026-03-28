@@ -111,6 +111,8 @@ async def analyze_xray(
         # Recommendation is non-critical; provide diagnosis even if RAG fails
         rec_result = {
             "recommendation": "Recommendation service temporarily unavailable.",
+            "lifestyle_plan": [],
+            "warnings": [],
             "exercise_video_urls": [],
         }
 
@@ -122,6 +124,8 @@ async def analyze_xray(
         confidence=confidence,
         diagnosis_summary=diagnosis_summary,
         recommendation=rec_result["recommendation"],
+        lifestyle_plan=json.dumps(rec_result.get("lifestyle_plan", [])),
+        warnings=json.dumps(rec_result.get("warnings", [])),
         exercise_video_urls=json.dumps(rec_result["exercise_video_urls"]),
     )
     db.add(new_report)
@@ -137,6 +141,8 @@ async def analyze_xray(
         confidence=new_report.confidence,
         diagnosis_summary=new_report.diagnosis_summary,
         recommendation=new_report.recommendation,
+        lifestyle_plan=json.loads(new_report.lifestyle_plan) if new_report.lifestyle_plan else [],
+        warnings=json.loads(new_report.warnings) if new_report.warnings else [],
         exercise_video_urls=json.loads(new_report.exercise_video_urls)
         if new_report.exercise_video_urls
         else [],
@@ -165,6 +171,8 @@ def get_my_reports(
             confidence=r.confidence,
             diagnosis_summary=r.diagnosis_summary,
             recommendation=r.recommendation,
+            lifestyle_plan=json.loads(r.lifestyle_plan) if r.lifestyle_plan else [],
+            warnings=json.loads(r.warnings) if r.warnings else [],
             exercise_video_urls=json.loads(r.exercise_video_urls)
             if r.exercise_video_urls
             else [],
@@ -199,6 +207,8 @@ def get_report(
         confidence=report.confidence,
         diagnosis_summary=report.diagnosis_summary,
         recommendation=report.recommendation,
+        lifestyle_plan=json.loads(report.lifestyle_plan) if report.lifestyle_plan else [],
+        warnings=json.loads(report.warnings) if report.warnings else [],
         exercise_video_urls=json.loads(report.exercise_video_urls)
         if report.exercise_video_urls
         else [],

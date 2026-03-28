@@ -13,6 +13,19 @@ class TestGetRecommendation:
     def test_recommendation_success(self, mock_rec, client, patient_headers, seed_patient):
         mock_rec.return_value = {
             "recommendation": "Stay active with low-impact exercises.",
+            "lifestyle_plan": [
+                {"id": "EX-001", "category": "exercise", "action": "Walk daily",
+                 "frequency": "5x/week", "duration_min": 30, "intensity": "moderate",
+                 "evidence_level": "strong", "source": "OARSI 2019",
+                 "contraindications": ["acute_flare"]},
+            ],
+            "warnings": [
+                {"level": "caution", "message": "Avoid high-impact activities."},
+            ],
+            "exercise_videos": [
+                {"video_id": 1, "title": "Stretches", "s3_url": "https://s3.amazonaws.com/videos/v1.mp4",
+                 "category": "flexibility", "difficulty": "beginner", "duration_seconds": 300},
+            ],
             "exercise_video_urls": ["https://s3.amazonaws.com/videos/v1.mp4"],
         }
 
@@ -24,12 +37,26 @@ class TestGetRecommendation:
         data = response.json()
         assert "Stay active" in data["recommendation"]
         assert len(data["exercise_video_urls"]) == 1
+        # Verify parametric structured output
+        assert len(data["lifestyle_plan"]) == 1
+        assert data["lifestyle_plan"][0]["id"] == "EX-001"
+        assert data["lifestyle_plan"][0]["category"] == "exercise"
+        assert data["lifestyle_plan"][0]["evidence_level"] == "strong"
+        assert data["lifestyle_plan"][0]["source"] == "OARSI 2019"
+        assert data["lifestyle_plan"][0]["frequency"] == "5x/week"
+        assert len(data["warnings"]) == 1
+        assert data["warnings"][0]["level"] == "caution"
+        assert len(data["exercise_videos"]) == 1
+        assert data["exercise_videos"][0]["video_id"] == 1
 
     @patch("app.api.v1.recommendation.generate_recommendation")
     def test_recommendation_minimal_params(self, mock_rec, client, patient_headers, seed_patient):
         """Only kl_grade is required."""
         mock_rec.return_value = {
             "recommendation": "General advice for grade 0.",
+            "lifestyle_plan": [],
+            "warnings": [],
+            "exercise_videos": [],
             "exercise_video_urls": [],
         }
 
