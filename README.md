@@ -103,7 +103,8 @@ knee_oa_backend/
 │   │   ├── diagnostic.py          # POST /analyze, GET /reports, GET /reports/{id}
 │   │   ├── recommendation.py      # GET / (standalone recommendations)
 │   │   ├── profile.py             # GET/PUT /me, POST /me/change-password
-│   │   └── video.py               # CRUD for exercise video library
+│   │   ├── video.py               # CRUD for exercise video library
+│   │   └── mobile_sync.py         # Mobile app data sync endpoints
 │   ├── core/
 │   │   ├── config.py              # SQLAlchemy engine, session, Base (Neon DB)
 │   │   ├── dependencies.py        # get_db, get_current_user, RoleChecker
@@ -187,6 +188,10 @@ Client                          Server
 | `GET/PUT /profile/me` | ✅ | ✅ | ✅ |
 | `GET /videos/` | ✅ | ✅ | ✅ |
 | `POST/PUT/DELETE /videos/` | ❌ | ❌ | ✅ |
+
+| GET /mobile/sync/data | ✅ | ✅ | ❌ |
+| GET /mobile/sync/summary | ✅ | ✅ | ❌ |
+| POST /mobile/sync/export | ✅ | ✅ | ❌ |
 
 ---
 
