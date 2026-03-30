@@ -3,6 +3,7 @@ Tests for /api/v1/profile — Profile Management
 """
 
 import pytest
+from app.models.profile_log import ProfileLog
 
 
 class TestGetProfile:
@@ -133,3 +134,255 @@ class TestChangePassword:
             headers=patient_headers,
         )
         assert response.status_code == 422
+
+
+class TestProfileHistory:
+    """GET /api/v1/profile/me/history"""
+
+    def test_get_history_empty(self, client, patient_headers, seed_patient):
+        """Should return empty history for new user."""
+        response = client.get("/api/v1/profile/me/history", headers=patient_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user_id"] == seed_patient.user_id
+        assert data["full_name"] == "Test Patient"
+        assert data["total_changes"] == 0
+        assert data["history"] == []
+
+    def test_get_history_with_logs(self, client, patient_headers, seed_patient, db):
+        """Should return all logged changes."""
+        from app.models.profile_log import ProfileLog
+        
+        # Create some log entries
+        log1 = ProfileLog(
+            user_id=seed_patient.user_id,
+            field_name="pain_level",
+            old_value="3",
+            new_value="5",
+        )
+        log2 = ProfileLog(
+            user_id=seed_patient.user_id,
+            field_name="mobility_level",
+            old_value="good",
+            new_value="moderate",
+        )
+        db.add(log1)
+        db.add(log2)
+        db.commit()
+
+        response = client.get("/api/v1/profile/me/history", headers=patient_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_changes"] == 2
+        assert len(data["history"]) == 2
+        # Should be ordered by changed_at desc
+        assert data["history"][0]["field_name"] == "mobility_level"
+        assert data["history"][1]["field_name"] == "pain_level"
+
+    def test_get_history_no_auth(self, client):
+        """Should require authentication."""
+        response = client.get("/api/v1/profile/me/history")
+        assert response.status_code == 401
+
+    def test_get_history_gp(self, client, gp_headers, seed_gp):
+        """GP should be able to view their own history."""
+        response = client.get("/api/v1/profile/me/history", headers=gp_headers)
+        assert response.status_code == 200
+        assert response.json()["user_id"] == seed_gp.user_id
+
+
+class TestProfileLogging:
+    """Test that profile changes are properly logged."""
+
+    def test_log_full_name_change(self, client, patient_headers, seed_patient, db):
+        """Changing full_name should create a log entry."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={"full_name": "New Name"},
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["full_name"] == "New Name"
+
+        # Verify log was created
+        log = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id,
+            ProfileLog.field_name == "full_name"
+        ).first()
+        assert log is not None
+        assert log.old_value == "Test Patient"
+        assert log.new_value == "New Name"
+
+    def test_log_age_change(self, client, patient_headers, seed_patient, db):
+        """Changing age should create a log entry."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={"age": 35},
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["age"] == 35
+
+        log = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id,
+            ProfileLog.field_name == "age"
+        ).first()
+        assert log is not None
+        assert log.old_value is None
+        assert log.new_value == "35"
+
+    def test_log_pain_level_change(self, client, patient_headers, seed_patient, db):
+        """Changing pain_level should create a log entry."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={"pain_level": 7},
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["pain_level"] == 7
+
+        log = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id,
+            ProfileLog.field_name == "pain_level"
+        ).first()
+        assert log is not None
+        assert log.old_value is None
+        assert log.new_value == "7"
+
+    def test_log_mobility_level_change(self, client, patient_headers, seed_patient, db):
+        """Changing mobility_level should create a log entry."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={"mobility_level": "limited"},
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["mobility_level"] == "limited"
+
+        log = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id,
+            ProfileLog.field_name == "mobility_level"
+        ).first()
+        assert log is not None
+        assert log.old_value is None
+        assert log.new_value == "limited"
+
+    def test_log_has_support_change(self, client, patient_headers, seed_patient, db):
+        """Changing has_support should create a log entry."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={"has_support": True},
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["has_support"] is True
+
+        log = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id,
+            ProfileLog.field_name == "has_support"
+        ).first()
+        assert log is not None
+        assert log.old_value is None
+        assert log.new_value == "True"
+
+    def test_no_log_for_same_value(self, client, patient_headers, seed_patient, db):
+        """Setting same value should not create duplicate log."""
+        # First update
+        client.put(
+            "/api/v1/profile/me",
+            json={"pain_level": 5},
+            headers=patient_headers,
+        )
+        
+        # Update with same value
+        client.put(
+            "/api/v1/profile/me",
+            json={"pain_level": 5},
+            headers=patient_headers,
+        )
+
+        # Should only have one log entry
+        logs = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id,
+            ProfileLog.field_name == "pain_level"
+        ).all()
+        assert len(logs) == 1
+
+    def test_log_multiple_fields_single_request(self, client, patient_headers, seed_patient, db):
+        """Updating multiple fields should create multiple log entries."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={
+                "age": 40,
+                "pain_level": 6,
+                "mobility_level": "moderate",
+            },
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+
+        # Should have 3 log entries
+        logs = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id
+        ).all()
+        assert len(logs) == 3
+        field_names = {log.field_name for log in logs}
+        assert field_names == {"age", "pain_level", "mobility_level"}
+
+    def test_log_email_change(self, client, patient_headers, seed_patient, db):
+        """Changing email should create a log entry."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={"email": "newemail@test.com"},
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["email"] == "newemail@test.com"
+
+        log = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id,
+            ProfileLog.field_name == "email"
+        ).first()
+        assert log is not None
+        assert log.old_value == "patient@test.com"
+        assert log.new_value == "newemail@test.com"
+
+    def test_update_with_all_fields(self, client, patient_headers, seed_patient, db):
+        """Updating all patient context fields should log each one."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={
+                "full_name": "Complete Name",
+                "age": 45,
+                "pain_level": 8,
+                "mobility_level": "limited",
+                "has_support": False,
+            },
+            headers=patient_headers,
+        )
+        assert response.status_code == 200
+
+        # Should have 5 log entries (one for each field)
+        logs = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_patient.user_id
+        ).all()
+        assert len(logs) == 5
+        field_names = {log.field_name for log in logs}
+        assert field_names == {"full_name", "age", "pain_level", "mobility_level", "has_support"}
+
+    def test_gp_can_update_patient_context(self, client, gp_headers, seed_gp, db):
+        """GP should be able to update their own patient context fields."""
+        response = client.put(
+            "/api/v1/profile/me",
+            json={"pain_level": 4, "mobility_level": "good"},
+            headers=gp_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["pain_level"] == 4
+        assert response.json()["mobility_level"] == "good"
+
+        # Verify logs were created
+        logs = db.query(ProfileLog).filter(
+            ProfileLog.user_id == seed_gp.user_id
+        ).all()
+        assert len(logs) == 2

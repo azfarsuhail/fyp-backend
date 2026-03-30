@@ -57,7 +57,16 @@ class TestRegister:
         assert response.status_code == 201
         assert response.json()["role"] == "gp"
 
-    def test_register_admin_role(self, client):
+    def test_register_admin_forbidden(self, client):
+        """Should NOT allow public registration as admin."""
+        response = client.post("/api/v1/auth/register", json={
+            "email": "eviladmin@test.com",
+            "password": "securepass123",
+            "full_name": "Evil Admin",
+            "role": "admin",
+        })
+        assert response.status_code == 400
+        assert "not allowed" in response.json()["detail"].lower()
         response = client.post("/api/v1/auth/register", json={
             "email": "admin@newtest.com",
             "password": "securepass123",

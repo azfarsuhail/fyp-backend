@@ -17,6 +17,13 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Prevent admin registration - admins must be created manually
+    if user.role == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration as admin is not allowed. Contact system administrator."
+        )
+    
     hashed_password = get_password_hash(user.password)
     
     # Create new user record

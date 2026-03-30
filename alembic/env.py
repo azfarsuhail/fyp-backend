@@ -4,8 +4,11 @@ Alembic Environment Configuration
 Connects Alembic to the same Neon DB engine used by the app,
 and imports all models so autogenerate can detect schema changes.
 """
-
+import sys
 import os
+# Force Python to look in the root directory
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool

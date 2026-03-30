@@ -116,6 +116,23 @@ def seed_admin(db):
     return user
 
 
+@pytest.fixture
+def seed_admin(db):
+    """Create an admin user in the test DB."""
+    from app.models.user import User
+
+    user = User(
+        email="admin@test.com",
+        full_name="Test Admin",
+        password_hash=get_password_hash("password123"),
+        role="admin",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def _auth_header(email: str, role: str) -> dict:
     """Generate a Bearer token header for a given user."""
     token = create_access_token(data={"sub": email, "role": role})
