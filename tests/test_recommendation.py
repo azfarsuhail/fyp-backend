@@ -99,6 +99,9 @@ class TestGetRecommendation:
     def test_recommendation_gp_allowed(self, mock_rec, client, gp_headers, seed_gp):
         mock_rec.return_value = {
             "recommendation": "GP advice.",
+            "lifestyle_plan": [],
+            "warnings": [],
+            "exercise_videos": [],
             "exercise_video_urls": [],
         }
 
@@ -107,6 +110,8 @@ class TestGetRecommendation:
             headers=gp_headers,
         )
         assert response.status_code == 200
+        data = response.json()
+        assert "GP advice" in data["recommendation"]
 
     @patch("app.api.v1.recommendation.generate_recommendation")
     def test_recommendation_agent_failure(self, mock_rec, client, patient_headers, seed_patient):

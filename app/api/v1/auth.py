@@ -7,6 +7,7 @@ from app.schemas.user_schema import UserCreate, UserOut, Token
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.core.dependencies import get_db
 from app.models.user import User
+from app.core.security_middleware import require_strong_password
 
 router = APIRouter()
 
@@ -22,6 +23,14 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Registration as admin is not allowed. Contact system administrator."
+        )
+    
+    # Validate password strength
+    password_errors = require_strong_password(user.password)
+    if password_errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"password_validation_errors": password_errors}
         )
     
     hashed_password = get_password_hash(user.password)

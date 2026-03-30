@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video
+from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitLoginMiddleware
 
 app = FastAPI(
     title="Medical Image Analysis API",
@@ -9,14 +11,39 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# ── CORS Middleware (allow mobile app to connect) ─────────────────────────────
+# ── Load environment variables ────────────────────────────────────────────────
+from dotenv import load_dotenv
+load_dotenv()
+
+# ── CORS Configuration ────────────────────────────────────────────────────────
+# Get allowed origins from environment variable
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "")
+dev_origins = os.getenv("ALLOW_DEV_ORIGINS", "")
+
+origins = []
+if allowed_origins:
+    origins.extend([origin.strip() for origin in allowed_origins.split(",")])
+
+# Only add dev origins if DEBUG is enabled
+if os.getenv("DEBUG", "false").lower() == "true" and dev_origins:
+    origins.extend([origin.strip() for origin in dev_origins.split(",")])
+
+# Add localhost for local development
+if os.getenv("DEBUG", "false").lower() == "true":
+    origins.extend(["http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:3000"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=origins if origins else ["*"],  # Fallback to * only in dev
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    max_age=3600,
 )
+
+# ── Security Middleware ───────────────────────────────────────────────────────
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitLoginMiddleware)
 
 # ── Include Routers ───────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])

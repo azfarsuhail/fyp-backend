@@ -73,7 +73,7 @@ def seed_patient(db):
     user = User(
         email="patient@test.com",
         full_name="Test Patient",
-        password_hash=get_password_hash("password123"),
+        password_hash=get_password_hash("SecurePass123!@#"),
         role="patient",
     )
     db.add(user)
@@ -90,7 +90,7 @@ def seed_gp(db):
     user = User(
         email="gp@test.com",
         full_name="Test GP",
-        password_hash=get_password_hash("password123"),
+        password_hash=get_password_hash("SecurePass123!@#"),
         role="gp",
     )
     db.add(user)
@@ -107,7 +107,7 @@ def seed_admin(db):
     user = User(
         email="admin@test.com",
         full_name="Test Admin",
-        password_hash=get_password_hash("password123"),
+        password_hash=get_password_hash("SecurePass123!@#"),
         role="admin",
     )
     db.add(user)
@@ -124,7 +124,7 @@ def seed_admin(db):
     user = User(
         email="admin@test.com",
         full_name="Test Admin",
-        password_hash=get_password_hash("password123"),
+        password_hash=get_password_hash("SecurePass123!@#"),
         role="admin",
     )
     db.add(user)

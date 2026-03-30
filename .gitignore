@@ -5,3 +5,91 @@ __pycache__/
 *.pyo
 # --- Local Configurations ---
 config.yaml
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual Environment ---
+venv/
+ENV/
+env/
+ENVIRONMENT.local
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# --- Environment Variables (SENSITIVE - NEVER COMMIT) ---
+.env.local
+.env.*.local
+
+# --- Testing ---
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+*.cover
+*.log
+
+# --- Docker ---
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# --- Database ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- ML/AI Models and Assets ---
+*.h5
+*.pkl
+*.joblib
+*.onnx
+ml_assets/
+models/
+*.keras
+*.pth
+*.pt
+
+# --- AWS ---
+.aws/
+.aws-sam/
+
+# --- Build artifacts ---
+*.whl
+*.tar.gz
+
+# --- Temporary files ---
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# --- Misc ---
+*.old
+*.orig

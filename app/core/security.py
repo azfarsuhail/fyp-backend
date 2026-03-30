@@ -1,11 +1,23 @@
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
+import os
 
-# Configuration (Move these to .env in production)
-SECRET_KEY = "your-super-secret-key-change-this-later"
+# Load environment variables
+load_dotenv()
+
+# Configuration - Load from environment variables in production
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError(
+        "CRITICAL: SECRET_KEY not set! "
+        "Set a strong random key in .env file (min 32 characters). "
+        "Generate with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+    )
+
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 
 # Password Hashing Context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
