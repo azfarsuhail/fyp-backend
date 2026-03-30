@@ -493,3 +493,84 @@ pytest tests/ --cov=app --cov-report=term-missing
 ## 📄 License
 
 This project is part of a Final Year Project (FYP) for academic purposes.
+
+| **Mobile Sync** | ✅ Implemented | 20 tests passing |
+| **Admin Dashboard** | ✅ Created | Analytics & monitoring |
+| **Docker** | ✅ Production Ready | Multi-stage build |
+| **Documentation** | ✅ Organized | Structured docs folder |
+
+---
+
+## 📚 Documentation
+
+Comprehensive documentation is now organized in the [`docs/`](docs/) folder:
+
+### 🔒 Security
+- [Security Audit](docs/security/SECURITY_AUDIT.md) - Vulnerability assessment
+- [Security Fixes](docs/security/SECURITY_FIXES.md) - Implementation guide
+- [Applied Fixes](docs/security/SECURITY_APPLIED.md) - Current security status
+
+### 🐳 Docker & Deployment
+- [Docker Audit](docs/docker/DOCKER_AUDIT.md) - Configuration review
+- [Quick Reference](docs/docker/DOCKER_QUICKREF.md) - Commands & best practices
+
+### 📱 Mobile Integration
+- [Mobile Sync Guide](docs/mobile/MOBILE_SYNC_GUIDE.md) - Complete integration guide
+
+### 📦 Git & Version Control
+- [Git Guide](docs/git/GIT_GUIDE.md) - Workflow & security checklist
+
+### 📊 Code Quality
+- [Code Quality Report](docs/code-quality/CODE_QUALITY_REPORT.md) - Audit & metrics
+
+**Documentation Index**: [docs/README.md](docs/README.md)
+
+---
+
+## 🎨 Admin Dashboard
+
+Access the admin analytics dashboard at:
+- **Login**: `http://localhost:8000/admin-login.html`
+- **Dashboard**: `http://localhost:8000/admin-dashboard.html`
+
+**Features**:
+- 📊 Real-time analytics charts (KL grades, user growth, confidence)
+- 👥 User statistics and role distribution
+- 📈 Activity monitoring and recent reports
+- 💚 System health monitoring
+- 🔐 Admin-only access (RBAC protected)
+
+**Default Credentials**:
+- Email: `admin`
+- Password: `admin`
+- ⚠️ **Change password after first login!**
+
+---
+
+## 📱 Mobile App Integration
+
+The backend provides comprehensive mobile sync capabilities:
+
+### API Endpoints
+- `GET /api/v1/mobile/sync/data` - Get all user-specific data
+- `GET /api/v1/mobile/sync/summary` - Get data count summary
+- `POST /api/v1/mobile/sync/export` - Export user data as JSON
+- `GET /api/v1/mobile/sync/status` - Get sync status
+
+### What Gets Synced
+- ✅ User profile (age, pain_level, mobility_level, has_support)
+- ✅ User's X-ray images (metadata + S3 URLs)
+- ✅ User's diagnostic reports (KL grades, recommendations)
+- ✅ User's profile change history (audit trail)
+
+### What Does NOT Get Synced
+- ❌ Other users' data
+- ❌ Exercise video library (downloaded separately)
+- ❌ System configurations
+
+**Implementation Guide**: [docs/mobile/MOBILE_SYNC_GUIDE.md](docs/mobile/MOBILE_SYNC_GUIDE.md)
+
+---
+
+## 🗂️ Project Structure
+```

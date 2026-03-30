@@ -14,6 +14,9 @@ from app.services.mobile_sync import MobileSyncService, sync_user_data
 
 router = APIRouter()
 
+# Only patients and GPs can sync data
+allow_sync = RoleChecker(allowed_roles=["patient", "gp"])
+
 
 @router.get("/sync/data", response_model=dict)
 def sync_user_data_endpoint(
@@ -124,6 +127,3 @@ def get_sync_status(
         "last_sync": None,  # Would be tracked in mobile app
         "available": True,
     }
-
-# Only patients and GPs can sync data
-allow_sync = RoleChecker(allowed_roles=["patient", "gp"])

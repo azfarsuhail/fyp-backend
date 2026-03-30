@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync
+from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics
 from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitLoginMiddleware
 
 app = FastAPI(
@@ -53,6 +53,7 @@ app.include_router(recommendation.router, prefix="/api/v1/recommendation", tags=
 app.include_router(profile.router, prefix="/api/v1/profile", tags=["Profile"])
 app.include_router(video.router, prefix="/api/v1/videos", tags=["Video Library"])
 app.include_router(mobile_sync.router, prefix="/api/v1/mobile", tags=["Mobile Sync"])
+app.include_router(admin_analytics.router, prefix="/api/v1/admin", tags=["Admin Analytics"])
 
 
 @app.get("/")
