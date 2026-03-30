@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import json
 
-from app.core.dependencies import get_db, get_current_user
+from app.core.dependencies import get_db, get_current_user, RoleChecker
 from app.services.mobile_sync import MobileSyncService, sync_user_data
 
 router = APIRouter()
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/sync/data", response_model=dict)
 def sync_user_data_endpoint(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(allow_sync),
 ):
     """
     Get all user-specific data for mobile sync.
@@ -44,7 +44,7 @@ def sync_user_data_endpoint(
 @router.get("/sync/summary")
 def get_sync_summary(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(allow_sync),
 ):
     """
     Get a summary of data that will be synced.
@@ -69,7 +69,7 @@ def get_sync_summary(
 @router.post("/sync/export")
 def export_user_data(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(allow_sync),
 ):
     """
     Export user data as JSON for mobile download.
@@ -100,7 +100,7 @@ def export_user_data(
 @router.get("/sync/status")
 def get_sync_status(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(allow_sync),
 ):
     """
     Get sync status and last sync time.
@@ -124,3 +124,6 @@ def get_sync_status(
         "last_sync": None,  # Would be tracked in mobile app
         "available": True,
     }
+
+# Only patients and GPs can sync data
+allow_sync = RoleChecker(allowed_roles=["patient", "gp"])

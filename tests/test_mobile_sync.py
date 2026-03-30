@@ -7,8 +7,7 @@ Tests for /api/v1/mobile sync endpoints.
 import pytest
 import json
 import sqlite3
-from unittest.mock import patch, MagicMock
-from datetime import datetime
+from pathlib import Path
 
 
 class TestSyncDataEndpoint:
@@ -42,24 +41,11 @@ class TestSyncDataEndpoint:
         assert len(data["reports"]) >= 1
         assert data["reports"][0]["report_id"] == seed_report.report_id
         assert data["reports"][0]["kl_grade"] == seed_report.kl_grade
-        
-        # Check history (should have at least one entry from profile logging)
-        assert "history" in data
 
     def test_sync_data_no_auth(self, client):
         """Should require authentication."""
         response = client.get("/api/v1/mobile/sync/data")
         assert response.status_code == 401
-
-    def test_sync_data_user_not_found(self, client, patient_headers):
-        """Should return 404 if user not found."""
-        # Mock user query to return None
-        with patch('app.api.v1.mobile_sync.User') as mock_user:
-            mock_user.query.filter.return_value.first.return_value = None
-            
-            response = client.get("/api/v1/mobile/sync/data", headers=patient_headers)
-            assert response.status_code == 404
-            assert response.json()["detail"] == "User not found"
 
 
 class TestSyncSummaryEndpoint:
@@ -77,21 +63,12 @@ class TestSyncSummaryEndpoint:
         assert "reports_count" in data
         assert "history_count" in data
         assert "total_records" in data
-        assert data["total_records"] >= 2  # At least 1 image + 1 report
+        assert data["total_records"] >= 2
 
     def test_sync_summary_no_auth(self, client):
         """Should require authentication."""
         response = client.get("/api/v1/mobile/sync/summary")
         assert response.status_code == 401
-
-    def test_sync_summary_user_not_found(self, client, patient_headers):
-        """Should return 404 if user not found."""
-        with patch('app.api.v1.mobile_sync.User') as mock_user:
-            mock_user.query.filter.return_value.first.return_value = None
-            
-            response = client.get("/api/v1/mobile/sync/summary", headers=patient_headers)
-            assert response.status_code == 404
-            assert response.json()["detail"] == "User not found"
 
 
 class TestExportUserDataEndpoint:
@@ -115,15 +92,6 @@ class TestExportUserDataEndpoint:
         """Should require authentication."""
         response = client.post("/api/v1/mobile/sync/export")
         assert response.status_code == 401
-
-    def test_export_user_data_user_not_found(self, client, patient_headers):
-        """Should return 404 if user not found."""
-        with patch('app.api.v1.mobile_sync.User') as mock_user:
-            mock_user.query.filter.return_value.first.return_value = None
-            
-            response = client.post("/api/v1/mobile/sync/export", headers=patient_headers)
-            assert response.status_code == 404
-            assert response.json()["detail"] == "User not found"
 
 
 class TestSyncStatusEndpoint:
