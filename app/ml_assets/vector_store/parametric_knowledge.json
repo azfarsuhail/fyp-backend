@@ -1,0 +1,402 @@
+[
+  {
+    "id": "rec_001",
+    "category": "strengthening",
+    "action": "Quadriceps sets (isometric tightening). Sit with your leg straight and tighten the thigh muscle, pressing the back of the knee downward.",
+    "frequency": "Daily",
+    "duration_min": 10,
+    "intensity": "low",
+    "kl_grade_min": 0,
+    "kl_grade_max": 3,
+    "pain_threshold": 7,
+    "mobility_req": "limited",
+    "contraindications": [
+      "acute joint inflammation",
+      "recent acute knee injury"
+    ],
+    "evidence_level": "High",
+    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA"
+  },
+  {
+    "id": "rec_002",
+    "category": "strengthening",
+    "action": "Straight leg raises. Lie on your back, bend one knee, and keep the other straight. Slowly lift the straight leg about 12 inches off the floor.",
+    "frequency": "3 days a week",
+    "duration_min": 15,
+    "intensity": "moderate",
+    "kl_grade_min": 1,
+    "kl_grade_max": 2,
+    "pain_threshold": 5,
+    "mobility_req": "moderate",
+    "contraindications": [
+      "lower back pain flare-up",
+      "unmanaged hip osteoarthritis"
+    ],
+    "evidence_level": "High",
+    "source": "ACR Guidelines for Osteoarthritis"
+  },
+  {
+    "id": "rec_003",
+    "category": "flexibility",
+    "action": "Seated hamstring stretch. Sit on the edge of a chair, extend one leg with the heel on the floor, and gently lean forward keeping the back straight.",
+    "frequency": "Daily",
+    "duration_min": 5,
+    "intensity": "low",
+    "kl_grade_min": 0,
+    "kl_grade_max": 4,
+    "pain_threshold": 8,
+    "mobility_req": "limited",
+    "contraindications": [
+      "sciatica",
+      "recent hamstring strain"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Clinical Practice Guidelines for Physical Therapy"
+  },
+  {
+    "id": "rec_004",
+    "category": "low-impact",
+    "action": "Stationary cycling. Use a recumbent or upright stationary bike with low resistance to promote joint lubrication.",
+    "frequency": "3-5 days a week",
+    "duration_min": 20,
+    "intensity": "moderate",
+    "kl_grade_min": 1,
+    "kl_grade_max": 3,
+    "pain_threshold": 6,
+    "mobility_req": "good",
+    "contraindications": [
+      "severe patellofemoral pain syndrome",
+      "inability to achieve 90-degree knee flexion"
+    ],
+    "evidence_level": "High",
+    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA"
+  },
+  {
+    "id": "rec_005",
+    "category": "low-impact",
+    "action": "Aquatic therapy / Water walking. Walk waist-deep or chest-deep in a warm pool to reduce weight-bearing stress on the knee joint.",
+    "frequency": "2-3 days a week",
+    "duration_min": 30,
+    "intensity": "moderate",
+    "kl_grade_min": 2,
+    "kl_grade_max": 4,
+    "pain_threshold": 9,
+    "mobility_req": "limited",
+    "contraindications": [
+      "open wounds",
+      "incontinence",
+      "severe cardiovascular disease"
+    ],
+    "evidence_level": "High",
+    "source": "Aquatic Physical Therapy Section Guidelines"
+  },
+  {
+    "id": "rec_006",
+    "category": "flexibility",
+    "action": "Heel slides. Lie on your back or sit, and slowly slide your heel toward your buttocks to bend the knee, then slide it back out.",
+    "frequency": "Daily",
+    "duration_min": 10,
+    "intensity": "low",
+    "kl_grade_min": 0,
+    "kl_grade_max": 4,
+    "pain_threshold": 8,
+    "mobility_req": "limited",
+    "contraindications": [
+      "deep vein thrombosis (DVT)",
+      "recent surgical incision instability"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Standard Orthopedic Rehabilitation Protocols"
+  },
+  {
+    "id": "rec_007",
+    "category": "medication_guidance",
+    "action": "Topical NSAIDs. Discuss with your GP about applying topical pain relief directly to the knee to minimize systemic side effects.",
+    "frequency": "As directed by GP",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 1,
+    "kl_grade_max": 4,
+    "pain_threshold": 4,
+    "mobility_req": "limited",
+    "contraindications": [
+      "allergy to NSAIDs",
+      "broken or irritated skin at application site"
+    ],
+    "evidence_level": "High",
+    "source": "ACR Guidelines for Osteoarthritis"
+  },
+  {
+    "id": "rec_008",
+    "category": "medication_guidance",
+    "action": "Oral Acetaminophen or NSAIDs. Consult your GP for a tailored pain management plan using oral pain relievers during flare-ups.",
+    "frequency": "As directed by GP",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 2,
+    "kl_grade_max": 4,
+    "pain_threshold": 6,
+    "mobility_req": "limited",
+    "contraindications": [
+      "history of gastrointestinal bleeding",
+      "kidney disease",
+      "cardiovascular disease"
+    ],
+    "evidence_level": "High",
+    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA"
+  },
+  {
+    "id": "rec_009",
+    "category": "supplement",
+    "action": "Vitamin D and Calcium. Ask your GP if a blood test to check Vitamin D levels is appropriate, as deficiency impacts bone health.",
+    "frequency": "Daily if prescribed",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 0,
+    "kl_grade_max": 4,
+    "pain_threshold": 0,
+    "mobility_req": "limited",
+    "contraindications": [
+      "hypercalcemia",
+      "history of specific kidney stones"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Clinical Guidelines on Bone Health"
+  },
+  {
+    "id": "rec_010",
+    "category": "supplement",
+    "action": "Glucosamine and Chondroitin Sulfate. Consider discussing these joint supplements with your healthcare provider for joint stiffness.",
+    "frequency": "Daily",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 1,
+    "kl_grade_max": 3,
+    "pain_threshold": 4,
+    "mobility_req": "limited",
+    "contraindications": [
+      "shellfish allergy (for some formulations)",
+      "interactions with blood thinners (Warfarin)"
+    ],
+    "evidence_level": "Low to Moderate",
+    "source": "Osteoarthritis Research Society International (OARSI)"
+  },
+  {
+    "id": "rec_011",
+    "category": "supplement",
+    "action": "Omega-3 Fatty Acids (Fish Oil). Discuss adding Omega-3 supplements to your diet, as natural anti-inflammatory properties may reduce joint pain.",
+    "frequency": "Daily",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 0,
+    "kl_grade_max": 4,
+    "pain_threshold": 3,
+    "mobility_req": "limited",
+    "contraindications": [
+      "bleeding disorders",
+      "upcoming surgeries",
+      "fish/seafood allergy"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Journal of Rheumatology"
+  },
+  {
+    "id": "rec_012",
+    "category": "lifestyle",
+    "action": "Weight Management. Aim for a 5% to 10% body weight reduction if overweight. Every 1 kg of weight lost removes roughly 4 kg of pressure from the knee joint.",
+    "frequency": "Ongoing",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 1,
+    "kl_grade_max": 4,
+    "pain_threshold": 0,
+    "mobility_req": "limited",
+    "contraindications": [
+      "eating disorders",
+      "severe malnutrition"
+    ],
+    "evidence_level": "High",
+    "source": "American College of Rheumatology (ACR) Guidelines"
+  },
+  {
+    "id": "rec_013",
+    "category": "pain_management",
+    "action": "Cold Therapy. Apply an ice pack wrapped in a towel to the knee for 15-20 minutes to reduce acute swelling and numb sharp pain after activity.",
+    "frequency": "As needed post-activity",
+    "duration_min": 20,
+    "intensity": "N/A",
+    "kl_grade_min": 0,
+    "kl_grade_max": 4,
+    "pain_threshold": 5,
+    "mobility_req": "limited",
+    "contraindications": [
+      "Raynaud's phenomenon",
+      "impaired skin sensation",
+      "cold urticaria"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Arthritis Foundation Guidelines"
+  },
+  {
+    "id": "rec_014",
+    "category": "pain_management",
+    "action": "Heat Therapy. Apply a warm compress or heating pad to the knee before exercise or morning activity to relax surrounding muscles and reduce joint stiffness.",
+    "frequency": "As needed pre-activity",
+    "duration_min": 15,
+    "intensity": "N/A",
+    "kl_grade_min": 0,
+    "kl_grade_max": 4,
+    "pain_threshold": 3,
+    "mobility_req": "limited",
+    "contraindications": [
+      "acute inflammation/swelling (hot joints)",
+      "impaired skin sensation",
+      "open wounds"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Arthritis Foundation Guidelines"
+  },
+  {
+    "id": "rec_015",
+    "category": "orthotics",
+    "action": "Knee Bracing (Unloader/Sleeve). Discuss with your GP or physiotherapist about using an unloader brace to shift weight off the damaged compartment, or a neoprene sleeve for warmth and compression.",
+    "frequency": "During weight-bearing activity",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 2,
+    "kl_grade_max": 4,
+    "pain_threshold": 6,
+    "mobility_req": "moderate",
+    "contraindications": [
+      "severe peripheral vascular disease",
+      "skin contact allergies to brace materials"
+    ],
+    "evidence_level": "Moderate",
+    "source": "OARSI Guidelines"
+  },
+  {
+    "id": "rec_016",
+    "category": "orthotics",
+    "action": "Supportive Footwear & Insoles. Wear shoes with thick, shock-absorbing soles. Avoid high heels or flat shoes with no arch support to minimize impact translation to the knee.",
+    "frequency": "Daily",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 1,
+    "kl_grade_max": 4,
+    "pain_threshold": 2,
+    "mobility_req": "limited",
+    "contraindications": [
+      "custom orthotics already prescribed for other conditions (consult podiatrist)"
+    ],
+    "evidence_level": "Moderate",
+    "source": "ACR Guidelines"
+  },
+  {
+    "id": "rec_017",
+    "category": "orthotics",
+    "action": "Assistive Walking Devices. Use a walking cane held in the hand opposite to your painful knee. This reduces weight-bearing load and improves stability.",
+    "frequency": "During prolonged walking",
+    "duration_min": 0,
+    "intensity": "N/A",
+    "kl_grade_min": 3,
+    "kl_grade_max": 4,
+    "pain_threshold": 7,
+    "mobility_req": "limited",
+    "contraindications": [
+      "severe shoulder or wrist issues on the opposing side"
+    ],
+    "evidence_level": "High",
+    "source": "American College of Rheumatology (ACR)"
+  },
+  {
+    "id": "rec_018",
+    "category": "strengthening",
+    "action": "Clamshells. Lie on your side with knees bent. Keeping your feet together, slowly lift your top knee to strengthen hip abductors and glutes, which help stabilize the knee joint.",
+    "frequency": "3 days a week",
+    "duration_min": 10,
+    "intensity": "low",
+    "kl_grade_min": 0,
+    "kl_grade_max": 3,
+    "pain_threshold": 6,
+    "mobility_req": "moderate",
+    "contraindications": [
+      "recent hip replacement surgery",
+      "acute trochanteric bursitis"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Journal of Orthopaedic & Sports Physical Therapy"
+  },
+  {
+    "id": "rec_019",
+    "category": "strengthening",
+    "action": "Mini Wall Squats. Lean your back against a smooth wall, feet shoulder-width apart. Slowly slide down until your knees are bent at a shallow 30-45 degree angle, hold for 5 seconds, and rise.",
+    "frequency": "3 days a week",
+    "duration_min": 10,
+    "intensity": "moderate",
+    "kl_grade_min": 1,
+    "kl_grade_max": 2,
+    "pain_threshold": 5,
+    "mobility_req": "good",
+    "contraindications": [
+      "severe patellofemoral osteoarthritis",
+      "pain exceeding 6/10 during the movement"
+    ],
+    "evidence_level": "High",
+    "source": "Clinical Practice Guidelines for Physical Therapy"
+  },
+  {
+    "id": "rec_020",
+    "category": "low-impact",
+    "action": "Tai Chi. Participate in modified Tai Chi routines. The slow, controlled movements improve neuromuscular control, balance, and muscle strength around the joint with minimal impact.",
+    "frequency": "2 days a week",
+    "duration_min": 45,
+    "intensity": "low",
+    "kl_grade_min": 1,
+    "kl_grade_max": 3,
+    "pain_threshold": 6,
+    "mobility_req": "moderate",
+    "contraindications": [
+      "severe balance impairments without supervision",
+      "frequent falls"
+    ],
+    "evidence_level": "High",
+    "source": "ACR Guidelines for Osteoarthritis"
+  },
+  {
+    "id": "rec_021",
+    "category": "pain_management",
+    "action": "TENS Therapy. Consider using a Transcutaneous Electrical Nerve Stimulation (TENS) unit on the knee under physiotherapy guidance to help block pain signals to the brain.",
+    "frequency": "As needed/prescribed",
+    "duration_min": 20,
+    "intensity": "N/A",
+    "kl_grade_min": 2,
+    "kl_grade_max": 4,
+    "pain_threshold": 7,
+    "mobility_req": "limited",
+    "contraindications": [
+      "pacemaker or implanted cardiac defibrillator",
+      "pregnancy",
+      "use over broken skin or areas of numbness"
+    ],
+    "evidence_level": "Moderate",
+    "source": "OARSI Guidelines"
+  },
+  {
+    "id": "rec_022",
+    "category": "flexibility",
+    "action": "Calf Stretches. Stand facing a wall. Step one foot back, keeping that leg straight and heel flat on the floor. Lean forward into the wall until you feel a stretch in your calf.",
+    "frequency": "Daily",
+    "duration_min": 5,
+    "intensity": "low",
+    "kl_grade_min": 0,
+    "kl_grade_max": 3,
+    "pain_threshold": 6,
+    "mobility_req": "moderate",
+    "contraindications": [
+      "Achilles tendonitis flare-up",
+      "plantar fasciitis acute phase"
+    ],
+    "evidence_level": "Moderate",
+    "source": "Standard Orthopedic Rehabilitation Protocols"
+  }
+]

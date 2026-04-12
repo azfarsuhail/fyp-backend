@@ -4,7 +4,7 @@
 
 | Metric | Status |
 |--------|--------|
-| **Tests** | ✅ 85/85 Passing (100%) |
+| **Tests** | ✅ 105/105 Passing (100%) |
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened (March 2026) |
 | **Production Ready** | ✅ Yes |
@@ -147,15 +147,16 @@ Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocon
 
 ## Testing
 
-### Test Suite (85 tests, ALL PASSING)
+### Test Suite (105 tests, ALL PASSING)
 - `tests/conftest.py` - In-memory SQLite, DB override, fixtures (patient/gp/admin, seed_image, seed_report, seed_video)
 - `tests/test_health.py` - Root + /health (2 tests)
-- `tests/test_auth.py` - Register + Login (12 tests) - **includes admin registration prevention**
+- `tests/test_auth.py` - Register + Login (11 tests) - **includes admin registration prevention**
 - `tests/test_upload.py` - X-ray upload with S3 mocking (7 tests)
 - `tests/test_diagnostic.py` - Analyze + Reports with CNN/RAG mocking (11 tests)
 - `tests/test_recommendation.py` - Standalone recommendation (9 tests)
 - `tests/test_profile.py` - Profile CRUD + password change + **logging & history** (26 tests)
 - `tests/test_video.py` - Video library CRUD + RBAC (19 tests)
+- `tests/test_mobile_sync.py` - Mobile sync endpoints + data export (20 tests)
 
 ### Profile Logging Tests (15 new tests)
 - `TestProfileHistory` - GET /me/history endpoint (4 tests)
@@ -245,7 +246,7 @@ pytest -v
 - ✅ Multi-agent architecture (CNN + RAG)
 - ✅ RBAC enforcement across all routes
 - ✅ Docker setup for local development
-- ✅ **85 tests passing** covering all functionality
+- ✅ **105 tests passing** covering all functionality
 - ✅ **Security hardened** (March 2026)
 - ✅ **Code quality: A- (90/100)**
 - ✅ **Production ready**

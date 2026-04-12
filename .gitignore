@@ -66,16 +66,6 @@ docker-compose*.yml
 *.sqlite
 *.sqlite3
 
-# --- ML/AI Models and Assets ---
-*.h5
-*.pkl
-*.joblib
-*.onnx
-ml_assets/
-models/
-*.keras
-*.pth
-*.pt
 
 # --- AWS ---
 .aws/

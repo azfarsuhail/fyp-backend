@@ -10,7 +10,7 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 
 | Metric | Status |
 |--------|--------|
-| **Tests** | ✅ 85/85 Passing (100%) |
+| **Tests** | ✅ 105/105 Passing (100%) |
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened |
 | **Production Ready** | ✅ Yes |
@@ -139,7 +139,7 @@ knee_oa_backend/
 │   ├── test_video.py              # 19 tests — video library CRUD + RBAC
 │   └── test_health.py             # 2 tests — root + health check
 │
-│ **Total: 85 tests, ALL PASSING**
+│ **Total: 105 tests, ALL PASSING**
 ├── Dockerfile                     # Python 3.10-slim, ML-optimised
 ├── docker-compose.yml             # Dev setup with hot-reload volume mount
 ├── requirements.txt               # All dependencies with version pins
@@ -438,7 +438,7 @@ Tests use an **in-memory SQLite** database and mock all external services (S3, C
 # Activate venv
 .venv\Scripts\activate
 
-# Run all 59 tests
+# Run all 105 tests
 pytest tests/ -v
 
 # Run a specific test file
@@ -455,11 +455,12 @@ pytest tests/ --cov=app --cov-report=term-missing
 | `test_health.py` | 2 | Root + health endpoints |
 | `test_auth.py` | 11 | Registration, login, validation, duplicate emails |
 | `test_upload.py` | 7 | File upload, type validation, S3 mocking, RBAC |
-| `test_diagnostic.py` | 9 | Full pipeline mocking, reports CRUD, access control |
-| `test_recommendation.py` | 8 | RAG endpoint, validation, error handling |
-| `test_profile.py` | 11 | Profile CRUD, password change, duplicate email check |
-| `test_video.py` | 11 | Video CRUD, KL grade filtering, admin-only guards |
-| **Total** | **59** | **All passing ✅** |
+| `test_diagnostic.py` | 11 | Full pipeline mocking, reports CRUD, access control |
+| `test_recommendation.py` | 9 | RAG endpoint, validation, error handling |
+| `test_profile.py` | 26 | Profile CRUD, password change, duplicate email check, **logging & history** |
+| `test_video.py` | 19 | Video CRUD, KL grade filtering, admin-only guards |
+| `test_mobile_sync.py` | 20 | Mobile sync endpoints, data export, RBAC |
+| **Total** | **105** | **All passing ✅** |
 
 ---
 
@@ -477,7 +478,7 @@ pytest tests/ --cov=app --cov-report=term-missing
 | **Image Processing** | Pillow + NumPy | Grayscale, resize, ROI extraction, normalisation |
 | **RAG Embeddings** | Sentence-Transformers | `all-MiniLM-L6-v2` for semantic retrieval |
 | **Containerisation** | Docker + Compose | Reproducible dev/prod environments |
-| **Testing** | pytest + httpx | 59 tests with in-memory SQLite and mocking |
+| **Testing** | pytest + httpx | 105 tests with in-memory SQLite and mocking |
 
 ---
 
