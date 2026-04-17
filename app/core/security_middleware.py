@@ -8,7 +8,7 @@ from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from functools import wraps
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -23,7 +23,7 @@ class RateLimiter:
     
     def is_allowed(self, identifier: str) -> bool:
         """Check if identifier is allowed to make request."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         # Clean old attempts
         self.attempts[identifier] = [
             ts for ts in self.attempts[identifier]
@@ -38,7 +38,7 @@ class RateLimiter:
     
     def get_remaining(self, identifier: str) -> int:
         """Get remaining attempts for identifier."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         self.attempts[identifier] = [
             ts for ts in self.attempts[identifier]
             if now - ts < self.window

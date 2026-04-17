@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.config import Base
 
 
@@ -22,7 +22,7 @@ class Report(Base):
     warnings = Column(Text, nullable=True)               # JSON: grade-specific warnings
     exercise_video_urls = Column(Text, nullable=True)    # JSON string of S3 video URLs
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     image = relationship("Image", back_populates="report")

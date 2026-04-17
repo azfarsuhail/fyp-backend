@@ -15,7 +15,7 @@ Each row captures:
 
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.config import Base
 
 
@@ -27,7 +27,7 @@ class ProfileLog(Base):
     field_name = Column(String, nullable=False)       # e.g. "pain_level", "mobility_level", "age"
     old_value = Column(Text, nullable=True)            # Previous value (as string)
     new_value = Column(Text, nullable=True)            # New value (as string)
-    changed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    changed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
     # Relationship
     user = relationship("User", back_populates="profile_logs")

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -16,6 +16,8 @@ class UserCreate(BaseModel):
 
 
 class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     user_id: int
     email: EmailStr
     full_name: str
@@ -25,9 +27,6 @@ class UserOut(BaseModel):
     mobility_level: Optional[str] = None
     has_support: Optional[bool] = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class Token(BaseModel):

@@ -18,7 +18,7 @@ Data NOT Synced:
 """
 
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 import json
 import sqlite3
@@ -112,7 +112,7 @@ class MobileSyncService:
             "images": images_data,
             "reports": reports_data,
             "history": history_data,
-            "synced_at": datetime.utcnow().isoformat(),
+            "synced_at": datetime.now(timezone.utc).isoformat(),
         }
     
     def export_to_json(self, output_path: Optional[str] = None) -> str:

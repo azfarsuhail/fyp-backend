@@ -7,7 +7,7 @@ API endpoints for admin dashboard analytics and statistics.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any
 
 from app.core.dependencies import get_db, RoleChecker
@@ -44,13 +44,13 @@ def get_dashboard_analytics(
     users_by_role_dict = {role: count for role, count in users_by_role}
     
     # New users this week
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     new_users_this_week = db.query(func.count(User.user_id)).filter(
         User.created_at >= week_ago
     ).scalar()
     
     # New users this month
-    month_ago = datetime.utcnow() - timedelta(days=30)
+    month_ago = datetime.now(timezone.utc) - timedelta(days=30)
     new_users_this_month = db.query(func.count(User.user_id)).filter(
         User.created_at >= month_ago
     ).scalar()
@@ -105,7 +105,7 @@ def get_dashboard_analytics(
     # User growth (last 7 days)
     user_growth = []
     for i in range(6, -1, -1):
-        date = datetime.utcnow() - timedelta(days=i)
+        date = datetime.now(timezone.utc) - timedelta(days=i)
         date_end = date + timedelta(days=1)
         count = db.query(func.count(User.user_id)).filter(
             User.created_at >= date,
@@ -141,7 +141,7 @@ def get_dashboard_analytics(
         "user_growth": user_growth,
         "recent_activity": recent_activity,
         "system_health": system_health,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -160,7 +160,7 @@ def get_user_analytics(
     total_users = db.query(func.count(User.user_id)).scalar()
     
     # Active users (logged in last 30 days)
-    month_ago = datetime.utcnow() - timedelta(days=30)
+    month_ago = datetime.now(timezone.utc) - timedelta(days=30)
     active_users = db.query(func.count(User.user_id)).filter(
         User.last_login >= month_ago
     ).scalar()
@@ -233,7 +233,7 @@ def get_report_analytics(
     ).scalar()
     
     # Reports this month
-    month_ago = datetime.utcnow() - timedelta(days=30)
+    month_ago = datetime.now(timezone.utc) - timedelta(days=30)
     reports_this_month = db.query(func.count(Report.report_id)).filter(
         Report.created_at >= month_ago
     ).scalar()
@@ -261,7 +261,7 @@ def get_activity_analytics(
         Dictionary with activity statistics
     """
     # Profile changes this week
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     profile_changes = db.query(func.count(ProfileLog.log_id)).filter(
         ProfileLog.changed_at >= week_ago
     ).scalar()

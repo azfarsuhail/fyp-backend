@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.config import Base
 
 
@@ -13,7 +13,7 @@ class Image(Base):
     processed_s3_url = Column(String, nullable=True)   # Preprocessed image URL on S3
     file_name = Column(String, nullable=False)
     content_type = Column(String, default="image/png")
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = relationship("User", backref="images")

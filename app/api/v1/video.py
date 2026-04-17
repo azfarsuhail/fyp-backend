@@ -9,7 +9,7 @@ CRUD endpoints for the exercise video library.
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.core.dependencies import get_db, RoleChecker, get_current_user
 from app.models.library import ExerciseVideo
@@ -36,6 +36,8 @@ class VideoCreate(BaseModel):
 
 
 class VideoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     video_id: int
     title: str
     description: Optional[str] = None
@@ -46,9 +48,6 @@ class VideoOut(BaseModel):
     category: str
     difficulty: str
     duration_seconds: Optional[int] = None
-
-    class Config:
-        from_attributes = True
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────

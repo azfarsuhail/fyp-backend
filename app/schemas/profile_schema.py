@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -15,6 +15,8 @@ class ProfileUpdate(BaseModel):
 
 class ProfileOut(BaseModel):
     """Public profile view."""
+    model_config = ConfigDict(from_attributes=True)
+    
     user_id: int
     email: EmailStr
     full_name: str
@@ -26,9 +28,6 @@ class ProfileOut(BaseModel):
     created_at: datetime
     last_login: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
-
 
 class PasswordChange(BaseModel):
     """Request body for changing password."""
@@ -38,15 +37,14 @@ class PasswordChange(BaseModel):
 
 class ProfileLogOut(BaseModel):
     """A single audit log entry for a profile field change."""
+    model_config = ConfigDict(from_attributes=True)
+    
     log_id: int
     user_id: int
     field_name: str
     old_value: Optional[str] = None
     new_value: Optional[str] = None
     changed_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ProfileHistoryOut(BaseModel):

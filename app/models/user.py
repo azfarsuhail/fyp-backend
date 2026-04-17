@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.config import Base
 
 
@@ -19,7 +19,7 @@ class User(Base):
     mobility_level = Column(String, nullable=True)       # 'limited', 'moderate', 'good'
     has_support = Column(Boolean, nullable=True)          # Is there someone to help them?
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime, nullable=True)
 
 

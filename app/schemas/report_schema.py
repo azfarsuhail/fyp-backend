@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
@@ -63,6 +63,8 @@ class RecommendationResult(BaseModel):
 
 class ReportOut(BaseModel):
     """Full report returned to the client."""
+    model_config = ConfigDict(from_attributes=True)
+    
     report_id: int
     image_id: int
     user_id: int
@@ -74,6 +76,3 @@ class ReportOut(BaseModel):
     warnings: Optional[List[Warning]] = None
     exercise_video_urls: Optional[List[str]] = []
     created_at: datetime
-
-    class Config:
-        from_attributes = True
