@@ -88,7 +88,9 @@ def predict_kl_grade(image_bytes: bytes) -> Tuple[int, float, str]:
 
 
 def get_model_info() -> dict:
-    """Return basic metadata about the loaded CNN (useful for health checks)."""
+    """
+    Return basic metadata about the loaded CNN (useful for health checks).
+    """
     model = _load_model()
     return {
         "model_name": model.name,

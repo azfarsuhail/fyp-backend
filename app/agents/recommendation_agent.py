@@ -59,280 +59,31 @@ def _load_embedding_model() -> SentenceTransformer:
 
 
 def _load_knowledge_base():
-    """Load or build the parametric knowledge base with embeddings."""
+    """Load the parametric knowledge base with embeddings from files."""
     global _kb_embeddings, _knowledge_base
 
     if _knowledge_base is not None:
         return
 
-    if os.path.exists(EMBEDDINGS_FILE) and os.path.exists(KNOWLEDGE_FILE):
-        _kb_embeddings = np.load(EMBEDDINGS_FILE)
-        with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
-            _knowledge_base = json.load(f)
-    else:
-        _knowledge_base = _build_parametric_knowledge_base()
-        model = _load_embedding_model()
-        # Embed the semantic_key of each record for retrieval
-        texts = [rec["semantic_key"] for rec in _knowledge_base]
-        _kb_embeddings = model.encode(texts, show_progress_bar=False)
-        # Persist
-        os.makedirs(VECTOR_STORE_DIR, exist_ok=True)
-        np.save(EMBEDDINGS_FILE, _kb_embeddings)
-        with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
-            json.dump(_knowledge_base, f, indent=2)
+    if not os.path.exists(EMBEDDINGS_FILE) or not os.path.exists(KNOWLEDGE_FILE):
+        raise FileNotFoundError(
+            f"Vector store files not found. Please run: python scripts/generate_embeddings.py"
+        )
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  PARAMETRIC KNOWLEDGE BASE
-#  Every record is a typed parameter set — NOT free text.
-#  Fields:
-#    id              — unique identifier
-#    semantic_key    — natural-language description used ONLY for embedding/retrieval
-#    category        — "exercise" | "nutrition" | "pain_management" | "lifestyle" | "flexibility"
-#    action          — the specific recommendation (imperative, short)
-#    frequency       — how often (e.g. "daily", "3x/week")
-#    duration_min    — session duration in minutes
-#    intensity       — "low" | "moderate" | "high"
-#    kl_grade_min/max— which KL grades this applies to
-#    pain_threshold  — max pain level (0-10) this is safe for; null = any
-#    mobility_req    — minimum mobility needed: "limited" | "moderate" | "good" | null
-#    contraindications — list of conditions where this should NOT be recommended
-#    evidence_level  — "strong" | "moderate" | "emerging"
-#    source          — citation / guideline reference
-# ══════════════════════════════════════════════════════════════════════════════
-
-def _build_parametric_knowledge_base() -> List[Dict[str, Any]]:
-    return [
-        # ── EXERCISE ──────────────────────────────────────────────────────
-        {
-            "id": "EX-001",
-            "semantic_key": "low-impact aerobic exercise walking cycling swimming early knee osteoarthritis",
-            "category": "exercise",
-            "action": "Perform low-impact aerobic exercise: walking, cycling, or swimming",
-            "frequency": "5x/week",
-            "duration_min": 30,
-            "intensity": "moderate",
-            "kl_grade_min": 0,
-            "kl_grade_max": 2,
-            "pain_threshold": 6,
-            "mobility_req": "moderate",
-            "contraindications": ["acute_flare", "post_surgery"],
-            "evidence_level": "strong",
-            "source": "OARSI 2019 Guidelines",
-        },
-        {
-            "id": "EX-002",
-            "semantic_key": "quadriceps hamstring strengthening exercises moderate knee osteoarthritis",
-            "category": "exercise",
-            "action": "Strengthen quadriceps and hamstrings with isometric exercises and leg presses",
-            "frequency": "3x/week",
-            "duration_min": 20,
-            "intensity": "moderate",
-            "kl_grade_min": 1,
-            "kl_grade_max": 3,
-            "pain_threshold": 7,
-            "mobility_req": "moderate",
-            "contraindications": ["acute_flare", "joint_instability"],
-            "evidence_level": "strong",
-            "source": "ACR/AF 2020 Guidelines",
-        },
-        {
-            "id": "EX-003",
-            "semantic_key": "aqua therapy water-based exercise severe knee osteoarthritis buoyancy",
-            "category": "exercise",
-            "action": "Perform water-based exercises (aqua therapy) to reduce joint loading by up to 90%",
-            "frequency": "3x/week",
-            "duration_min": 30,
-            "intensity": "low",
-            "kl_grade_min": 2,
-            "kl_grade_max": 4,
-            "pain_threshold": 9,
-            "mobility_req": "limited",
-            "contraindications": ["open_wounds", "skin_infection"],
-            "evidence_level": "strong",
-            "source": "Cochrane Review 2016",
-        },
-        {
-            "id": "EX-004",
-            "semantic_key": "gentle range of motion exercises severe osteoarthritis limited mobility",
-            "category": "exercise",
-            "action": "Perform gentle seated range-of-motion exercises (ankle pumps, knee extensions)",
-            "frequency": "daily",
-            "duration_min": 10,
-            "intensity": "low",
-            "kl_grade_min": 3,
-            "kl_grade_max": 4,
-            "pain_threshold": 10,
-            "mobility_req": "limited",
-            "contraindications": [],
-            "evidence_level": "moderate",
-            "source": "NICE NG226 2022",
-        },
-        # ── FLEXIBILITY ───────────────────────────────────────────────────
-        {
-            "id": "FL-001",
-            "semantic_key": "stretching hamstrings calves hip flexors flexibility knee osteoarthritis",
-            "category": "flexibility",
-            "action": "Stretch hamstrings, calves, and hip flexors (hold each stretch 30 seconds)",
-            "frequency": "daily",
-            "duration_min": 15,
-            "intensity": "low",
-            "kl_grade_min": 0,
-            "kl_grade_max": 4,
-            "pain_threshold": 8,
-            "mobility_req": "limited",
-            "contraindications": ["acute_flare"],
-            "evidence_level": "moderate",
-            "source": "ACSM Exercise Guidelines 2021",
-        },
-        {
-            "id": "FL-002",
-            "semantic_key": "yoga tai chi balance flexibility knee osteoarthritis pain reduction",
-            "category": "flexibility",
-            "action": "Practice yoga or tai chi for balance and pain reduction",
-            "frequency": "2x/week",
-            "duration_min": 30,
-            "intensity": "low",
-            "kl_grade_min": 0,
-            "kl_grade_max": 3,
-            "pain_threshold": 6,
-            "mobility_req": "moderate",
-            "contraindications": ["severe_instability"],
-            "evidence_level": "moderate",
-            "source": "Arthritis Foundation 2020",
-        },
-        # ── NUTRITION ─────────────────────────────────────────────────────
-        {
-            "id": "NU-001",
-            "semantic_key": "weight management diet anti-inflammatory foods knee osteoarthritis",
-            "category": "nutrition",
-            "action": "Follow an anti-inflammatory diet rich in fish, nuts, and leafy greens",
-            "frequency": "daily",
-            "duration_min": None,
-            "intensity": None,
-            "kl_grade_min": 0,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": None,
-            "contraindications": ["fish_allergy", "nut_allergy"],
-            "evidence_level": "moderate",
-            "source": "Mediterranean Diet & OA Meta-analysis 2018",
-        },
-        {
-            "id": "NU-002",
-            "semantic_key": "weight loss body weight reduction knee joint pressure osteoarthritis",
-            "category": "nutrition",
-            "action": "Aim for gradual weight loss (0.5-1 kg/week) — each 1 kg lost removes ~4 kg of knee pressure",
-            "frequency": "ongoing",
-            "duration_min": None,
-            "intensity": None,
-            "kl_grade_min": 0,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": None,
-            "contraindications": ["underweight"],
-            "evidence_level": "strong",
-            "source": "Messier et al. JAMA 2013",
-        },
-        # ── PAIN MANAGEMENT ───────────────────────────────────────────────
-        {
-            "id": "PM-001",
-            "semantic_key": "heat therapy before exercise warm stiff joints knee osteoarthritis",
-            "category": "pain_management",
-            "action": "Apply heat therapy for 15-20 minutes before exercise to loosen stiff joints",
-            "frequency": "before exercise",
-            "duration_min": 20,
-            "intensity": None,
-            "kl_grade_min": 1,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": None,
-            "contraindications": ["acute_inflammation", "open_wounds"],
-            "evidence_level": "moderate",
-            "source": "NICE NG226 2022",
-        },
-        {
-            "id": "PM-002",
-            "semantic_key": "cold therapy ice after exercise reduce swelling knee osteoarthritis",
-            "category": "pain_management",
-            "action": "Apply cold therapy (ice pack) for 10-15 minutes after exercise to reduce swelling",
-            "frequency": "after exercise",
-            "duration_min": 15,
-            "intensity": None,
-            "kl_grade_min": 1,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": None,
-            "contraindications": ["raynauds_disease", "cold_sensitivity"],
-            "evidence_level": "moderate",
-            "source": "NICE NG226 2022",
-        },
-        {
-            "id": "PM-003",
-            "semantic_key": "assistive devices walking aids cane knee osteoarthritis severe pain",
-            "category": "pain_management",
-            "action": "Use assistive devices (cane, knee brace) to reduce joint loading during daily activities",
-            "frequency": "as needed",
-            "duration_min": None,
-            "intensity": None,
-            "kl_grade_min": 3,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": "limited",
-            "contraindications": [],
-            "evidence_level": "strong",
-            "source": "OARSI 2019 Guidelines",
-        },
-        # ── LIFESTYLE ─────────────────────────────────────────────────────
-        {
-            "id": "LS-001",
-            "semantic_key": "proper footwear arch support cushioning knee osteoarthritis",
-            "category": "lifestyle",
-            "action": "Wear footwear with good arch support and cushioning; consider orthotic insoles",
-            "frequency": "daily",
-            "duration_min": None,
-            "intensity": None,
-            "kl_grade_min": 0,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": None,
-            "contraindications": [],
-            "evidence_level": "moderate",
-            "source": "Cochrane Review 2015",
-        },
-        {
-            "id": "LS-002",
-            "semantic_key": "sleep quality pain management pillow knee alignment osteoarthritis",
-            "category": "lifestyle",
-            "action": "Ensure 7-9 hours of sleep; use a pillow between knees when sleeping on your side",
-            "frequency": "nightly",
-            "duration_min": None,
-            "intensity": None,
-            "kl_grade_min": 0,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": None,
-            "contraindications": [],
-            "evidence_level": "moderate",
-            "source": "Sleep Foundation & OA Guidelines 2021",
-        },
-        {
-            "id": "LS-003",
-            "semantic_key": "avoid high impact activities running jumping knee osteoarthritis moderate severe",
-            "category": "lifestyle",
-            "action": "Avoid high-impact activities (running, jumping, heavy squats)",
-            "frequency": "always",
-            "duration_min": None,
-            "intensity": None,
-            "kl_grade_min": 2,
-            "kl_grade_max": 4,
-            "pain_threshold": None,
-            "mobility_req": None,
-            "contraindications": [],
-            "evidence_level": "strong",
-            "source": "OARSI 2019 Guidelines",
-        },
-    ]
+    # Load embeddings
+    _kb_embeddings = np.load(EMBEDDINGS_FILE)
+    
+    # Load knowledge base
+    with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
+        _knowledge_base = json.load(f)
+    
+    # Verify embeddings match knowledge base
+    if len(_kb_embeddings) != len(_knowledge_base):
+        raise ValueError(
+            f"Embedding count ({len(_kb_embeddings)}) doesn't match "
+            f"knowledge base count ({len(_knowledge_base)}). "
+            "Please regenerate embeddings."
+        )
 
 
 # ── WARNINGS TABLE (deterministic, grade-based) ──────────────────────────────
@@ -421,7 +172,6 @@ def _semantic_rank(
         return []
 
     _load_knowledge_base()
-    model = _load_embedding_model()
 
     # Build context query
     parts = [f"knee osteoarthritis KL grade {kl_grade}"]
@@ -431,7 +181,8 @@ def _semantic_rank(
     if mobility_level:
         parts.append(f"{mobility_level} mobility")
 
-    query_embedding = model.encode(". ".join(parts), show_progress_bar=False)
+    query_text = ". ".join(parts)
+    query_embedding = _load_embedding_model().encode(query_text, show_progress_bar=False)
 
     # Get embeddings for only the filtered records
     filtered_embeddings = _kb_embeddings[indices]
