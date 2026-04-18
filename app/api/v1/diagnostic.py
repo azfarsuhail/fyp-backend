@@ -106,6 +106,12 @@ async def analyze_xray(
             db=db,
             pain_level=request.pain_level,
             mobility_level=request.mobility_level,
+            # New profile fields (April 2026)
+            kinesiophobia=user.kinesiophobia,
+            occupation_type=user.occupation_type,
+            has_stairs=user.has_stairs,
+            current_meds=json.loads(user.current_meds) if user.current_meds else None,
+            sleep_quality=user.sleep_quality,
         )
     except Exception as e:
         # Recommendation is non-critical; provide diagnosis even if RAG fails

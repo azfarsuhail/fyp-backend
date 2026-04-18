@@ -38,7 +38,7 @@ class RateLimiter:
     
     def get_remaining(self, identifier: str) -> int:
         """Get remaining attempts for identifier."""
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         self.attempts[identifier] = [
             ts for ts in self.attempts[identifier]
             if now - ts < self.window
@@ -68,8 +68,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Referrer policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         
-        # Content Security Policy (basic)
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        # Content Security Policy (Updated for FastAPI Docs)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: https://fastapi.tiangolo.com;"
+        )
         
         # Remove server header
         if "server" in response.headers:

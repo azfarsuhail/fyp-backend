@@ -11,6 +11,13 @@ class ProfileUpdate(BaseModel):
     pain_level: Optional[int] = Field(None, ge=0, le=10, description="Self-reported pain 0-10")
     mobility_level: Optional[str] = Field(None, description="'limited', 'moderate', or 'good'")
     has_support: Optional[bool] = Field(None, description="Is there someone to help them?")
+    
+    # Additional patient context fields (April 2026)
+    kinesiophobia: Optional[str] = Field(None, description="'low', 'moderate', or 'high'")
+    occupation_type: Optional[str] = Field(None, description="'sedentary', 'light_manual', or 'heavy_manual'")
+    has_stairs: Optional[bool] = Field(None, description="Access to stairs at home/work")
+    current_meds: Optional[List[str]] = Field(None, description="List of current medications")
+    sleep_quality: Optional[str] = Field(None, description="'poor', 'fair', or 'good'")
 
 
 class ProfileOut(BaseModel):
@@ -25,6 +32,14 @@ class ProfileOut(BaseModel):
     pain_level: Optional[int] = None
     mobility_level: Optional[str] = None
     has_support: Optional[bool] = None
+    
+    # Additional patient context fields (April 2026)
+    kinesiophobia: Optional[str] = None
+    occupation_type: Optional[str] = None
+    has_stairs: Optional[bool] = None
+    current_meds: Optional[List[str]] = None
+    sleep_quality: Optional[str] = None
+    
     created_at: datetime
     last_login: Optional[datetime] = None
 

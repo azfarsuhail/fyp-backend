@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knee OA - Diagnostic System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --success: #22c55e;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; }
+
+        /* Auth Screen */
+        #auth-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .auth-card {
+            background: white; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+
+        /* Layout */
+        .dashboard { display: none; min-height: 100vh; }
+        .sidebar {
+            width: 260px; background: white; border-right: 1px solid var(--border);
+            height: 100vh; position: fixed; padding: 1.5rem;
+        }
+        .main-content { margin-left: 260px; padding: 2.5rem; }
+
+        /* UI Elements */
+        .btn {
+            background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem; cursor: pointer; font-weight: 600; transition: 0.2s; width: 100%;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        
+        .input-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
+        input, select {
+            width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem; outline-color: var(--primary);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border); padding: 3rem; text-align: center; border-radius: 1rem;
+            background: white; cursor: pointer;
+        }
+
+        .tab-content { display: none; }
+        .active { display: block; }
+
+        .report-card {
+            background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .kl-badge {
+            background: #dbeafe; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 1rem;
+            font-size: 0.75rem; font-weight: 700;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2 style="margin-top:0">Knee OA Portal</h2>
+            <p style="color:#64748b; font-size: 0.9rem">Sign in to your medical account</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Username / Email</label>
+                    <input type="text" id="username" required placeholder="admin">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="admin">
+                </div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="dashboard" class="dashboard">
+        <nav class="sidebar">
+            <h3 style="color:var(--primary)">KneeSafe AI</h3>
+            <hr style="border:0; border-top:1px solid var(--border); margin: 1.5rem 0">
+            <div style="display:flex; flex-direction:column; gap:0.5rem">
+                <button class="btn btn-outline" onclick="showTab('upload')">Analyze Image</button>
+                <button class="btn btn-outline" onclick="showTab('reports')">Reports</button>
+                <button class="btn btn-outline" onclick="showTab('profile')">My Profile</button>
+            </div>
+            <div style="position:absolute; bottom:1.5rem; width:calc(100% - 3rem)">
+                <div id="user-display" style="font-size:0.8rem; margin-bottom:1rem; color:#64748b"></div>
+                <button class="btn" style="background:#ef4444" onclick="logout()">Logout</button>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <section id="tab-upload" class="tab-content active">
+                <h1>Diagnostic Analysis</h1>
+                <p>Upload a weight-bearing knee X-ray for KL grade prediction.</p>
+                
+                <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary); margin-bottom:1rem">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    <p id="file-status">Click to select image (JPEG/PNG)</p>
+                    <input type="file" id="file-input" class="hidden" accept="image/*">
+                </div>
+
+                <button id="analyze-btn" class="btn hidden" style="margin-top:1.5rem">
+                    Start AI Inference
+                </button>
+
+                <div id="results" class="hidden" style="margin-top:2rem; background:white; padding:2rem; border-radius:1rem; border:1px solid var(--border)">
+                </div>
+            </section>
+
+            <section id="tab-reports" class="tab-content">
+                <h1>Historical Reports</h1>
+                <div id="reports-list"></div>
+            </section>
+
+            <section id="tab-profile" class="tab-content">
+                <h1>My Profile</h1>
+                <p>Manage your medical context for better RAG recommendations.</p>
+                
+                <form id="profile-form" style="background:white; padding:2rem; border-radius:1rem; border:1px solid var(--border); max-width: 500px;">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="prof-name" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="prof-email" required>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="input-group" style="flex: 1;">
+                            <label>Age</label>
+                            <input type="number" id="prof-age">
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Pain Level (0-10)</label>
+                            <input type="number" id="prof-pain" min="0" max="10">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Mobility Level</label>
+                        <select id="prof-mobility">
+                            <option value="limited">Limited</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="good">Good</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="prof-support" style="width: auto;">
+                        <label style="margin: 0;">I have personal/family support</label>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="margin-top: 1rem;">Save Changes</button>
+                    <div id="prof-msg" style="margin-top: 1rem; font-size: 0.875rem; color: var(--success); display: none;">Profile updated successfully!</div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8000/api/v1"; // Update as needed
+        let TOKEN = localStorage.getItem('oa_token');
+
+        // Logic to toggle between login and dashboard
+        function init() {
+            if (TOKEN) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                fetchUser();
+                loadReports();
+            }
+        }
+
+        // Authentication POST
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const body = new URLSearchParams();
+            body.append('username', document.getElementById('username').value);
+            body.append('password', document.getElementById('password').value);
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                });
+                if (!res.ok) throw new Error('Invalid Login');
+                const data = await res.json();
+                TOKEN = data.access_token;
+                localStorage.setItem('oa_token', TOKEN);
+                init();
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+
+        // Fetch User Profile (UPDATED to populate form)
+        async function fetchUser() {
+            try {
+                const res = await fetch(`${API_BASE}/profile/me`, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                if (!res.ok) throw new Error("Session expired");
+                const data = await res.json();
+                
+                // Update sidebar
+                document.getElementById('user-display').innerText = `${data.role.toUpperCase()}: ${data.full_name}`;
+                
+                // Populate profile form
+                document.getElementById('prof-name').value = data.full_name || '';
+                document.getElementById('prof-email').value = data.email || '';
+                document.getElementById('prof-age').value = data.age || '';
+                document.getElementById('prof-pain').value = data.pain_level || 0;
+                
+                if (data.mobility_level) {
+                    document.getElementById('prof-mobility').value = data.mobility_level;
+                }
+                document.getElementById('prof-support').checked = data.has_support || false;
+
+            } catch (err) {
+                logout();
+            }
+        }
+
+        // Profile Update Handler (NEW)
+        document.getElementById('profile-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const btn = e.target.querySelector('button');
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            const body = {
+                full_name: document.getElementById('prof-name').value,
+                email: document.getElementById('prof-email').value,
+                age: parseInt(document.getElementById('prof-age').value) || null,
+                pain_level: parseInt(document.getElementById('prof-pain').value) || 0,
+                mobility_level: document.getElementById('prof-mobility').value,
+                has_support: document.getElementById('prof-support').checked
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/profile/me`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (!res.ok) throw new Error('Failed to update profile');
+                
+                const msg = document.getElementById('prof-msg');
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 3000);
+                
+                fetchUser(); // Refresh the name in the sidebar
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.innerText = "Save Changes";
+                btn.disabled = false;
+            }
+        };
+
+        // Handle File Selection
+        document.getElementById('file-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('file-status').innerText = `Selected: ${file.name}`;
+                document.getElementById('analyze-btn').classList.remove('hidden');
+            }
+        };
+
+        // Analysis Pipeline (Upload -> Analyze)
+        document.getElementById('analyze-btn').onclick = async () => {
+            const btn = document.getElementById('analyze-btn');
+            const file = document.getElementById('file-input').files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            btn.disabled = true;
+            btn.innerText = "Analyzing...";
+
+            try {
+                const res = await fetch(`${API_BASE}/diagnostic/analyze`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` },
+                    body: formData
+                });
+                const report = await res.json();
+                renderResult(report);
+            } catch (err) {
+                alert("Analysis failed. Ensure server is running.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Start AI Inference";
+            }
+        };
+
+        function renderResult(report) {
+            const div = document.getElementById('results');
+            div.classList.remove('hidden');
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <h2 style="margin:0">KL Grade ${report.kl_grade}</h2>
+                    <span class="kl-badge">Confidence: ${(report.confidence * 100).toFixed(1)}%</span>
+                </div>
+                <p style="background:var(--bg); padding:1rem; border-radius:0.5rem; margin:1.5rem 0">
+                    <strong>Diagnosis Summary:</strong><br>${report.diagnosis_summary}
+                </p>
+                <h3>Recommended Action Plan</h3>
+                <div style="font-style:italic; border-left:4px solid var(--primary); padding-left:1rem">
+                    ${report.recommendation}
+                </div>
+            `;
+            loadReports(); // Refresh history
+        }
+
+        async function loadReports() {
+            const res = await fetch(`${API_BASE}/diagnostic/reports`, {
+                headers: { 'Authorization': `Bearer ${TOKEN}` }
+            });
+            const reports = await res.json();
+            const list = document.getElementById('reports-list');
+            list.innerHTML = reports.map(r => `
+                <div class="report-card">
+                    <div style="display:flex; justify-content:space-between">
+                        <strong>Grade ${r.kl_grade}</strong>
+                        <span style="font-size:0.8rem; color:#64748b">${new Date(r.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p style="font-size:0.9rem; margin-top:0.5rem">${r.diagnosis_summary.substring(0, 100)}...</p>
+                </div>
+            `).join('');
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        function logout() {
+            localStorage.removeItem('oa_token');
+            location.reload();
+        }
+
+        init();
+    </script>
+</body>
+</html>

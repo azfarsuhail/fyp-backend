@@ -112,6 +112,34 @@ def update_my_profile(
         log_profile_change(db, user.user_id, "has_support", user.has_support, updates.has_support)
         user.has_support = updates.has_support
 
+    # Log and update kinesiophobia
+    if updates.kinesiophobia is not None and updates.kinesiophobia != user.kinesiophobia:
+        log_profile_change(db, user.user_id, "kinesiophobia", user.kinesiophobia, updates.kinesiophobia)
+        user.kinesiophobia = updates.kinesiophobia
+
+    # Log and update occupation_type
+    if updates.occupation_type is not None and updates.occupation_type != user.occupation_type:
+        log_profile_change(db, user.user_id, "occupation_type", user.occupation_type, updates.occupation_type)
+        user.occupation_type = updates.occupation_type
+
+    # Log and update has_stairs
+    if updates.has_stairs is not None and updates.has_stairs != user.has_stairs:
+        log_profile_change(db, user.user_id, "has_stairs", user.has_stairs, updates.has_stairs)
+        user.has_stairs = updates.has_stairs
+
+    # Log and update current_meds (convert list to JSON string for storage)
+    if updates.current_meds is not None and updates.current_meds != user.current_meds:
+        import json
+        old_meds = json.dumps(user.current_meds) if user.current_meds else None
+        new_meds = json.dumps(updates.current_meds)
+        log_profile_change(db, user.user_id, "current_meds", old_meds, new_meds)
+        user.current_meds = json.dumps(updates.current_meds)
+
+    # Log and update sleep_quality
+    if updates.sleep_quality is not None and updates.sleep_quality != user.sleep_quality:
+        log_profile_change(db, user.user_id, "sleep_quality", user.sleep_quality, updates.sleep_quality)
+        user.sleep_quality = updates.sleep_quality
+
     db.commit()
     db.refresh(user)
     return user

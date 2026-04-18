@@ -18,6 +18,13 @@ class User(Base):
     pain_level = Column(Integer, nullable=True)          # 0-10 self-reported
     mobility_level = Column(String, nullable=True)       # 'limited', 'moderate', 'good'
     has_support = Column(Boolean, nullable=True)          # Is there someone to help them?
+    
+    # Additional patient context fields (April 2026)
+    kinesiophobia = Column(String, nullable=True)        # 'low', 'moderate', 'high'
+    occupation_type = Column(String, nullable=True)      # 'sedentary', 'light_manual', 'heavy_manual'
+    has_stairs = Column(Boolean, nullable=True)           # Access to stairs at home/work
+    current_meds = Column(String, nullable=True)          # JSON array of medication names
+    sleep_quality = Column(String, nullable=True)        # 'poor', 'fair', 'good'
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime, nullable=True)

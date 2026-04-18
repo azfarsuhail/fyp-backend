@@ -7,6 +7,7 @@
 | **Tests** | ✅ 105/105 Passing (100%) |
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened (March 2026) |
+| **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
 | **Production Ready** | ✅ Yes |
 
 ## Tech Stack
@@ -32,6 +33,17 @@
 - ✅ CORS configurable via environment
 - ✅ Input sanitization for error messages
 
+## Advanced Clinical RAG Upgrades (April 2026)
+- ✅ **New Patient Profile Fields**: kinesiophobia, occupation_type, has_stairs, current_meds, sleep_quality
+- ✅ **Strict Clinical Filtering**: RAG agent filters contraindicated advice based on behavioral constraints
+- ✅ **Kinesiophobia Safety**: Filters out intimidating exercises for high kinesiophobia users
+- ✅ **Occupation-Based Filtering**: Excludes exercises contraindicated for specific work types
+- ✅ **Medication Conflict Detection**: Filters advice that conflicts with user's current medications
+- ✅ **Stairs Impact Assessment**: Prioritizes stair-friendly recommendations for users with stairs
+- ✅ **Safe Defaults**: Null values default to conservative settings to prevent over-filtering
+- ✅ **Enhanced Knowledge Base**: parametric_knowledge.json updated with new constraint fields
+- ✅ **Full Audit Trail**: All profile changes logged to PROFILE_LOG table
+
 ## Project Overview
 Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The system uses a decoupled multi-agent architecture with a CNN-based Diagnostic Agent for KL grade prediction and a parametric RAG Recommendation Agent for evidence-based lifestyle advice.
 
@@ -54,7 +66,7 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 
 ### Profile Management (`/api/v1/profile`)
 - `GET /me` - Get current user profile
-- `PUT /me` - Update profile (name, email, age, pain_level, mobility_level, has_support) - **logs all changes**
+- `PUT /me` - Update profile (name, email, age, pain_level, mobility_level, has_support, **kinesiophobia, occupation_type, has_stairs, current_meds, sleep_quality**) - **logs all changes**
 - `GET /me/history` - Get profile change history (audit trail)
 - `POST /me/change-password` - Change password
 
@@ -82,9 +94,11 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 
 ### User (`USER` table)
 - `user_id`, `email` (unique), `password_hash`, `full_name`, `role` (patient/gp/admin)
-- Patient context: `age`, `pain_level` (0-10), `mobility_level` (limited/moderate/good), `has_support`
+- **Patient Context (Original)**: `age`, `pain_level` (0-10), `mobility_level` (limited/moderate/good), `has_support`
+- **Patient Context (April 2026)**: `kinesiophobia` (low/moderate/high), `occupation_type` (sedentary/light_manual/heavy_manual), `has_stairs` (boolean), `current_meds` (JSON array), `sleep_quality` (poor/fair/good)
 - Timestamps: `created_at`, `last_login`
 - Relationship: `profile_logs` (one-to-many with ProfileLog)
+- **Note**: All April 2026 fields are nullable for backward compatibility with legacy users
 
 ### ProfileLog (`PROFILE_LOG` table)
 - `log_id`, `user_id` (FK), `field_name`, `old_value`, `new_value`, `changed_at`
@@ -122,8 +136,20 @@ Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocon
 
 ### Recommendation Agent (`app/agents/recommendation_agent.py`)
 - **Parametric RAG** (hallucination-free): Structured parameter table with embeddings
-- Fields: `id`, `category`, `action`, `frequency`, `duration_min`, `intensity`, `kl_grade_min/max`, `pain_threshold`, `mobility_req`, `contraindications`, `evidence_level`, `source`
-- Retrieval: sentence-transformers (all-MiniLM-L6-v2) + cosine similarity
+- **Original Fields**: `id`, `category`, `action`, `frequency`, `duration_min`, `intensity`, `kl_grade_min/max`, `pain_threshold`, `mobility_req`, `contraindications`, `evidence_level`, `source`
+- **April 2026 Constraint Fields**: `kinesiophobia_req`, `contraindicated_occupations`, `stairs_impact`, `medication_conflicts`, `sleep_consideration`
+- **Retrieval Pipeline**:
+  1. Hard parametric filter (KL grade, pain, mobility)
+  2. Semantic ranking (sentence-transformers + cosine similarity)
+  3. **Profile-based clinical filtering** (kinesiophobia, occupation, medications, stairs)
+  4. Pain/mobility modifiers
+  5. Format into clean parameter sets
+- **Business Rules**:
+  - High kinesiophobia → filter out low-kinesiophobia items
+  - Heavy manual occupation → filter out contraindicated occupations
+  - NSAIDs in current_meds → filter out medication conflicts
+  - Has stairs → prioritize stair-friendly recommendations
+- **Safe Defaults**: Null values default to conservative settings (e.g., null kinesiophobia → 'moderate')
 - Output: List of typed JSON objects (not free-text)
 
 ## Authentication & RBAC
