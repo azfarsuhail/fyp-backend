@@ -38,7 +38,7 @@ COPY --chown=appuser:appgroup app/ ./app/
 COPY --chown=appuser:appgroup alembic/ ./alembic/
 COPY --chown=appuser:appgroup alembic.ini .
 COPY --chown=appuser:appgroup scripts/ ./scripts/
-COPY --chown=appuser:appgroup --chmod=755 ml_assets/ ./ml_assets/ 2>/dev/null || true
+COPY --chown=appuser:appgroup ml_assets/ ./ml_assets/
 
 RUN chown -R appuser:appgroup /code
 
