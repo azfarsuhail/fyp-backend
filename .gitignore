@@ -61,11 +61,6 @@ __pycache__/
 *.pyc
 *.pytest_cache/
 
-# --- Docker ---
-Dockerfile*
-docker-compose*.yml
-.docker/
-
 # --- Database ---
 *.db
 *.sqlite
