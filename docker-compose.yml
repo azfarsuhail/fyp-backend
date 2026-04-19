@@ -37,10 +37,15 @@ services:
       resources:
         limits:
           cpus: '3.5'      # Leaves 0.5 cores for NGINX/OS on a 4 vCPU instance
-          memory: 6G       # Safe limit for an 8GB instance
+          memory: 14G      # Safely scaled up for the 16GB g4dn.xlarge instance
         reservations:
           cpus: '2.0'
-          memory: 3G
+          memory: 4G
+          # Grants the container access to the Tesla T4 GPU
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     logging:
       driver: "json-file"
       options:
