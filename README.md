@@ -56,27 +56,27 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Mobile App (Client)                         │
+│                        Mobile App (Client)                          │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │  HTTPS / JSON
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      NGINX Reverse Proxy                           │
+│                      NGINX Reverse Proxy                            │
 │                                                                     │
-│  • Rate Limiting (10r/s, burst=20)                                 │
-│  • Security Headers (CSP, X-Frame-Options, etc.)                   │
-│  • SSL/TLS Termination (Let's Encrypt)                             │
-│  • Proxy Headers (X-Forwarded-For, X-Real-IP)                      │
+│  • Rate Limiting (10r/s, burst=20)                                  │
+│  • Security Headers (CSP, X-Frame-Options, etc.)                    │
+│  • SSL/TLS Termination (Let's Encrypt)                              │
+│  • Proxy Headers (X-Forwarded-For, X-Real-IP)                       │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     FastAPI Application Layer                       │
 │                                                                     │
-│  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌─────────┐ ┌─────────┐ │
-│  │  Auth    │ │  Upload  │ │ Diagnostic │ │ Recomm. │ │  Video  │ │
-│  │ /auth/*  │ │ /upload/ │ │ /diagnos./*│ │ /recom./ │ │ /videos │ │
-│  └────┬─────┘ └────┬─────┘ └─────┬──────┘ └────┬────┘ └────┬────┘ │
+│  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌─────────┐ ┌─────────┐   │
+│  │  Auth    │ │  Upload  │ │ Diagnostic │ │ Recomm. │ │  Video  │   │
+│  │ /auth/*  │ │ /upload/ │ │ /diagnos./*│ │ /recom./│ │ /videos │   │
+│  └────┬─────┘ └────┬─────┘ └─────┬──────┘ └────┬────┘ └────┬────┘   │
 │       │             │             │              │           │      │
 │  ┌────▼─────────────▼─────────────▼──────────────▼───────────▼────┐ │
 │  │              Core: JWT Auth + RBAC + DB Session                │ │
@@ -86,20 +86,20 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
            ▼          ▼              ▼              ▼
       ┌─────────┐ ┌────────┐ ┌────────────┐ ┌────────────┐
       │ Neon DB │ │ AWS S3 │ │ Diagnostic │ │ Recommend. │
-      │ (Postgres│ │(Images │ │   Agent    │ │   Agent    │
+      │ (Postgres││(Images │ │   Agent    │ │   Agent    │
       │  + ORM) │ │+Videos)│ │  (CNN)     │ │   (RAG)    │
       └─────────┘ └────────┘ └──────┬─────┘ └──────┬─────┘
                                     │               │
                               ┌─────▼─────┐  ┌──────▼──────┐
-                              │ CNN.keras │  │ Sentence    │
-                              │ TF Model  │  │ Transformers│
-                              │ (256×256) │  │ + VectorDB  │
+                              │ Gatekeeper│  │ Sentence    │
+                              │MobileNetV2│  │ Transformers│
+                              │  (Binary) │  │ + VectorDB  │
                               └──────┬────┘  └─────────────┘
                                      │
                               ┌──────▼──────┐
-                              │ Gatekeeper  │
-                              │ MobileNetV2 │
-                              │ (Binary)    │
+                              │  CNN.keras  │
+                              │ TF Model    │
+                              |  (256×256)  │
                               └─────────────┘
 ```
 
@@ -326,16 +326,25 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 ┌──────────────┐       ┌──────────────┐       ┌──────────────────┐
 │    USER      │       │    IMAGE     │       │     REPORT       │
 ├──────────────┤       ├──────────────┤       ├──────────────────┤
-│ user_id (PK) │◄──┐   │ image_id (PK)│◄──┐   │ report_id (PK)  │
-│ email        │   │   │ user_id (FK) │───┘   │ image_id (FK)   │──►IMAGE
-│ password_hash│   │   │ s3_url       │       │ user_id (FK)    │──►USER
-│ full_name    │   │   │ processed_url│       │ kl_grade (0-4)  │
+│ user_id (PK) │◄──┐   │ image_id (PK)│◄──┐   │ report_id (PK)   │
+│ email        │   │   │ user_id (FK) │───┘   │ image_id (FK)    │──►IMAGE
+│ password_hash│   │   │ s3_url       │       │ user_id (FK)     │──►USER
+│ full_name    │   │   │ processed_url│       │ kl_grade (0-4)   │
 │ role         │   │   │ file_name    │       │ confidence       │
-│ created_at   │   │   │ content_type │       │ diagnosis_summary│
-│ last_login   │   │   │ uploaded_at  │       │ recommendation   │
-└──────────────┘   │   └──────────────┘       │ video_urls (JSON)│
-                   │                           │ created_at       │
-                   │                           └──────────────────┘
+│ age          │   │   │ content_type │       │ diagnosis_summary│
+│ pain_level   │   │   │ uploaded_at  │       │ recommendation   │
+│ mobility_lev │   │   └──────────────┘       │ lifestyle_plan   │
+│ has_support  │   │                          │ warnings         │
+│ kinesiophobia│   │   ┌──────────────────┐   │ video_urls (JSON)│
+│ occupation_  │   │   │ PROFILE_LOG      │   │ created_at       │
+│ has_stairs   │───┼─▶├──────────────────┤   └──────────────────┘
+│ current_meds │   │   │ log_id (PK)      │
+│ sleep_qual   │   │   │ user_id (FK)     │
+│ created_at   │   │   │ field_name       │
+│ last_login   │   │   │ old_value        │
+└──────────────┘   │   │ new_value        │
+                   │   │ changed_at       │
+                   │   └──────────────────┘
                    │
                    │   ┌──────────────────┐
                    │   │ EXERCISE_VIDEO   │
@@ -343,15 +352,56 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
                    │   │ video_id (PK)    │
                    │   │ title            │
                    │   │ description      │
-                   │   │ s3_url           │
-                   │   │ thumbnail_url    │
-                   │   │ kl_grade_min     │
-                   │   │ kl_grade_max     │
-                   │   │ category         │
-                   │   │ difficulty       │
-                   │   │ duration_seconds │
-                   │   └──────────────────┘
+                   └──▶│ s3_url           │
+                       │ thumbnail_url    │
+                       │ kl_grade_min     │
+                       │ kl_grade_max     │
+                       │ category         │
+                       │ difficulty       │
+                       │ duration_seconds │
+                       └──────────────────┘
 ```
+
+### Table Descriptions
+
+#### USER Table
+- **Core Fields**: `user_id` (PK), `email` (unique), `password_hash`, `full_name`, `role` (patient/gp/admin)
+- **Patient Context (Original)**: `age`, `pain_level` (0-10), `mobility_level` (limited/moderate/good), `has_support` (boolean)
+- **Patient Context (April 2026)**: `kinesiophobia` (low/moderate/high), `occupation_type` (sedentary/light_manual/heavy_manual), `has_stairs` (boolean), `current_meds` (JSON array as string), `sleep_quality` (poor/fair/good)
+- **Timestamps**: `created_at`, `last_login`
+- **Relationships**: One-to-many with `IMAGE`, `REPORT`, `PROFILE_LOG`
+
+#### PROFILE_LOG Table ⭐ NEW (April 2026)
+- `log_id` (PK), `user_id` (FK)
+- `field_name` - Name of the field that changed
+- `old_value` - Previous value (NULL if new field)
+- `new_value` - New value (NULL if field removed)
+- `changed_at` - Timestamp of change
+- **Purpose**: Full audit trail for all profile updates
+- **Indexed by**: `user_id`, `changed_at`
+
+#### IMAGE Table
+- `image_id` (PK), `user_id` (FK)
+- `s3_url` - Original image URL
+- `processed_s3_url` - Processed image URL (if applicable)
+- `file_name`, `content_type`, `uploaded_at`
+- **Relationship**: Belongs to one user
+
+#### REPORT Table
+- `report_id` (PK), `image_id` (FK), `user_id` (FK)
+- **Diagnostic Fields**: `kl_grade` (0-4), `confidence` (float), `diagnosis_summary` (text)
+- **Recommendation Fields**: `recommendation` (text), `lifestyle_plan` (JSON), `warnings` (JSON), `exercise_video_urls` (JSON)
+- `created_at` - Timestamp
+- **Relationship**: Links to one image and one user
+
+#### EXERCISE_VIDEO Table
+- `video_id` (PK)
+- `title`, `description`, `s3_url`, `thumbnail_url`
+- `kl_grade_min`, `kl_grade_max` - Range filter for KL grades
+- `category` (strengthening/flexibility/low-impact)
+- `difficulty` (beginner/intermediate/advanced)
+- `duration_seconds`
+- **Purpose**: Exercise video library for recommendations
 
 ---
 
