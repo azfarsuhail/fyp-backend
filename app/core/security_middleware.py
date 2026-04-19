@@ -21,14 +21,17 @@ class RateLimiter:
         self.window = timedelta(minutes=window_minutes)
         self.attempts: dict[str, list[datetime]] = defaultdict(list)
     
-    def is_allowed(self, identifier: str) -> bool:
-        """Check if identifier is allowed to make request."""
-        now = datetime.now(timezone.utc)
-        # Clean old attempts
+    def _clean_old_attempts(self, identifier: str, now: datetime):
+        """Helper to remove timestamps older than the window."""
         self.attempts[identifier] = [
             ts for ts in self.attempts[identifier]
             if now - ts < self.window
         ]
+
+    def is_allowed(self, identifier: str) -> bool:
+        """Check if identifier is allowed to make request."""
+        now = datetime.now(timezone.utc)
+        self._clean_old_attempts(identifier, now)
         
         if len(self.attempts[identifier]) >= self.max_attempts:
             return False
@@ -38,11 +41,8 @@ class RateLimiter:
     
     def get_remaining(self, identifier: str) -> int:
         """Get remaining attempts for identifier."""
-        now = datetime.utcnow()
-        self.attempts[identifier] = [
-            ts for ts in self.attempts[identifier]
-            if now - ts < self.window
-        ]
+        now = datetime.now(timezone.utc)
+        self._clean_old_attempts(identifier, now)
         return max(0, self.max_attempts - len(self.attempts[identifier]))
 
 
@@ -89,8 +89,15 @@ class RateLimitLoginMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Only apply to login endpoint
         if request.url.path == "/api/v1/auth/login" and request.method == "POST":
-            # Use IP address or user agent as identifier
-            identifier = request.client.host if request.client else "unknown"
+            
+            # Attempt to get the real IP from NGINX headers first
+            forwarded_for = request.headers.get("X-Forwarded-For")
+            if forwarded_for:
+                # X-Forwarded-For can be a comma-separated list; the first is the real client
+                identifier = forwarded_for.split(",")[0].strip()
+            else:
+                # Fallback if accessed directly
+                identifier = request.client.host if request.client else "unknown"
             
             if not login_rate_limiter.is_allowed(identifier):
                 remaining = login_rate_limiter.get_remaining(identifier)

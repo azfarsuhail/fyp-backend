@@ -15,10 +15,14 @@ class TestAnalyzeXray:
     @patch("app.api.v1.diagnostic.predict_kl_grade")
     @patch("app.api.v1.diagnostic.get_processed_image_bytes")
     @patch("app.api.v1.diagnostic.requests")
+    @patch("app.api.v1.diagnostic.validate_image")
     def test_analyze_success(
-        self, mock_requests, mock_proc, mock_predict, mock_rec, mock_s3,
+        self, mock_validate, mock_requests, mock_proc, mock_predict, mock_rec, mock_s3,
         client, patient_headers, seed_image,
     ):
+        # Mock validation agent - accept the image
+        mock_validate.return_value = True
+        
         # Mock S3 download
         mock_response = MagicMock()
         mock_response.content = b"\x89PNG" + b"\x00" * 100

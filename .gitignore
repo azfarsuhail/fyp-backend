@@ -57,6 +57,9 @@ htmlcov/
 .nox/
 *.cover
 *.log
+__pycache__/
+*.pyc
+*.pytest_cache/
 
 # --- Docker ---
 Dockerfile*
@@ -67,6 +70,7 @@ docker-compose*.yml
 *.db
 *.sqlite
 *.sqlite3
+alembic/versions/
 
 
 # --- AWS ---

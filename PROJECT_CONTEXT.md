@@ -8,6 +8,7 @@
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened (March 2026) |
 | **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
+| **Image Validation** | ✅ Gatekeeper Model (April 2026) |
 | **Production Ready** | ✅ Yes |
 
 ## Tech Stack
@@ -44,6 +45,15 @@
 - ✅ **Enhanced Knowledge Base**: parametric_knowledge.json updated with new constraint fields
 - ✅ **Full Audit Trail**: All profile changes logged to PROFILE_LOG table
 
+## Image Validation - Gatekeeper Model (April 2026)
+- ✅ **Binary Classification Agent**: MobileNetV2 model validates knee X-ray authenticity
+- ✅ **OOD Detection**: Rejects Out-of-Distribution images (wrong body part, garbage uploads)
+- ✅ **Pre-Diagnostic Filter**: Validates images before they reach the main diagnostic CNN
+- ✅ **3-Channel RGB Processing**: Converts images to RGB (256×256×3) for MobileNetV2
+- ✅ **Singleton Pattern**: Model loaded once at startup for efficiency
+- ✅ **Error Handling**: Gracefully rejects corrupt or malformed files
+- ✅ **User Feedback**: Clear error message when invalid images are uploaded
+
 ## Project Overview
 Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The system uses a decoupled multi-agent architecture with a CNN-based Diagnostic Agent for KL grade prediction and a parametric RAG Recommendation Agent for evidence-based lifestyle advice.
 
@@ -57,7 +67,7 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 - `POST /` - Upload X-ray to S3 + DB metadata (Patient/GP only)
 
 ### Diagnostic Pipeline (`/api/v1/diagnostic`)
-- `POST /analyze` - Full pipeline: CNN inference + RAG recommendations + DB persistence
+- `POST /analyze` - Full pipeline: Gatekeeper validation → CNN inference + RAG recommendations + DB persistence
 - `GET /reports` - List user reports
 - `GET /reports/{id}` - Get specific report
 
@@ -133,6 +143,21 @@ Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocon
 - Singleton CNN loader from `app/ml_assets/cnn_weights/CNN.keras`
 - `predict_kl_grade(image_bytes)` → `(kl_grade: int, confidence: float, summary: str)`
 - KL Labels: 0=None, 1=Doubtful, 2=Minimal, 3=Moderate, 4=Severe
+
+### Diagnostic Agent (`app/agents/diagnostic_agent.py`)
+- Singleton CNN loader from `app/ml_assets/cnn_weights/CNN.keras`
+- `predict_kl_grade(image_bytes)` → `(kl_grade: int, confidence: float, summary: str)`
+- KL Labels: 0=None, 1=Doubtful, 2=Minimal, 3=Moderate, 4=Severe
+- Input: 256×256 grayscale images (preprocessed)
+
+### Validation Agent (`app/agents/validation_agent.py`) ⭐ NEW
+- **Gatekeeper Model**: MobileNetV2 binary classifier for image validation
+- `validate_image(image_bytes)` → `bool` (True = valid knee X-ray, False = OOD)
+- **Purpose**: Reject Out-of-Distribution images before diagnostic CNN
+- **Preprocessing**: Converts to RGB (256×256×3), applies MobileNetV2 preprocessing
+- **Threshold**: < 0.5 = valid, ≥ 0.5 = OOD (rejected)
+- **Singleton Pattern**: Model loaded once at startup
+- **Error Handling**: Gracefully rejects corrupt/invalid files
 
 ### Recommendation Agent (`app/agents/recommendation_agent.py`)
 - **Parametric RAG** (hallucination-free): Structured parameter table with embeddings

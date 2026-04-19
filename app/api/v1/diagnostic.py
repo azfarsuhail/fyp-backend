@@ -2,11 +2,13 @@
 Diagnostic Router
 -----------------
 Orchestrates the full diagnostic pipeline:
-  1. Fetch the uploaded image from S3
-  2. Run the Diagnostic Agent (CNN) to predict KL grade
-  3. Run the Recommendation Agent (RAG) for lifestyle advice
-  4. Save the complete report to Neon DB
-  5. Return the report to the client
+  1. Validate image ownership and existing reports
+  2. Download image bytes from S3
+  3. Validate image is a valid knee X-ray (Gatekeeper/ValidationAgent)
+  4. Run the Diagnostic Agent (CNN) to predict KL grade
+  5. Run the Recommendation Agent (RAG) for lifestyle advice
+  6. Save the complete report to Neon DB
+  7. Return the report to the client
 """
 
 import json
@@ -21,6 +23,7 @@ from app.models.report import Report
 from app.models.user import User
 from app.agents.diagnostic_agent import predict_kl_grade
 from app.agents.recommendation_agent import generate_recommendation
+from app.agents.validation_agent import validate_image
 from app.services.image_processor import get_processed_image_bytes
 from app.services.s3_service import upload_bytes_to_s3
 
@@ -42,11 +45,12 @@ async def analyze_xray(
     Flow:
       1. Validate the image belongs to the current user (or user is GP)
       2. Download the image bytes from S3
-      3. Diagnostic Agent → KL grade + confidence
-      4. Upload processed image to S3 for audit trail
-      5. Recommendation Agent → lifestyle advice + exercise videos
-      6. Persist the Report in Neon DB
-      7. Return the complete report
+      3. Gatekeeper Validation → reject OOD/invalid images
+      4. Diagnostic Agent → KL grade + confidence
+      5. Upload processed image to S3 for audit trail
+      6. Recommendation Agent → lifestyle advice + exercise videos
+      7. Persist the Report in Neon DB
+      8. Return the complete report
     """
     # ── 1. Validate image ownership ──────────────────────────────────────
     image = db.query(Image).filter(Image.image_id == request.image_id).first()
@@ -80,6 +84,14 @@ async def analyze_xray(
             detail=f"Failed to download image from S3: {e}",
         )
 
+    # ── 3. Validate image is a valid knee X-ray (Gatekeeper) ────────────
+    # This prevents OOD images from reaching the diagnostic CNN
+    if not validate_image(image_bytes):
+        raise HTTPException(
+            status_code=400,
+            detail="Image validation failed. Please upload a clear, weight-bearing knee X-ray.",
+        )
+
     # ── 3. Diagnostic Agent — CNN Inference ──────────────────────────────
     try:
         kl_grade, confidence, diagnosis_summary = predict_kl_grade(image_bytes)
@@ -89,7 +101,16 @@ async def analyze_xray(
             detail=f"Diagnostic Agent failed: {e}",
         )
 
-    # ── 4. Upload processed image to S3 ──────────────────────────────────
+    # ── 4. Diagnostic Agent — CNN Inference ──────────────────────────────
+    try:
+        kl_grade, confidence, diagnosis_summary = predict_kl_grade(image_bytes)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Diagnostic Agent failed: {e}",
+        )
+
+    # ── 5. Upload processed image to S3 ──────────────────────────────────
     try:
         processed_bytes = get_processed_image_bytes(image_bytes)
         processed_key = f"processed/{image.image_id}_processed.png"
@@ -99,7 +120,7 @@ async def analyze_xray(
     except Exception:
         pass  # Non-critical — don't fail the pipeline if processed upload fails
 
-    # ── 5. Recommendation Agent — RAG ────────────────────────────────────
+    # ── 6. Recommendation Agent — RAG ────────────────────────────────────
     try:
         rec_result = generate_recommendation(
             kl_grade=kl_grade,
@@ -122,7 +143,7 @@ async def analyze_xray(
             "exercise_video_urls": [],
         }
 
-    # ── 6. Persist Report ────────────────────────────────────────────────
+    # ── 7. Persist Report ────────────────────────────────────────────────
     new_report = Report(
         image_id=image.image_id,
         user_id=user.user_id,
@@ -138,7 +159,7 @@ async def analyze_xray(
     db.commit()
     db.refresh(new_report)
 
-    # ── 7. Return Report ─────────────────────────────────────────────────
+    # ── 8. Return Report ─────────────────────────────────────────────────
     return ReportOut(
         report_id=new_report.report_id,
         image_id=new_report.image_id,
