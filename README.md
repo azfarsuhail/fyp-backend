@@ -22,13 +22,14 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 ### ✅ Implemented Security Measures
 - **JWT Authentication** with bcrypt password hashing
 - **RBAC** (Patient, GP, Admin) with role-based endpoint access
-- **Rate Limiting** (5 login attempts per minute)
+- **Rate Limiting** (5 login attempts per minute per IP)
 - **Password Validation** (8+ chars, uppercase, lowercase, numbers, special chars)
 - **Security Headers** (X-Frame-Options, CSP, X-XSS-Protection, etc.)
 - **CORS Configuration** (configurable allowed origins)
 - **Environment-based Secrets** (SECRET_KEY from .env)
 - **Admin Registration Blocked** (manual creation only)
 - **Profile Change Logging** (audit trail for all updates)
+- **Gatekeeper Validation** (MobileNetV2 image authenticity check)
 
 ### 🚨 Security Hardening Applied (March 2026)
 - ✅ SECRET_KEY now loaded from environment variable
@@ -37,6 +38,17 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 - ✅ File upload validation added (size limits, content-type checks)
 - ✅ Security middleware with headers and rate limiting
 - ✅ Input sanitization for error messages
+
+### 🏗️ Infrastructure & Deployment (April 2026)
+- ✅ **NGINX Reverse Proxy**: Rate limiting (10r/s, burst=20), proxy headers (X-Forwarded-For, X-Real-IP)
+- ✅ **IP Proxy Forwarding**: Real client IP extraction from X-Forwarded-For header
+- ✅ **Login Rate Limiting**: 5 attempts per minute per IP address
+- ✅ **SSL/TLS**: Let's Encrypt configuration (docker-compose ready)
+- ✅ **Cloud Hosting**: AWS EC2 c6a.xlarge (4 vCPU, 16GB RAM)
+- ✅ **CI/CD**: GitHub Actions automated Docker build with semver tagging (v1.0.0)
+- ✅ **Multi-Stage Dockerfile**: Builder + runtime stages, non-root user (appuser)
+- ✅ **Resource Limits**: 3.5 CPU, 14GB memory reservation (2 CPU, 4GB)
+- ✅ **Health Checks**: NGINX depends on API health (urllib-based)
 
 ---
 
@@ -47,6 +59,16 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 │                        Mobile App (Client)                         │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │  HTTPS / JSON
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      NGINX Reverse Proxy                           │
+│                                                                     │
+│  • Rate Limiting (10r/s, burst=20)                                 │
+│  • Security Headers (CSP, X-Frame-Options, etc.)                   │
+│  • SSL/TLS Termination (Let's Encrypt)                             │
+│  • Proxy Headers (X-Forwarded-For, X-Real-IP)                      │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     FastAPI Application Layer                       │
@@ -72,7 +94,13 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
                               │ CNN.keras │  │ Sentence    │
                               │ TF Model  │  │ Transformers│
                               │ (256×256) │  │ + VectorDB  │
-                              └───────────┘  └─────────────┘
+                              └──────┬────┘  └─────────────┘
+                                     │
+                              ┌──────▼──────┐
+                              │ Gatekeeper  │
+                              │ MobileNetV2 │
+                              │ (Binary)    │
+                              └─────────────┘
 ```
 
 ### Multi-Agent Design
@@ -81,10 +109,11 @@ The backend uses a **decoupled multi-agent architecture** where each agent has a
 
 | Agent | Responsibility | Technology |
 |-------|---------------|------------|
+| **Gatekeeper Agent** | Validates image authenticity, rejects OOD/garbage uploads | MobileNetV2 binary classifier |
 | **Diagnostic Agent** | Predicts KL severity grade (0–4) from a preprocessed knee X-ray | TensorFlow CNN (`.keras` model) |
 | **Recommendation Agent** | Generates personalised lifestyle advice and exercise video links based on KL grade, pain, and mobility | Sentence-Transformers RAG with cosine similarity retrieval |
 
-The agents are invoked sequentially during the `/diagnostic/analyze` pipeline but are fully independent — the Recommendation Agent can also be called standalone via `/recommendation/`.
+The agents are invoked sequentially during the `/diagnostic/analyze` pipeline but are fully independent — the Recommendation Agent can also be called standalone via `/recommendation/`. The Gatekeeper runs first to ensure only valid knee X-rays proceed to the diagnostic pipeline.
 
 ---
 
@@ -123,7 +152,9 @@ knee_oa_backend/
 │   │   ├── image_processor.py     # Grayscale → ROI → Resize → CLAHE → Normalise
 │   │   └── s3_service.py          # S3 upload/download/presigned URL helpers
 │   └── ml_assets/
-│       ├── cnn_weights/CNN.keras   # Trained CNN model weights
+│       ├── cnn_weights/
+│       │   ├── CNN.keras           # Diagnostic CNN model (KL grading)
+│       │   └── gatekeeper.keras    # Gatekeeper MobileNetV2 (image validation)
 │       └── vector_store/           # RAG embeddings (auto-generated on first run)
 ├── alembic/
 │   ├── env.py                     # Alembic config (loads all models for autogenerate)
@@ -203,6 +234,18 @@ When a user calls `POST /diagnostic/analyze`, the following pipeline executes:
 Raw X-ray bytes (PNG/JPEG)
         │
         ▼
+┌─────────────────────────┐
+│  Gatekeeper Agent       │
+│                         │
+│  MobileNetV2 Binary     │
+│  (Image Validation)     │
+│                         │
+│  • Converts to RGB      │
+│  • Checks OOD images    │
+│  • Rejects garbage      │
+└────────────┬────────────┘
+             │ (if valid)
+             ▼
 ┌─────────────────────────┐
 │   Image Processor       │
 │                         │
@@ -317,13 +360,13 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 ### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/auth/register` | Register a new user |
-| `POST` | `/api/v1/auth/login` | Login and receive JWT token |
+| `POST` | `/api/v1/auth/register` | Register a new user (Patient, GP only) |
+| `POST` | `/api/v1/auth/login` | Login and receive JWT token (rate-limited) |
 
 ### Image Upload
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/upload/` | Upload a knee X-ray (PNG/JPEG) |
+| `POST` | `/api/v1/upload/` | Upload a knee X-ray (PNG/JPEG) with Gatekeeper validation |
 
 ### Diagnostic
 | Method | Endpoint | Description |
@@ -359,6 +402,11 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 | `GET` | `/` | Welcome message |
 | `GET` | `/health` | Health check |
 
+### Admin Analytics
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/admin/analytics/dashboard` | Dashboard statistics (Admin only) |
+
 ---
 
 ## 🚀 Getting Started
@@ -369,6 +417,7 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 - Docker & Docker Compose
 - A [Neon DB](https://neon.tech) account (free tier works)
 - An AWS account with an S3 bucket
+- Git (for cloning and version tagging)
 
 ### 1. Clone & Configure
 
@@ -391,6 +440,10 @@ AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_REGION=eu-west-1
 S3_BUCKET_NAME=knee-oa-uploads
+
+# CORS Configuration (optional)
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+ALLOW_DEV_ORIGINS=http://127.0.0.1:3000
 ```
 
 ### 2. Run with Docker (Recommended)
@@ -399,7 +452,10 @@ S3_BUCKET_NAME=knee-oa-uploads
 docker-compose up --build
 ```
 
-This starts the API at `http://localhost:8000` with hot-reload enabled.
+This starts:
+- **NGINX Proxy** on port 80 (rate-limited, security headers)
+- **FastAPI Backend** on port 8000 (internal)
+- API accessible at `http://localhost` with hot-reload enabled
 
 ### 3. Run Locally (Without Docker)
 
@@ -422,11 +478,40 @@ alembic revision --autogenerate -m "initial tables"
 alembic upgrade head
 ```
 
-### 5. Access the API Docs
+### 5. Initialize Admin Account
+
+```bash
+python scripts/init_admin.py
+```
+
+### 6. Access the API Docs
 
 Once running, visit:
 - **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Admin Dashboard**: [http://localhost/admin-dashboard.html](http://localhost/admin-dashboard.html)
+
+### 7. Build & Push to Docker Hub (CI/CD)
+
+For automated builds, push a version tag:
+
+```bash
+# Create and push a version tag
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This triggers GitHub Actions to:
+1. Build the Docker image
+2. Tag with semver (e.g., `1.0.0`)
+3. Push to Docker Hub (`${DOCKERHUB_USERNAME}/knee-oa-api`)
+
+For continuous deployment on main branch:
+```bash
+git push origin main
+```
+
+This tags the image as `latest`.
 
 ---
 
@@ -475,9 +560,12 @@ pytest tests/ --cov=app --cov-report=term-missing
 | **Auth** | JWT + bcrypt | Stateless token auth with password hashing |
 | **Storage** | AWS S3 + boto3 | X-ray images and exercise video hosting |
 | **ML Inference** | TensorFlow (CPU) | CNN model for KL grade prediction |
+| **Image Validation** | MobileNetV2 | Gatekeeper model for OOD detection |
 | **Image Processing** | Pillow + NumPy | Grayscale, resize, ROI extraction, normalisation |
 | **RAG Embeddings** | Sentence-Transformers | `all-MiniLM-L6-v2` for semantic retrieval |
 | **Containerisation** | Docker + Compose | Reproducible dev/prod environments |
+| **Reverse Proxy** | NGINX | Rate limiting, security headers, SSL termination |
+| **CI/CD** | GitHub Actions | Automated Docker builds with semver tagging |
 | **Testing** | pytest + httpx | 105 tests with in-memory SQLite and mocking |
 
 ---
@@ -488,6 +576,9 @@ pytest tests/ --cov=app --cov-report=term-missing
 - **`datetime.utcnow()` deprecation** — Python 3.12+ warns about this; will be migrated to `datetime.now(UTC)` in a future update.
 - **Pydantic `class Config` deprecation** — will be migrated to `model_config = ConfigDict(...)` in a future update.
 - The CNN model file (`CNN.keras`) is not included in the repository due to size — place it in `app/ml_assets/cnn_weights/`.
+- The Gatekeeper model file (`gatekeeper.keras`) is also not included — place it in the same directory.
+- **NGINX Rate Limiting**: Default is 10 requests/second with burst of 20 — adjust in `nginx.conf` if needed.
+- **Docker Resource Limits**: API container is limited to 3.5 CPU and 14GB memory — adjust in `docker-compose.yml` based on your instance specs.
 
 ---
 
@@ -571,7 +662,3 @@ The backend provides comprehensive mobile sync capabilities:
 
 **Implementation Guide**: [docs/mobile/MOBILE_SYNC_GUIDE.md](docs/mobile/MOBILE_SYNC_GUIDE.md)
 
----
-
-## 🗂️ Project Structure
-```

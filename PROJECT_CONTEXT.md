@@ -34,6 +34,17 @@
 - ✅ CORS configurable via environment
 - ✅ Input sanitization for error messages
 
+## Infrastructure & Deployment (April 2026)
+- ✅ **NGINX Reverse Proxy**: Rate limiting (10r/s, burst=20), proxy headers (X-Forwarded-For, X-Real-IP)
+- ✅ **IP Proxy Forwarding**: Real client IP extraction from X-Forwarded-For header
+- ✅ **Login Rate Limiting**: 5 attempts per minute per IP address
+- ✅ **SSL/TLS**: Let's Encrypt configuration (docker-compose ready)
+- ✅ **Cloud Hosting**: AWS EC2 c6a.xlarge (4 vCPU, 16GB RAM)
+- ✅ **CI/CD**: GitHub Actions automated Docker build with semver tagging (v1.0.0)
+- ✅ **Multi-Stage Dockerfile**: Builder + runtime stages, non-root user (appuser)
+- ✅ **Resource Limits**: 3.5 CPU, 14GB memory reservation (2 CPU, 4GB)
+- ✅ **Health Checks**: NGINX depends on API health (urllib-based)
+
 ## Advanced Clinical RAG Upgrades (April 2026)
 - ✅ **New Patient Profile Fields**: kinesiophobia, occupation_type, has_stairs, current_meds, sleep_quality
 - ✅ **Strict Clinical Filtering**: RAG agent filters contraindicated advice based on behavioral constraints
@@ -60,11 +71,12 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 ## API Endpoints
 
 ### Authentication (`/api/v1/auth`)
-- `POST /register` - User registration (Patient, GP, Admin)
-- `POST /login` - JWT token generation
+- `POST /register` - User registration (Patient, GP only; Admin disabled)
+- `POST /login` - JWT token generation (**rate-limited: 5 attempts/minute per IP**)
 
 ### Image Upload (`/api/v1/upload`)
 - `POST /` - Upload X-ray to S3 + DB metadata (Patient/GP only)
+- **Validation**: Gatekeeper MobileNetV2 model checks image authenticity before processing
 
 ### Diagnostic Pipeline (`/api/v1/diagnostic`)
 - `POST /analyze` - Full pipeline: Gatekeeper validation → CNN inference + RAG recommendations + DB persistence
@@ -92,6 +104,15 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 - `GET /sync/summary` - Get data count summary
 - `POST /sync/export` - Export user data as JSON file
 - `GET /sync/status` - Get sync status and availability
+
+### Admin Analytics (`/api/v1/admin`) ⭐ NEW
+- `GET /analytics/dashboard` - Comprehensive dashboard statistics (Admin only)
+  - Total users, users by role
+  - New users (this week/month)
+  - Total images/reports, activity metrics
+  - KL grade distribution
+  - Average confidence score
+  - Recent reports (last 10)
 
 ## Mobile Sync Feature
 - **Purpose**: Sync only authenticated user's data to mobile devices
@@ -201,7 +222,7 @@ Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocon
 ### Test Suite (105 tests, ALL PASSING)
 - `tests/conftest.py` - In-memory SQLite, DB override, fixtures (patient/gp/admin, seed_image, seed_report, seed_video)
 - `tests/test_health.py` - Root + /health (2 tests)
-- `tests/test_auth.py` - Register + Login (11 tests) - **includes admin registration prevention**
+- `tests/test_auth.py` - Register + Login with rate limiting (11 tests) - **includes admin registration prevention**
 - `tests/test_upload.py` - X-ray upload with S3 mocking (7 tests)
 - `tests/test_diagnostic.py` - Analyze + Reports with CNN/RAG mocking (11 tests)
 - `tests/test_recommendation.py` - Standalone recommendation (9 tests)
@@ -241,27 +262,62 @@ pytest -v
 
 ## ML Assets
 
-### CNN Model
+### CNN Model (Diagnostic Agent)
 - Path: `app/ml_assets/cnn_weights/CNN.keras`
 - Input: 256×256 grayscale images (preprocessed)
 - Output: 5-class softmax → KL grade 0-4
+- Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocontrast → Normalize → (1,256,256,1)
 
-### Vector Store
+### Gatekeeper Model (Validation Agent)
+- Path: `app/ml_assets/cnn_weights/gatekeeper.keras`
+- Architecture: MobileNetV2 (binary classifier)
+- Input: 256×256 RGB images (converted from any format)
+- Output: Sigmoid probability → Valid (True) or OOD (False)
+- Threshold: < 0.5 = valid, ≥ 0.5 = rejected
+- Purpose: Reject Out-of-Distribution images before diagnostic CNN
+
+### Vector Store (Recommendation Agent)
 - Path: `app/ml_assets/vector_store/`
 - Files: `parametric_embeddings.npy`, `parametric_knowledge.json`
 - Model: all-MiniLM-L6-v2 (sentence-transformers)
+- Usage: Semantic ranking + parametric filtering for RAG
 
 ## Docker & Deployment
 
-### Dockerfile
-- Base: `python:3.10-slim`
-- Installs: gcc, libpq-dev, pip dependencies
-- CMD: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+### Dockerfile (Multi-Stage)
+- **Builder Stage**: `python:3.10-slim`, installs gcc, libpq-dev, creates venv, installs dependencies
+- **Runtime Stage**: `python:3.10-slim`, copies venv, runs as non-root user (`appuser`)
+- **Security**: No-new-privileges, minimal base image, cached layers
+- **Health Check**: urllib-based HTTP check to `/health` endpoint (30s interval, 10s timeout)
+- **CMD**: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 
-### Docker Compose (Dev)
-- Mounts local code for hot-reload
-- Overrides CMD with `--reload` flag
-- Exposes port 8000
+### Docker Compose (Dev & Prod)
+- **NGINX Proxy**: `nginx:alpine` reverse proxy on port 80 (443 ready for SSL)
+  - Rate limiting zone: 10r/s with burst=20
+  - Proxy headers: X-Real-IP, X-Forwarded-For, X-Forwarded-Proto
+  - Read timeout: 60s (for ML pipeline)
+  - Health check dependency on API
+- **API Service**: 
+  - Resource limits: 3.5 CPU, 14GB memory
+  - Resource reservation: 2 CPU, 4GB
+  - Environment: DEBUG=false, LOG_LEVEL=INFO
+  - Restart policy: unless-stopped
+  - Logging: json-file, 10MB max size, 3 files
+
+### CI/CD - GitHub Actions (`.github/workflows/docker-build.yml`)
+- **Trigger**: Push to `main` branch OR semantic version tags (`v*.*.*`)
+- **Build**: Docker Buildx with multi-platform support
+- **Tags**: 
+  - `latest` on main branch push
+  - Semver (e.g., `1.0.1`) on version tag push
+- **Registry**: Docker Hub (`${{ secrets.DOCKERHUB_USERNAME }}/knee-oa-api`)
+- **Authentication**: Docker Hub credentials from GitHub Secrets
+
+### Cloud Deployment (AWS EC2)
+- **Instance**: c6a.xlarge (4 vCPU, 8GB RAM)
+- **Hosting**: Docker Compose with NGINX + FastAPI
+- **SSL**: Let's Encrypt (configuration ready in docker-compose)
+- **S3 Bucket**: `knee-oa-uploads` (eu-west-1 region)
 
 ### Environment Variables (.env)
 - `DATABASE_URL` - Neon PostgreSQL connection string (sslmode=require)
@@ -269,6 +325,8 @@ pytest -v
 - `AWS_REGION` - Default: eu-west-1
 - `S3_BUCKET_NAME` - Default: knee-oa-uploads
 - `SECRET_KEY` - JWT signing key
+- `ALLOWED_ORIGINS` - CORS allowed origins (comma-separated)
+- `ALLOW_DEV_ORIGINS` - Additional dev origins (only if DEBUG=true)
 
 ## Requirements Notes
 - `bcrypt==4.0.1` - Pinned (newer versions break passlib)
@@ -294,10 +352,15 @@ pytest -v
 
 ## Current Status
 - ✅ All core endpoints implemented and tested
-- ✅ Multi-agent architecture (CNN + RAG)
+- ✅ Multi-agent architecture (CNN + RAG + Gatekeeper Validation)
 - ✅ RBAC enforcement across all routes
 - ✅ Docker setup for local development
 - ✅ **105 tests passing** covering all functionality
+- ✅ **NGINX reverse proxy** with rate limiting and security headers
+- ✅ **GitHub Actions CI/CD** with automated Docker builds and semver tagging
+- ✅ **Admin Analytics Dashboard** endpoint for comprehensive statistics
+- ✅ **Mobile Sync** feature for offline-first mobile apps
+- ✅ **Profile Audit Trail** with full change logging
 - ✅ **Security hardened** (March 2026)
 - ✅ **Code quality: A- (90/100)**
 - ✅ **Production ready**
