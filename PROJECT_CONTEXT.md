@@ -9,6 +9,7 @@
 | **Security** | ✅ Hardened (March 2026) |
 | **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
 | **Image Validation** | ✅ Gatekeeper Model (April 2026) |
+| **API Contract Check** | ✅ Verified (April 2026) |
 | **Production Ready** | ✅ Yes |
 
 ## Tech Stack
@@ -67,6 +68,13 @@
 
 ## Project Overview
 Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The system uses a decoupled multi-agent architecture with a CNN-based Diagnostic Agent for KL grade prediction and a parametric RAG Recommendation Agent for evidence-based lifestyle advice.
+
+## Latest Maintenance Update (2026-04-21)
+- ✅ **API Contract Verification Completed**: Documented frontend/backend contract was cross-checked against implemented FastAPI routes and dependencies.
+- ✅ **Route Connectivity Confirmed**: Endpoints in auth, upload, diagnostic, recommendation, profile, videos, mobile sync, and health are correctly registered and tested.
+- ✅ **Regression Test Confirmation**: API test suites passed after verification run (105/105).
+- ✅ **Diagnostic Pipeline Optimization**: Removed duplicated `predict_kl_grade(image_bytes)` invocation in `POST /api/v1/diagnostic/analyze` so CNN inference runs once per request.
+- ✅ **Documentation Synced**: Project context and changelog updated to capture this maintenance pass.
 
 ## API Endpoints
 
@@ -159,11 +167,6 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 
 ### Image Processor (`app/services/image_processor.py`)
 Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocontrast → Normalize → (1,256,256,1)
-
-### Diagnostic Agent (`app/agents/diagnostic_agent.py`)
-- Singleton CNN loader from `app/ml_assets/cnn_weights/CNN.keras`
-- `predict_kl_grade(image_bytes)` → `(kl_grade: int, confidence: float, summary: str)`
-- KL Labels: 0=None, 1=Doubtful, 2=Minimal, 3=Moderate, 4=Severe
 
 ### Diagnostic Agent (`app/agents/diagnostic_agent.py`)
 - Singleton CNN loader from `app/ml_assets/cnn_weights/CNN.keras`
@@ -352,6 +355,7 @@ pytest -v
 
 ## Current Status
 - ✅ All core endpoints implemented and tested
+- ✅ API contract verified against implemented backend routes (April 2026)
 - ✅ Multi-agent architecture (CNN + RAG + Gatekeeper Validation)
 - ✅ RBAC enforcement across all routes
 - ✅ Docker setup for local development

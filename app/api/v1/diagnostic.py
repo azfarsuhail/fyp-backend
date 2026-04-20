@@ -92,15 +92,6 @@ async def analyze_xray(
             detail="Image validation failed. Please upload a clear, weight-bearing knee X-ray.",
         )
 
-    # ── 3. Diagnostic Agent — CNN Inference ──────────────────────────────
-    try:
-        kl_grade, confidence, diagnosis_summary = predict_kl_grade(image_bytes)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Diagnostic Agent failed: {e}",
-        )
-
     # ── 4. Diagnostic Agent — CNN Inference ──────────────────────────────
     try:
         kl_grade, confidence, diagnosis_summary = predict_kl_grade(image_bytes)

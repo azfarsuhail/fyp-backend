@@ -6,6 +6,20 @@
 - [README.md](../README.md) - Main project README
 - [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md) - Detailed project context
 
+### Architecture
+- [architecture/STRUCTURE.md](architecture/STRUCTURE.md) - System structure and module layout
+
+### Agents & AI
+- [agents/RECOMMENDATION_AGENT_UPDATE.md](agents/RECOMMENDATION_AGENT_UPDATE.md) - Recommendation agent architecture
+- [agents/RAG_AGENT_PROFILE_FILTERING.md](agents/RAG_AGENT_PROFILE_FILTERING.md) - Clinical profile-based RAG filtering
+- [agents/VALIDATION_AGENT.md](agents/VALIDATION_AGENT.md) - Gatekeeper validation agent guide
+- [agents/VALIDATION_AGENT_IMPLEMENTATION.md](agents/VALIDATION_AGENT_IMPLEMENTATION.md) - Validation agent implementation summary
+
+### Changelog
+- [changelog/changelog_2026-04-21.md](changelog/changelog_2026-04-21.md) - API contract verification and diagnostic fix
+- [changelog/changelog_2026-04-18.md](changelog/changelog_2026-04-18.md) - Clinical parameters and RAG filtering update
+- [changelog/DEPRECATION_FIXES_2026_04_17.md](changelog/DEPRECATION_FIXES_2026_04_17.md) - Deprecation and compatibility fixes
+
 ### Security
 - [Security Overview](security/) - Security documentation
 
@@ -27,20 +41,33 @@
 
 ```
 docs/
-├── README.md                    # This file
+├── README.md                      # This file
+├── architecture/
+│   └── STRUCTURE.md              # Architecture and structure notes
+├── agents/
+│   ├── RECOMMENDATION_AGENT_UPDATE.md
+│   ├── RAG_AGENT_PROFILE_FILTERING.md
+│   ├── VALIDATION_AGENT.md
+│   └── VALIDATION_AGENT_IMPLEMENTATION.md
+├── changelog/
+│   ├── changelog_2026-04-18.md
+│   ├── changelog_2026-04-21.md
+│   └── DEPRECATION_FIXES_2026_04_17.md
 ├── security/
-│   ├── SECURITY_AUDIT.md       # Security audit report
-│   ├── SECURITY_FIXES.md       # Security fixes guide
-│   └── SECURITY_APPLIED.md     # Applied security fixes
+│   ├── SECURITY_AUDIT.md         # Security audit report
+│   ├── SECURITY_FIXES.md         # Security fixes guide
+│   └── SECURITY_APPLIED.md       # Applied security fixes
 ├── docker/
-│   ├── DOCKER_AUDIT.md         # Docker configuration audit
-│   └── DOCKER_QUICKREF.md      # Docker quick reference
+│   ├── DOCKER_AUDIT.md           # Docker configuration audit
+│   └── DOCKER_QUICKREF.md        # Docker quick reference
+├── frontend/
+│   └── FRONTEND_CONTEXT.md       # Frontend integration context
 ├── mobile/
-│   └── MOBILE_SYNC_GUIDE.md    # Mobile app integration guide
+│   └── MOBILE_SYNC_GUIDE.md      # Mobile app integration guide
 ├── git/
-│   └── GIT_GUIDE.md            # Git configuration guide
+│   └── GIT_GUIDE.md              # Git configuration guide
 └── code-quality/
-    └── CODE_QUALITY_REPORT.md  # Code quality audit report
+    └── CODE_QUALITY_REPORT.md    # Code quality audit report
 ```
 
 ---
@@ -54,4 +81,4 @@ docs/
 
 ---
 
-**Last Updated**: March 30, 2026
+**Last Updated**: April 21, 2026

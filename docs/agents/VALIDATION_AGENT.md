@@ -336,8 +336,8 @@ if not validate_image(image_bytes):
 
 ## 📚 Related Documentation
 
-- [Diagnostic Pipeline](../../docs/README.md)
-- [Recommendation Agent](../../docs/RAG_AGENT_PROFILE_FILTERING.md)
+- [Diagnostic Pipeline](../README.md)
+- [Recommendation Agent](./RAG_AGENT_PROFILE_FILTERING.md)
 - [Project Context](../../PROJECT_CONTEXT.md)
 
 ---

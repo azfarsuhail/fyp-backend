@@ -256,6 +256,6 @@ result = generate_recommendation(
 
 ## 📚 References
 
-- [Parametric RAG Architecture](../docs/RECOMMENDATION_AGENT_UPDATE.md)
-- [Patient Profile Schema](../app/models/user.py)
-- [Profile Logging Audit Trail](../app/api/v1/profile.py)
+- [Parametric RAG Architecture](./RECOMMENDATION_AGENT_UPDATE.md)
+- [Patient Profile Schema](../../app/models/user.py)
+- [Profile Logging Audit Trail](../../app/api/v1/profile.py)

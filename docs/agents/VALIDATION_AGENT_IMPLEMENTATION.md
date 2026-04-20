@@ -126,8 +126,8 @@ kl_grade, confidence, diagnosis_summary = predict_kl_grade(image_bytes)
 | `app/agents/validation_agent.py` | **Created** | New ValidationAgent class with MobileNetV2 model |
 | `app/api/v1/diagnostic.py` | **Modified** | Integrated gatekeeper validation into pipeline |
 | `PROJECT_CONTEXT.md` | **Modified** | Added Image Validation section to documentation |
-| `docs/VALIDATION_AGENT.md` | **Created** | Comprehensive implementation guide |
-| `docs/VALIDATION_AGENT_IMPLEMENTATION.md` | **Created** | This summary document |
+| `docs/agents/VALIDATION_AGENT.md` | **Created** | Comprehensive implementation guide |
+| `docs/agents/VALIDATION_AGENT_IMPLEMENTATION.md` | **Created** | This summary document |
 
 ---
 
@@ -268,7 +268,7 @@ assert validate_image(b"") == False
 
 - [Validation Agent Guide](./VALIDATION_AGENT.md) - Detailed implementation guide
 - [Project Context](../../PROJECT_CONTEXT.md) - Updated project overview
-- [Diagnostic Pipeline](../../docs/README.md) - Full pipeline documentation
+- [Diagnostic Pipeline](../README.md) - Full pipeline documentation
 
 ---
 

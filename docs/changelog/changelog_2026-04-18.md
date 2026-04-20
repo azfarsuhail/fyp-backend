@@ -403,10 +403,10 @@ def generate_recommendation(
 
 ## 📚 Related Documentation
 
-- [RAG Agent Profile Filtering Guide](./RAG_AGENT_PROFILE_FILTERING.md)
+- [RAG Agent Profile Filtering Guide](../agents/RAG_AGENT_PROFILE_FILTERING.md)
 - [Project Context](../../PROJECT_CONTEXT.md)
-- [Database Schema](../../docs/STRUCTURE.md)
-- [API Documentation](../../docs/README.md)
+- [Database Schema](../architecture/STRUCTURE.md)
+- [API Documentation](../README.md)
 
 ---
 
