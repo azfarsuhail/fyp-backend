@@ -90,6 +90,11 @@ docs/
 - [x] Create documentation index
 - [x] Add navigation to all README files
 
+### Recent Changes
+- [x] 2026-05-31: Added `GET /api/v1/profile/patients/{patient_id}/history` (GP/Admin) — audit trail access for clinicians
+
+See full changelogs in: [docs/changelog/changelog_2026-05-31.md](./changelog/changelog_2026-05-31.md)
+
 ### Short-term
 - [ ] Add API documentation (Swagger/OpenAPI)
 - [ ] Add deployment guides for cloud providers
@@ -101,6 +106,5 @@ docs/
 - [ ] Add troubleshooting guides
 
 ---
-
-**Last Updated**: March 30, 2026  
+**Last Updated**: May 31, 2026  
 **Documentation Status**: ✅ Complete and Organized

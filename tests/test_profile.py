@@ -194,6 +194,37 @@ class TestProfileHistory:
         assert response.status_code == 200
         assert response.json()["user_id"] == seed_gp.user_id
 
+    def test_get_patient_history_gp_and_admin_access(self, client, gp_headers, admin_headers, seed_patient, db):
+        """GP and admin can fetch another patient's history."""
+        # Create a log entry for the patient
+        from app.models.profile_log import ProfileLog
+
+        log = ProfileLog(
+            user_id=seed_patient.user_id,
+            field_name="pain_level",
+            old_value="2",
+            new_value="4",
+        )
+        db.add(log)
+        db.commit()
+
+        # GP access
+        gp_resp = client.get(f"/api/v1/profile/patients/{seed_patient.user_id}/history", headers=gp_headers)
+        assert gp_resp.status_code == 200
+        assert gp_resp.json()["user_id"] == seed_patient.user_id
+        assert gp_resp.json()["total_changes"] == 1
+
+        # Admin access
+        admin_resp = client.get(f"/api/v1/profile/patients/{seed_patient.user_id}/history", headers=admin_headers)
+        assert admin_resp.status_code == 200
+        assert admin_resp.json()["user_id"] == seed_patient.user_id
+        assert admin_resp.json()["total_changes"] == 1
+
+    def test_get_patient_history_patient_forbidden(self, client, patient_headers, seed_patient):
+        """A patient must not access the /patients/{id}/history route."""
+        response = client.get(f"/api/v1/profile/patients/{seed_patient.user_id}/history", headers=patient_headers)
+        assert response.status_code == 403
+
 
 class TestProfileLogging:
     """Test that profile changes are properly logged."""

@@ -399,6 +399,65 @@ async def login(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+---
+
+## Backend Context (For Frontend Team)
+
+- **API Base:** `/api/v1` — all endpoints in this document are under this prefix.
+- **Auth:** Bearer JWT in `Authorization` header. Obtain tokens from `POST /api/v1/auth/login`.
+- **Role-based access:** `role` claim in the token is used for RBAC. Common roles: `patient`, `gp`, `admin`.
+
+**Environment / Runtime**
+- **DATABASE_URL:** full Postgres/Neon connection string (required in production).
+- **DEBUG:** `0|1` or `false|true` (defaults to false). Controls SQLAlchemy echo and verbose logging.
+- **TESTING:** `0|1` or `false|true` (set by CI/test runs to enable SQLite in-memory behavior).
+
+**Backend Config Notes**
+- The backend now supports SQLite for tests and Postgres for production. For Postgres, engine is created with `pool_pre_ping=True` to avoid stale connections. See `app/core/config.py`.
+
+**New/Updated Endpoints (important for frontend)**
+- **GET /api/v1/profile/me** — Get authenticated user's profile (all roles). Returns `ProfileOut`.
+- **GET /api/v1/profile/me/history** — Get authenticated user's profile change history (audit logs).
+- **GET /api/v1/profile/patients/{patient_id}/history** — NEW: Clinician audit access (allowed roles: `gp`, `admin`). Returns `ProfileHistoryOut` (ordered by `changed_at` desc).
+
+Example: fetch patient history as GP (replace token and id):
+
+```http
+GET /api/v1/profile/patients/42/history HTTP/1.1
+Host: api.example.com
+Authorization: Bearer <ACCESS_TOKEN_WITH_ROLE_gp>
+Accept: application/json
+```
+
+Successful response shape (abridged):
+
+```json
+{
+    "user_id": 42,
+    "full_name": "Patient Name",
+    "total_changes": 3,
+    "history": [
+        {"log_id": 5, "field_name": "pain_level", "old_value": "2", "new_value": "4", "changed_at": "2026-05-31T12:34:56Z"},
+        ...
+    ]
+}
+```
+
+**Auth Header Example**
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....
+```
+
+**Where to Find Backend Contracts and Tests**
+- API routes: `app/api/v1/` (look for `profile.py`, `mobile_sync.py`, `auth.py`).
+- Pydantic response schemas: `app/schemas/` (e.g., `profile_schema.py`).
+- Tests for profile endpoints: `tests/test_profile.py` (includes access-control tests for the patient-history endpoint).
+
+**Changelog**
+- Recent entries and historical changelogs: [docs/changelog/](../changelog/)
+
+If you want, I can also produce a compact JSON or OpenAPI fragment of the updated endpoints for the frontend team to import directly.
     access_token = create_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(minutes=15)

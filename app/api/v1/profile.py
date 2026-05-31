@@ -8,13 +8,16 @@ Logs all profile changes to PROFILE_LOG for audit trail.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db, get_current_user
+from app.core.dependencies import get_db, get_current_user, RoleChecker
 from app.core.security import verify_password, get_password_hash
 from app.schemas.profile_schema import ProfileOut, ProfileUpdate, PasswordChange, ProfileHistoryOut, ProfileLogOut
 from app.models.user import User
 from app.models.profile_log import ProfileLog
 
 router = APIRouter()
+
+# Allow GPs and admins to view patient histories
+allow_gp = RoleChecker(allowed_roles=["gp", "admin"])
 
 
 def log_profile_change(db: Session, user_id: int, field_name: str, old_value: any, new_value: any):
@@ -58,6 +61,30 @@ def get_profile_history(
     return ProfileHistoryOut(
         user_id=user.user_id,
         full_name=user.full_name,
+        total_changes=len(logs),
+        history=logs,
+    )
+
+
+
+@router.get("/patients/{patient_id}/history", response_model=ProfileHistoryOut)
+def get_patient_history(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(allow_gp),
+):
+    """GP-only: Get the change history for a specific patient by user id."""
+    patient = db.query(User).filter(User.user_id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    if patient.role != "patient":
+        raise HTTPException(status_code=400, detail="Requested user is not a patient")
+
+    logs = db.query(ProfileLog).filter(ProfileLog.user_id == patient.user_id).order_by(ProfileLog.changed_at.desc()).all()
+
+    return ProfileHistoryOut(
+        user_id=patient.user_id,
+        full_name=patient.full_name,
         total_changes=len(logs),
         history=logs,
     )
