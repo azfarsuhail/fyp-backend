@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knee OA Engine | AI Diagnostics & Rehabilitation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .bg-clinical { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col text-slate-800 antialiased pt-20">
+
+    <nav class="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm" data-aos="fade-down">
+        <div class="container mx-auto px-6 max-w-7xl flex justify-between items-center h-20">
+            <div class="flex items-center space-x-3 text-blue-700">
+                <i class="fas fa-microscope text-2xl"></i>
+                <span class="font-bold text-xl tracking-tight">KneeOA <span class="font-light text-slate-500">Engine</span></span>
+            </div>
+            
+            <div class="hidden lg:flex space-x-8 items-center font-medium text-sm text-slate-600">
+                <a href="#how-it-works" class="hover:text-blue-600 transition-colors">How It Works</a>
+                <a href="#features" class="hover:text-blue-600 transition-colors">AI Agents</a>
+                <a href="#clinical" class="hover:text-blue-600 transition-colors">Clinical Value</a>
+                <a href="#architecture" class="hover:text-blue-600 transition-colors">Tech Stack</a>
+                <a href="#source" class="hover:text-blue-600 transition-colors font-bold">Source Code</a>
+                <a href="/download/app.apk" class="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 shadow-md transition-all transform hover:-translate-y-0.5 flex items-center">
+                    <i class="fab fa-android mr-2"></i> Download App
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-clinical text-white py-24 shadow-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+        <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-500/20 blur-[150px] rounded-full pointer-events-none transform translate-x-1/2 -translate-y-1/2"></div>
+
+        <div class="container mx-auto px-6 max-w-7xl relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
+            
+            <div class="lg:w-1/2 text-center lg:text-left" data-aos="fade-right">
+                <div class="inline-block bg-white/10 border border-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide text-blue-200 mb-6 uppercase">
+                    Institute of Business Management • Final Year Project
+                </div>
+                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                    Medical Intelligence. <br/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">Empowering Patients.</span>
+                </h1>
+                <p class="text-lg text-slate-300 leading-relaxed mb-10">
+                    A secure, full-stack AI platform bridging advanced Convolutional Neural Networks with a user-friendly mobile experience for early Knee OA detection and guided rehabilitation.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 justify-center lg:justify-start">
+                    <a href="/download/app.apk" class="bg-white text-blue-900 font-bold py-3 px-8 rounded-full hover:bg-blue-50 transition-colors flex items-center w-full sm:w-auto justify-center shadow-lg transform hover:-translate-y-1">
+                        <i class="fab fa-android mr-3 text-green-500 text-xl"></i> Download Client APK
+                    </a>
+                    <a href="#source" class="border border-slate-500 text-white hover:border-white hover:bg-white/10 font-medium py-3 px-8 rounded-full transition-all flex items-center w-full sm:w-auto justify-center">
+                        <i class="fas fa-code-branch mr-2"></i> View Architecture
+                    </a>
+                </div>
+            </div>
+
+            <div class="lg:w-1/2 flex justify-center" data-aos="fade-left" data-aos-delay="200">
+                <div class="relative animate-float">
+                    <img src="https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Clinical AI Interface" class="w-[500px] h-[400px] object-cover rounded-[2rem] border-4 border-slate-700 shadow-2xl">
+                    
+                    <div class="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-slate-200 flex items-center space-x-4">
+                        <div class="bg-blue-100 text-blue-600 p-3 rounded-lg"><i class="fas fa-x-ray text-xl"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-bold uppercase">CNN Inference</p>
+                            <p class="text-lg font-extrabold text-slate-800">KL Grade: 3</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </header>
+
+    <section id="how-it-works" class="bg-white py-24 border-b border-slate-200 overflow-hidden">
+        <div class="container mx-auto px-6 max-w-7xl">
+            <div class="flex flex-col md:flex-row items-center gap-16">
+                <div class="md:w-1/2" data-aos="fade-right">
+                    <img src="https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?auto=format&fit=crop&w=800&q=80" alt="Doctor reviewing X-Ray" class="rounded-2xl shadow-xl border border-slate-100">
+                </div>
+                <div class="md:w-1/2">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-6" data-aos="fade-up">From Scan to Rehabilitation in Under 5 Seconds.</h2>
+                    <p class="text-slate-500 mb-10 leading-relaxed" data-aos="fade-up" data-aos-delay="100">Our clinical pipeline ensures every patient receives accurate, deterministic feedback driven by their unique physiological data.</p>
+                    
+                    <div class="space-y-8">
+                        <div class="flex items-start" data-aos="fade-up" data-aos-delay="200">
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold shrink-0 mt-1 shadow-inner text-xl">1</div>
+                            <div class="ml-6">
+                                <h4 class="text-xl font-bold text-slate-800">Profile & Symptoms</h4>
+                                <p class="text-slate-600 mt-2">Input age, biological sex, and complete a comprehensive pain and mobility assessment questionnaire.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start" data-aos="fade-up" data-aos-delay="300">
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold shrink-0 mt-1 shadow-inner text-xl">2</div>
+                            <div class="ml-6">
+                                <h4 class="text-xl font-bold text-slate-800">Image Capture</h4>
+                                <p class="text-slate-600 mt-2">Securely upload a Posterior-Anterior (PA) view X-ray directly from your mobile camera or gallery.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start" data-aos="fade-up" data-aos-delay="400">
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold shrink-0 mt-1 shadow-inner text-xl">3</div>
+                            <div class="ml-6">
+                                <h4 class="text-xl font-bold text-slate-800">AI Analysis & Smart Plan</h4>
+                                <p class="text-slate-600 mt-2">The CNN calculates your exact KL Grade while the RAG engine immediately fetches contraindicated exercise videos based on your diagnosis.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="bg-slate-50 py-24 border-b border-slate-200">
+        <div class="container mx-auto px-6 max-w-7xl">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4" data-aos="fade-up">Powered by Multi-Agent AI</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto" data-aos="fade-up" data-aos-delay="100">Seamlessly bridging intuitive mobile design with a high-performance cloud infrastructure to protect patients and deliver accuracy.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:-translate-y-2 hover:shadow-xl hover:border-indigo-300 transition-all duration-300" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-shield-halved text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">Intelligent Gatekeeper</h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        Instantly validates camera uploads. The MobileNetV2 agent ensures only valid knee X-rays are processed, rejecting irrelevant images automatically to prevent false diagnostics.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:-translate-y-2 hover:shadow-xl hover:border-blue-300 transition-all duration-300" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-x-ray text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">Clinical CNN Grading</h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        Evaluates the image using a custom-trained Convolutional Neural Network deployed on AWS to calculate an accurate Kellgren-Lawrence severity score (0-4).
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:-translate-y-2 hover:shadow-xl hover:border-emerald-300 transition-all duration-300" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-dumbbell text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">Parametric RAG Therapy</h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        The Recommendation Agent cross-references your diagnosis with your specific medical history to deliver safe, contraindicated exercise protocols and video guides.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="clinical" class="bg-white py-24 border-b border-slate-200">
+        <div class="container mx-auto px-6 max-w-7xl">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4" data-aos="fade-up">Designed for the Real World</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto" data-aos="fade-up" data-aos-delay="100">Bridging the gap between patient care at home and rapid triage in the clinic.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="bg-slate-50 rounded-2xl p-10 border border-slate-200 hover:shadow-lg transition-shadow" data-aos="fade-right">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl">
+                            <i class="fas fa-user-injured"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-800">For Patients</h3>
+                    </div>
+                    <ul class="space-y-4 text-slate-600">
+                        <li class="flex items-start"><i class="fas fa-check text-green-500 mt-1 mr-3"></i> <span><strong>Symptom Tracking:</strong> Log daily pain levels and joint mobility via an intuitive questionnaire.</span></li>
+                        <li class="flex items-start"><i class="fas fa-check text-green-500 mt-1 mr-3"></i> <span><strong>Home Exercise Library:</strong> Receive personalized, safe video exercises tailored to your specific mobility level.</span></li>
+                        <li class="flex items-start"><i class="fas fa-check text-green-500 mt-1 mr-3"></i> <span><strong>Condition Management:</strong> Take control of your preventive care before reaching late-stage disability.</span></li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-50 rounded-2xl p-10 border border-slate-200 hover:shadow-lg transition-shadow" data-aos="fade-left">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="w-14 h-14 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-2xl">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-800">For General Practitioners</h3>
+                    </div>
+                    <ul class="space-y-4 text-slate-600">
+                        <li class="flex items-start"><i class="fas fa-check text-teal-500 mt-1 mr-3"></i> <span><strong>Rapid Triage:</strong> Upload PA X-rays for an instant, unbiased second opinion on KL severity.</span></li>
+                        <li class="flex items-start"><i class="fas fa-check text-teal-500 mt-1 mr-3"></i> <span><strong>Standardized Reporting:</strong> Generate automated diagnostic summaries for patient records.</span></li>
+                        <li class="flex items-start"><i class="fas fa-check text-teal-500 mt-1 mr-3"></i> <span><strong>Secure & Scalable:</strong> Data is handled securely via AWS S3 and PostgreSQL, matching modern compliance standards.</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture" class="bg-slate-900 py-24 text-slate-300 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-3/4 bg-blue-600/20 blur-[120px] rounded-full z-0 pointer-events-none"></div>
+
+        <div class="container mx-auto px-6 max-w-7xl relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-white mb-2" data-aos="zoom-in">Engineering Architecture</h2>
+                <p class="text-slate-400 font-mono text-sm" data-aos="zoom-in" data-aos-delay="100">Decoupled Microservices • Automated CI/CD • Scalable ML Inference</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                <div class="space-y-6">
+                    <div class="bg-slate-800/80 backdrop-blur border border-slate-700 p-6 rounded-xl hover:-translate-y-1 transition-transform" data-aos="fade-up">
+                        <h4 class="text-lg font-bold text-white mb-2 flex items-center"><i class="fas fa-network-wired text-blue-400 mr-3"></i> Backend Infrastructure</h4>
+                        <p class="text-sm leading-relaxed mb-4">Powered by an asynchronous <strong>FastAPI</strong> layer, protected by JWT authentication and Role-Based Access Control (RBAC). API traffic is reverse-proxied through <strong>NGINX</strong>.</p>
+                        <div class="flex space-x-2 text-xs font-mono text-blue-300">
+                            <span class="bg-slate-900 px-2 py-1 rounded">Python 3.10</span>
+                            <span class="bg-slate-900 px-2 py-1 rounded">FastAPI</span>
+                            <span class="bg-slate-900 px-2 py-1 rounded">Docker</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/80 backdrop-blur border border-slate-700 p-6 rounded-xl hover:-translate-y-1 transition-transform" data-aos="fade-up" data-aos-delay="100">
+                        <h4 class="text-lg font-bold text-white mb-2 flex items-center"><i class="fas fa-brain text-orange-400 mr-3"></i> Multi-Agent Inference</h4>
+                        <p class="text-sm leading-relaxed mb-4">Uses a custom-trained <strong>TensorFlow CNN</strong> for image analysis and a <strong>Sentence-Transformers</strong> engine for Retrieval-Augmented Generation (RAG) to fetch clinical advice.</p>
+                        <div class="flex space-x-2 text-xs font-mono text-orange-300">
+                            <span class="bg-slate-900 px-2 py-1 rounded">TensorFlow</span>
+                            <span class="bg-slate-900 px-2 py-1 rounded">Vector DB</span>
+                            <span class="bg-slate-900 px-2 py-1 rounded">OpenCV</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/80 backdrop-blur border border-slate-700 p-6 rounded-xl hover:-translate-y-1 transition-transform" data-aos="fade-up" data-aos-delay="200">
+                        <h4 class="text-lg font-bold text-white mb-2 flex items-center"><i class="fas fa-database text-teal-400 mr-3"></i> Cloud Data Layer</h4>
+                        <p class="text-sm leading-relaxed mb-4">Relational data is managed via SQLAlchemy 2.0 on a serverless <strong>Neon DB (PostgreSQL)</strong>. High-volume media (X-rays, MP4s) are securely persisted in <strong>AWS S3</strong>.</p>
+                        <div class="flex space-x-2 text-xs font-mono text-teal-300">
+                            <span class="bg-slate-900 px-2 py-1 rounded">PostgreSQL</span>
+                            <span class="bg-slate-900 px-2 py-1 rounded">AWS S3</span>
+                            <span class="bg-slate-900 px-2 py-1 rounded">Alembic</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div data-aos="fade-left" data-aos-delay="300">
+                    <div class="bg-[#0d1117] rounded-xl border border-slate-700 shadow-2xl overflow-hidden h-full flex flex-col">
+                        <div class="bg-slate-800 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                            <div class="flex space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <span class="text-xs font-mono text-slate-400">CI/CD Pipeline (GitHub Actions)</span>
+                        </div>
+                        <div class="p-6 font-mono text-sm text-slate-300 flex-grow">
+                            <p class="text-slate-500 mb-2"># Automated Deployment Workflow Triggered</p>
+                            <p><span class="text-green-400">✔</span> Checkout code from <span class="text-blue-300">main</span></p>
+                            <p><span class="text-green-400">✔</span> Setup Docker Buildx</p>
+                            <p><span class="text-green-400">✔</span> Extract metadata (tags, labels)</p>
+                            <p class="mt-4 mb-2 text-yellow-300">> Executing Multi-Stage Build...</p>
+                            <p class="text-slate-400">  [builder 1/4] FROM python:3.10-slim</p>
+                            <p class="text-slate-400">  [builder 2/4] RUN pip install -r requirements.txt</p>
+                            <p class="text-slate-400">  [runtime 1/3] COPY --from=builder /opt/venv</p>
+                            <p class="text-slate-400">  [runtime 2/3] COPY app/ ./app/</p>
+                            <p class="mt-4"><span class="text-green-400">✔</span> Build and Push API Image to Registry</p>
+                            <p class="mt-4 text-blue-400">Deployed successfully to AWS EC2 instance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="source" class="bg-slate-950 py-24 text-white overflow-hidden relative border-t border-slate-800">
+        <div class="container mx-auto px-6 max-w-7xl relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4" data-aos="fade-up">Full-Stack Repositories</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto" data-aos="fade-up">Complete end-to-end source code and technical documentation available on GitHub.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="bg-slate-800 rounded-2xl p-8 border border-slate-700 hover:border-blue-500 transition-all flex flex-col h-full" data-aos="fade-right">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-14 h-14 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center"><i class="fas fa-server text-2xl"></i></div>
+                        <a href="https://github.com/azfarsuhail/fyp-backend/tree/main" target="_blank" class="text-slate-400 hover:text-white transition-colors"><i class="fab fa-github text-3xl"></i></a>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 font-mono">fyp-backend</h3>
+                    <p class="text-slate-400 text-sm mb-6 flex-grow leading-relaxed">
+                        Asynchronous FastAPI application orchestration. Features JWT authentication, RBAC, Multi-Agent ML pipeline (CNN/RAG), and automated CI/CD via GitHub Actions.
+                    </p>
+                    <a href="https://github.com/azfarsuhail/fyp-backend/tree/main#readme" target="_blank" class="w-full bg-blue-600 text-center py-3 rounded-lg font-bold hover:bg-blue-500 transition-colors">Technical Docs</a>
+                </div>
+
+                <div class="bg-slate-800 rounded-2xl p-8 border border-slate-700 hover:border-teal-500 transition-all flex flex-col h-full" data-aos="fade-left">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-14 h-14 bg-teal-500/20 text-teal-400 rounded-xl flex items-center justify-center"><i class="fas fa-mobile-alt text-2xl"></i></div>
+                        <a href="https://github.com/Dheerajtalreja/FYP_MIA-KneeOA-App-.git" target="_blank" class="text-slate-400 hover:text-white transition-colors"><i class="fab fa-github text-3xl"></i></a>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 font-mono">knee-oa-client</h3>
+                    <p class="text-slate-400 text-sm mb-6 flex-grow leading-relaxed">
+                        Cross-platform mobile application built with React Native and Expo. Implements PA view X-ray capture, secure API integration, and real-time diagnostic reporting.
+                    </p>
+                    <a href="https://github.com/Dheerajtalreja/FYP_MIA-KneeOA-App-.git#readme" target="_blank" class="w-full bg-teal-600 text-center py-3 rounded-lg font-bold hover:bg-teal-500 transition-colors">Frontend Specs</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="team" class="bg-white py-24">
+        <div class="container mx-auto px-6 max-w-6xl">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4" data-aos="fade-up">The Development Team</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto" data-aos="fade-up" data-aos-delay="100">Institute of Business Management • Final Year Project (FYP-II)</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+                <div class="group" data-aos="zoom-in-up" data-aos-delay="100">
+                    <img src="https://ui-avatars.com/api/?name=Dheeraj+Kumar&background=eff6ff&color=1d4ed8&size=200&font-size=0.33" alt="Dheeraj Kumar" class="w-40 h-40 rounded-full mx-auto mb-6 shadow-lg border-4 border-white group-hover:scale-110 transition-transform duration-300 object-cover">
+                    <h3 class="text-xl font-bold text-slate-800">Dheeraj Kumar</h3>
+                    <p class="text-blue-600 font-medium mb-3">Frontend Engineer</p>
+                    <p class="text-slate-500 text-sm px-4">Architected the cross-platform React Native UI and seamless image capture workflows.</p>
+                </div>
+                
+                <div class="group" data-aos="zoom-in-up" data-aos-delay="200">
+                    <img src="https://ui-avatars.com/api/?name=Azfar+Suhail&background=eff6ff&color=1d4ed8&size=200&font-size=0.33" alt="Azfar Suhail" class="w-40 h-40 rounded-full mx-auto mb-6 shadow-lg border-4 border-white group-hover:scale-110 transition-transform duration-300 object-cover">
+                    <h3 class="text-xl font-bold text-slate-800">Azfar Suhail</h3>
+                    <p class="text-blue-600 font-medium mb-3">Backend & ML Engineer</p>
+                    <p class="text-slate-500 text-sm px-4">Developed the FastAPI microservices, database architecture, and trained the TensorFlow diagnostic models.</p>
+                </div>
+
+                <div class="group" data-aos="zoom-in-up" data-aos-delay="300">
+                    <img src="https://ui-avatars.com/api/?name=Fahad+Shamsi&background=eff6ff&color=1d4ed8&size=200&font-size=0.33" alt="M. Fahad Shamsi" class="w-40 h-40 rounded-full mx-auto mb-6 shadow-lg border-4 border-white group-hover:scale-110 transition-transform duration-300 object-cover">
+                    <h3 class="text-xl font-bold text-slate-800">M. Fahad Shamsi</h3>
+                    <p class="text-blue-600 font-medium mb-3">Research & Testing</p>
+                    <p class="text-slate-500 text-sm px-4">Lead dataset curation, model testing, and comprehensive UX debugging across devices.</p>
+                </div>
+            </div>
+            
+            <div class="text-center mt-12 pt-8 border-t border-slate-200" data-aos="fade-in" data-aos-delay="400">
+                <p class="text-slate-500 font-medium">Under the Supervision of <span class="text-slate-800 font-bold">Miss Noor Ul Huda</span></p>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-amber-50 py-12 border-t border-b border-amber-200">
+        <div class="container mx-auto px-6 max-w-4xl text-center" data-aos="fade-in">
+            <div class="flex items-center justify-center space-x-3 mb-4 text-amber-600">
+                <i class="fas fa-triangle-exclamation text-2xl animate-pulse"></i>
+                <h3 class="text-xl font-bold">Important Clinical Disclaimer</h3>
+            </div>
+            <p class="text-amber-800 text-sm leading-relaxed">
+                This application is designed as a preliminary assessment tool for Knee Osteoarthritis. The AI-generated Kellgren-Lawrence grades and RAG-based exercise recommendations are for informational and preventive purposes only. <strong>This system does not replace professional medical diagnosis.</strong> Always consult with a certified orthopedic specialist before beginning any new rehabilitation protocol.
+            </p>
+        </div>
+    </section>
+
+    <footer class="bg-slate-900 text-slate-400 py-10">
+        <div class="container mx-auto px-6 max-w-6xl flex flex-col items-center">
+            <div class="flex space-x-6 mb-6">
+                <a href="https://github.com/Dheerajtalreja/FYP_MIA-KneeOA-App-.git" target="_blank" class="text-slate-400 hover:text-white transition-colors text-2xl hover:scale-110 transform">
+                    <i class="fab fa-github"></i>
+                </a>
+                <a href="https://github.com/azfarsuhail/fyp-backend/tree/main" target="_blank" class="text-slate-400 hover:text-white transition-colors text-2xl hover:scale-110 transform">
+                    <i class="fab fa-github"></i>
+                </a>
+            </div>
+            <p class="text-sm text-center mb-2">© 2026 Medical Image Analysis System. All rights reserved.</p>
+            <p class="text-xs text-slate-500 text-center">College of Computer Science & Information Systems • Institute of Business Management</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ once: true, offset: 50, easing: 'ease-out-cubic' });
+    </script>
+</body>
+</html>

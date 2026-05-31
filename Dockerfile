@@ -1,5 +1,5 @@
 # ===== BUILD STAGE =====
-FROM python:3.10-slim as builder
+FROM tensorflow/tensorflow:2.15.0-gpu as builder
 
 WORKDIR /build
 
@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # ===== RUNTIME STAGE =====
-FROM python:3.10-slim as runtime
+FROM tensorflow/tensorflow:2.15.0-gpu as runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
