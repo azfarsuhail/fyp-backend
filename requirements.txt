@@ -22,13 +22,14 @@ boto3>=1.34.0
 # --- Machine Learning & Image Processing (Diagnostic Agent) ---
 # Note: Using tensorflow-cpu keeps the Docker image much smaller if you aren't doing GPU inference inside the container. 
 # If you deploy to an AWS G4 instance and want GPU acceleration, change this to `tensorflow`.
-tensorflow>=2.15.0
 Pillow>=10.2.0
-numpy>=1.26.0
+numpy>=1.26.0,<2.0.0
 
 # --- RAG & NLP (Recommendation Agent) ---
-# Required to process the sentence-transformer model for the vector database
-sentence-transformers>=2.3.0
+torch==2.1.2
+torchvision==0.16.2
+transformers==4.38.2
+sentence-transformers==2.5.1
 
 # --- HTTP Client ---
 # Used to download images from S3 URLs for processing

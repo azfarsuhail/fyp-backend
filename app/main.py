@@ -1,20 +1,30 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
+from contextlib import asynccontextmanager
 
-from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics
-from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitLoginMiddleware
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # This runs when the server starts
+    print("Initializing server and loading heavy models...")
+    # Add any explicit model warming here if needed
+    yield
+    # This runs when the server shuts down
+    print("Shutting down server and cleaning up resources...")
 
 app = FastAPI(
     title="Medical Image Analysis API",
     description="Backend for Knee OA Detection and Management",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 # ── Load environment variables ────────────────────────────────────────────────
 from dotenv import load_dotenv
 load_dotenv()
-
+from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics
+from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitLoginMiddleware
 # ── CORS Configuration ────────────────────────────────────────────────────────
 # Get allowed origins from environment variable
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "")
