@@ -161,10 +161,9 @@ def admin_headers(seed_admin):
 def seed_image(db, seed_patient):
     """Create a test image record in the DB."""
     from app.models.image import Image
-
     image = Image(
         user_id=seed_patient.user_id,
-        s3_url="https://test-bucket.s3.amazonaws.com/xrays/test.png",
+        s3_url="xrays/test.png",
         file_name="test_xray.png",
         content_type="image/png",
     )
@@ -210,8 +209,8 @@ def seed_video(db):
     video = ExerciseVideo(
         title="Gentle Knee Stretches",
         description="Low-impact stretching for KL Grade 1-2",
-        s3_url="https://test-bucket.s3.amazonaws.com/videos/stretch.mp4",
-        thumbnail_url="https://test-bucket.s3.amazonaws.com/thumbs/stretch.jpg",
+        s3_url="videos/stretch.mp4",
+        thumbnail_url="thumbs/stretch.jpg",
         kl_grade_min=0,
         kl_grade_max=2,
         category="flexibility",

@@ -23,6 +23,7 @@ from typing import Dict, List, Any, Optional
 import json
 import sqlite3
 from pathlib import Path
+from app.services.s3_service import generate_presigned_url
 
 
 class MobileSyncService:
@@ -54,8 +55,8 @@ class MobileSyncService:
         images_data = [
             {
                 "image_id": img.image_id,
-                "s3_url": img.s3_url,
-                "processed_s3_url": img.processed_s3_url,
+                "s3_url": generate_presigned_url(img.s3_url) if img.s3_url else None,
+                "processed_s3_url": generate_presigned_url(img.processed_s3_url) if img.processed_s3_url else None,
                 "file_name": img.file_name,
                 "content_type": img.content_type,
                 "uploaded_at": img.uploaded_at.isoformat() if img.uploaded_at else None,

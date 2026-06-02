@@ -15,9 +15,10 @@ class TestAnalyzeXray:
     @patch("app.api.v1.diagnostic.predict_kl_grade")
     @patch("app.api.v1.diagnostic.get_processed_image_bytes")
     @patch("app.api.v1.diagnostic.requests")
+    @patch("app.api.v1.diagnostic.generate_presigned_url", return_value="https://bucket.s3.amazonaws.com/xrays/test.png")
     @patch("app.api.v1.diagnostic.validate_image")
     def test_analyze_success(
-        self, mock_validate, mock_requests, mock_proc, mock_predict, mock_rec, mock_s3,
+        self, mock_validate, mock_presigned, mock_requests, mock_proc, mock_predict, mock_rec, mock_s3,
         client, patient_headers, seed_image,
     ):
         # Mock validation agent - accept the image
@@ -35,8 +36,8 @@ class TestAnalyzeXray:
         # Mock image processor
         mock_proc.return_value = b"\x89PNG_processed"
 
-        # Mock S3 upload of processed image
-        mock_s3.return_value = "https://bucket.s3.amazonaws.com/processed/1_processed.png"
+        # Mock S3 upload of processed image (returns object key)
+        mock_s3.return_value = "processed/1_processed.png"
 
         # Mock recommendation agent (parametric RAG output)
         mock_rec.return_value = {
@@ -128,7 +129,7 @@ class TestAnalyzeXray:
         # Image belongs to the GP
         img = Image(
             user_id=seed_gp.user_id,
-            s3_url="https://bucket.s3.amazonaws.com/xrays/gp.png",
+            s3_url="xrays/gp.png",
             file_name="gp.png",
         )
         db.add(img)

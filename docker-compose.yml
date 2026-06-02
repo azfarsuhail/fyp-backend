@@ -29,7 +29,7 @@ services:
       - LOG_LEVEL=INFO
       - TF_FORCE_GPU_ALLOW_GROWTH=true
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True  # <-- ADD THIS
-      - USE_TF=0   # <-- ADD THIS LINE
+      - USE_TF=0   # <-- ADD THIS 
     restart: unless-stopped
     healthcheck:
       # Using urllib ensures we don't depend on external libraries being installed

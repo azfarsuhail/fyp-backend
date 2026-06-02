@@ -7,7 +7,7 @@ from fastapi import UploadFile
 # ── S3 Configuration (loaded from .env) ──────────────────────────────────────
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION", "eu-west-1")
+AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "knee-oa-uploads")
 
 s3_client = boto3.client(
@@ -20,14 +20,14 @@ s3_client = boto3.client(
 
 async def upload_file_to_s3(file: UploadFile, folder: str = "xrays") -> str:
     """
-    Upload a file to S3 and return its public URL.
+    Upload a file to S3 and return the object key (not the public URL).
 
     Args:
         file: The FastAPI UploadFile object.
         folder: S3 key prefix / folder name.
 
     Returns:
-        The full S3 URL of the uploaded object.
+        The S3 object key for the uploaded object (e.g. "xrays/abc123.png").
     """
     # Generate a unique filename to avoid collisions
     ext = file.filename.split(".")[-1] if "." in file.filename else "png"
@@ -41,8 +41,7 @@ async def upload_file_to_s3(file: UploadFile, folder: str = "xrays") -> str:
             Body=contents,
             ContentType=file.content_type or "image/png",
         )
-        s3_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_name}"
-        return s3_url
+        return unique_name
     except ClientError as e:
         raise RuntimeError(f"S3 upload failed: {e}")
     finally:
@@ -53,7 +52,7 @@ async def upload_bytes_to_s3(
     data: bytes, key: str, content_type: str = "image/png"
 ) -> str:
     """
-    Upload raw bytes (e.g. a processed image) to S3.
+    Upload raw bytes (e.g. a processed image) to S3 and return the object key.
 
     Args:
         data: Raw bytes to upload.
@@ -61,7 +60,7 @@ async def upload_bytes_to_s3(
         content_type: MIME type.
 
     Returns:
-        The full S3 URL.
+        The S3 object key that was uploaded.
     """
     try:
         s3_client.put_object(
@@ -70,7 +69,7 @@ async def upload_bytes_to_s3(
             Body=data,
             ContentType=content_type,
         )
-        return f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{key}"
+        return key
     except ClientError as e:
         raise RuntimeError(f"S3 upload failed: {e}")
 
@@ -95,3 +94,8 @@ def generate_presigned_url(key: str, expiration: int = 3600) -> str:
         return url
     except ClientError as e:
         raise RuntimeError(f"Failed to generate pre-signed URL: {e}")
+
+
+def get_presigned_url(key: str, expiration: int = 3600) -> str:
+    """Alias for generate_presigned_url for clearer callsites."""
+    return generate_presigned_url(key, expiration=expiration)

@@ -25,7 +25,7 @@ from app.agents.diagnostic_agent import predict_kl_grade
 from app.agents.recommendation_agent import generate_recommendation
 from app.agents.validation_agent import validate_image
 from app.services.image_processor import get_processed_image_bytes
-from app.services.s3_service import upload_bytes_to_s3
+from app.services.s3_service import upload_bytes_to_s3, generate_presigned_url
 
 router = APIRouter()
 
@@ -75,7 +75,8 @@ async def analyze_xray(
 
     # ── 2. Download image bytes from S3 ──────────────────────────────────
     try:
-        response = requests.get(image.s3_url, timeout=30)
+        presigned = generate_presigned_url(image.s3_url)
+        response = requests.get(presigned, timeout=30)
         response.raise_for_status()
         image_bytes = response.content
     except Exception as e:
@@ -105,8 +106,8 @@ async def analyze_xray(
     try:
         processed_bytes = get_processed_image_bytes(image_bytes)
         processed_key = f"processed/{image.image_id}_processed.png"
-        processed_url = await upload_bytes_to_s3(processed_bytes, processed_key)
-        image.processed_s3_url = processed_url
+        processed_key_returned = await upload_bytes_to_s3(processed_bytes, processed_key)
+        image.processed_s3_url = processed_key_returned
         db.commit()
     except Exception:
         pass  # Non-critical — don't fail the pipeline if processed upload fails

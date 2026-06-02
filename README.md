@@ -50,6 +50,12 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 - ✅ **Resource Limits**: 3.5 CPU, 14GB memory reservation (2 CPU, 4GB)
 - ✅ **Health Checks**: NGINX depends on API health (urllib-based)
 
+### S3 Storage & Access (June 2026)
+
+- ✅ **Private S3 objects:** Uploaded images and video assets are stored private in S3. The database stores the S3 object key (e.g. `xrays/abc123.png`) rather than a public URL.
+- ✅ **Presigned URLs:** API endpoints now return short-lived presigned URLs for clients to download objects. This improves security and auditability — objects remain private in the bucket and access is granted only via temporary URLs.
+- ✅ **IAM guidance:** The service requires an IAM role or credentials with `s3:PutObject`, `s3:GetObject`, and `s3:GeneratePresignedUrl` (via `s3:GetObject`) permissions for the bucket. Update `S3_BUCKET_NAME`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` in your `.env` or use instance profiles.
+
 ---
 
 ## 📐 System Architecture

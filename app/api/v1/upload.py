@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_db, RoleChecker
 from app.schemas.image_schema import ImageUploadResponse
 from app.models.image import Image
-from app.services.s3_service import upload_file_to_s3
+from app.services.s3_service import upload_file_to_s3, generate_presigned_url
 
 router = APIRouter()
 
@@ -42,9 +42,9 @@ async def upload_xray(
             detail=f"Invalid file type '{file.content_type}'. Allowed: {ALLOWED_CONTENT_TYPES}",
         )
 
-    # Upload to S3
+    # Upload to S3 (returns object key)
     try:
-        s3_url = await upload_file_to_s3(file, folder="xrays")
+        s3_key = await upload_file_to_s3(file, folder="xrays")
     except RuntimeError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -61,12 +61,19 @@ async def upload_xray(
     # Save image record to Neon DB
     new_image = Image(
         user_id=user.user_id,
-        s3_url=s3_url,
+        s3_url=s3_key,
         file_name=file.filename,
         content_type=file.content_type,
     )
     db.add(new_image)
     db.commit()
     db.refresh(new_image)
+
+    # Return a presigned URL to the client while keeping the object key in DB
+    try:
+        new_image.s3_url = generate_presigned_url(new_image.s3_url)
+    except Exception:
+        # Fallback: return the raw key if presigned URL generation fails
+        new_image.s3_url = new_image.s3_url
 
     return new_image

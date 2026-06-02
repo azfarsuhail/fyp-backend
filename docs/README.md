@@ -29,6 +29,9 @@
 ### Mobile Integration
 - [Mobile Sync Guide](mobile/) - Mobile app integration
 
+### S3 Presigned URL Migration
+- [Changelog: Presigned URL migration (2026-06-02)](changelog/changelog_2026-06-02.md) - Notes on replacing public S3 URLs with object keys + presigned URLs, IAM guidance, and test results.
+
 ### Git & Version Control
 - [Git Guide](git/) - Git configuration and best practices
 

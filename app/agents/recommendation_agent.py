@@ -38,6 +38,7 @@ from sqlalchemy.orm import Session
 
 from app.models.library import ExerciseVideo
 from app.models.user import User
+from app.services.s3_service import generate_presigned_url
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 VECTOR_STORE_DIR = os.path.join(
@@ -423,7 +424,7 @@ def get_exercise_videos(kl_grade: int, db: Session) -> List[Dict[str, Any]]:
         {
             "video_id": v.video_id,
             "title": v.title,
-            "s3_url": v.s3_url,
+            "s3_url": generate_presigned_url(v.s3_url) if v.s3_url else None,
             "category": v.category,
             "difficulty": v.difficulty,
             "duration_seconds": v.duration_seconds,
