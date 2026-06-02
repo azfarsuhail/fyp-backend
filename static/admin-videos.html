@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Video Manager - Knee OA</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+            color: #0f172a;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container { max-width: 1280px; margin: 0 auto; }
+        .hero, .panel, .video-card {
+            background: rgba(255,255,255,0.96);
+            border-radius: 18px;
+            box-shadow: 0 20px 40px rgba(15,23,42,0.18);
+        }
+        .hero { padding: 24px 28px; margin-bottom: 20px; }
+        .hero-top { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; }
+        h1, h2, h3 { margin: 0; }
+        p { color: #475569; }
+        .actions { display:flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+        .btn, .link-btn {
+            border: none; border-radius: 10px; padding: 10px 14px; cursor: pointer; font-weight: 700;
+            text-decoration: none; display:inline-flex; align-items:center; justify-content:center;
+        }
+        .btn-primary { background:#1d4ed8; color:white; }
+        .btn-secondary { background:white; color:#1d4ed8; border:1px solid #1d4ed8; }
+        .btn-danger { background:#dc2626; color:white; }
+        .panel { padding: 20px; margin-bottom: 20px; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+        .field { display:flex; flex-direction:column; gap:6px; }
+        label { font-size: 0.85rem; color:#334155; font-weight: 700; }
+        input, textarea, select {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; font: inherit;
+            background: white;
+        }
+        textarea { min-height: 92px; resize: vertical; }
+        .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 14px; }
+        .notice { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; display:none; }
+        .notice.ok { background:#dcfce7; color:#166534; }
+        .notice.err { background:#fee2e2; color:#991b1b; }
+        .video-list { display:grid; gap: 14px; }
+        .video-card { padding: 18px; }
+        .video-meta { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; margin: 12px 0; }
+        .badge { display:inline-block; padding: 4px 10px; border-radius: 999px; background:#dbeafe; color:#1d4ed8; font-size:0.8rem; font-weight:700; }
+        .muted { color:#64748b; font-size: 0.92rem; }
+        .row-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top: 14px; }
+        .two-col { display:grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; }
+        @media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <div class="hero-top">
+                <div>
+                    <h1>🎬 Video Manager</h1>
+                    <p>Manage exercise videos for the admin dashboard.</p>
+                </div>
+                <a class="btn btn-secondary" href="admin-dashboard.html">← Back to dashboard</a>
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="loadVideos()">Refresh videos</button>
+                <button class="btn btn-secondary" onclick="resetForm()">New video</button>
+            </div>
+        </div>
+
+        <div id="message" class="notice"></div>
+
+        <div class="two-col">
+            <div class="panel">
+                <h2 style="margin-bottom:12px;">Video library</h2>
+                <div class="toolbar">
+                    <div class="field" style="min-width:160px; flex:1;">
+                        <label for="filter-grade">KL grade</label>
+                        <select id="filter-grade">
+                            <option value="">All grades</option>
+                            <option value="0">Grade 0</option>
+                            <option value="1">Grade 1</option>
+                            <option value="2">Grade 2</option>
+                            <option value="3">Grade 3</option>
+                            <option value="4">Grade 4</option>
+                        </select>
+                    </div>
+                    <div class="field" style="min-width:220px; flex:1;">
+                        <label for="filter-category">Category</label>
+                        <input id="filter-category" type="text" placeholder="e.g. strengthening">
+                    </div>
+                    <div style="display:flex; align-items:end; gap:10px;">
+                        <button class="btn btn-primary" onclick="loadVideos()">Apply filters</button>
+                    </div>
+                </div>
+                <div id="video-list" class="video-list"></div>
+            </div>
+
+            <div class="panel">
+                <h2 style="margin-bottom:12px;">Create / edit video</h2>
+                <form id="video-form">
+                    <input type="hidden" id="video-id">
+                    <div class="grid">
+                        <div class="field">
+                            <label for="title">Title</label>
+                            <input id="title" required>
+                        </div>
+                        <div class="field">
+                            <label for="category">Category</label>
+                            <input id="category" required placeholder="strengthening">
+                        </div>
+                        <div class="field">
+                            <label for="difficulty">Difficulty</label>
+                            <select id="difficulty">
+                                <option value="beginner">beginner</option>
+                                <option value="intermediate">intermediate</option>
+                                <option value="advanced">advanced</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="kl-grade-min">KL grade min</label>
+                            <input id="kl-grade-min" type="number" min="0" max="4" required>
+                        </div>
+                        <div class="field">
+                            <label for="kl-grade-max">KL grade max</label>
+                            <input id="kl-grade-max" type="number" min="0" max="4" required>
+                        </div>
+                        <div class="field">
+                            <label for="duration-seconds">Duration seconds</label>
+                            <input id="duration-seconds" type="number" min="0" placeholder="Optional">
+                        </div>
+                    </div>
+                    <div class="field" style="margin-top:12px;">
+                        <label for="description">Description</label>
+                        <textarea id="description" placeholder="Short exercise description"></textarea>
+                    </div>
+                    <div class="field" style="margin-top:12px;">
+                        <label for="video-file">Video file upload</label>
+                        <input id="video-file" type="file" accept="video/*">
+                    </div>
+                    <div class="field" style="margin-top:12px;">
+                        <label for="thumbnail-url">Thumbnail URL</label>
+                        <input id="thumbnail-url" placeholder="Optional thumbnail URL">
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-primary" type="submit">Save video</button>
+                        <button class="btn btn-secondary" type="button" onclick="resetForm()">Clear</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+        let editingId = null;
+        let videoCache = [];
+
+        function getToken() {
+            return localStorage.getItem('adminToken');
+        }
+
+        function showMessage(text, kind = 'ok') {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = `notice ${kind}`;
+            el.style.display = 'block';
+        }
+
+        function requireToken() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return null;
+            }
+            return token;
+        }
+
+        async function loadVideos() {
+            const token = requireToken();
+            if (!token) return;
+
+            const grade = document.getElementById('filter-grade').value;
+            const category = document.getElementById('filter-category').value.trim();
+
+            const params = new URLSearchParams();
+            if (grade !== '') params.set('kl_grade', grade);
+            if (category) params.set('category', category);
+
+            const url = `${API_BASE}/videos/${params.toString() ? `?${params}` : ''}`;
+            const res = await fetch(url, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = 'admin-login.html';
+                    return;
+                }
+                showMessage('Failed to load videos', 'err');
+                return;
+            }
+
+            const videos = await res.json();
+            videoCache = videos;
+            const list = document.getElementById('video-list');
+
+            if (!videos.length) {
+                list.innerHTML = '<p class="muted">No videos found.</p>';
+                return;
+            }
+
+            list.innerHTML = videos.map((video) => `
+                <div class="video-card">
+                    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:start;">
+                        <div>
+                            <h3>${video.title}</h3>
+                            <p class="muted">${video.description || 'No description provided.'}</p>
+                        </div>
+                        <span class="badge">ID ${video.video_id}</span>
+                    </div>
+                    <div class="video-meta">
+                        <div><span class="muted">Category</span><div><strong>${video.category}</strong></div></div>
+                        <div><span class="muted">Difficulty</span><div><strong>${video.difficulty}</strong></div></div>
+                        <div><span class="muted">KL Range</span><div><strong>${video.kl_grade_min} - ${video.kl_grade_max}</strong></div></div>
+                        <div><span class="muted">Duration</span><div><strong>${video.duration_seconds || '-'} sec</strong></div></div>
+                    </div>
+                    <div class="row-actions">
+                        <button class="btn btn-secondary" onclick="editVideo(${video.video_id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteVideo(${video.video_id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function resetForm() {
+            editingId = null;
+            document.getElementById('video-form').reset();
+            document.getElementById('video-id').value = '';
+            document.getElementById('difficulty').value = 'beginner';
+            document.getElementById('video-file').value = '';
+        }
+
+        function editVideo(videoId) {
+            const video = videoCache.find((item) => item.video_id === videoId);
+            if (!video) {
+                showMessage('Video not found in cache', 'err');
+                return;
+            }
+
+            editingId = video.video_id;
+            document.getElementById('video-id').value = video.video_id;
+            document.getElementById('title').value = video.title || '';
+            document.getElementById('description').value = video.description || '';
+            document.getElementById('thumbnail-url').value = video.thumbnail_url || '';
+            document.getElementById('video-file').value = '';
+            document.getElementById('kl-grade-min').value = video.kl_grade_min;
+            document.getElementById('kl-grade-max').value = video.kl_grade_max;
+            document.getElementById('category').value = video.category || '';
+            document.getElementById('difficulty').value = video.difficulty || 'beginner';
+            document.getElementById('duration-seconds').value = video.duration_seconds ?? '';
+            showMessage(`Editing video ${video.video_id}`, 'ok');
+        }
+
+        async function deleteVideo(id) {
+            if (!confirm(`Delete video #${id}?`)) return;
+            const token = requireToken();
+            if (!token) return;
+
+            const res = await fetch(`${API_BASE}/videos/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                showMessage('Failed to delete video', 'err');
+                return;
+            }
+
+            showMessage('Video deleted successfully');
+            resetForm();
+            loadVideos();
+        }
+
+        document.getElementById('video-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const token = requireToken();
+            if (!token) return;
+
+            const videoFile = document.getElementById('video-file').files[0] || null;
+            if (!editingId && !videoFile) {
+                showMessage('Please select a video file to upload', 'err');
+                return;
+            }
+
+            const title = document.getElementById('title').value.trim();
+            const description = document.getElementById('description').value.trim() || null;
+            const thumbnailUrl = document.getElementById('thumbnail-url').value.trim() || null;
+            const klGradeMin = Number(document.getElementById('kl-grade-min').value);
+            const klGradeMax = Number(document.getElementById('kl-grade-max').value);
+            const category = document.getElementById('category').value.trim();
+            const difficulty = document.getElementById('difficulty').value;
+            const durationSeconds = document.getElementById('duration-seconds').value ? Number(document.getElementById('duration-seconds').value) : null;
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', description || '');
+            formData.append('kl_grade_min', String(klGradeMin));
+            formData.append('kl_grade_max', String(klGradeMax));
+            formData.append('category', category);
+            formData.append('difficulty', difficulty);
+            formData.append('thumbnail_url', thumbnailUrl || '');
+            if (durationSeconds !== null) {
+                formData.append('duration_seconds', String(durationSeconds));
+            }
+            if (videoFile) {
+                formData.append('video_file', videoFile);
+            }
+
+            const res = await fetch(
+                editingId ? `${API_BASE}/videos/${editingId}/upload` : `${API_BASE}/videos/upload`,
+                {
+                    method: editingId ? 'PUT' : 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData
+                }
+            );
+
+            if (!res.ok) {
+                showMessage('Failed to save video', 'err');
+                return;
+            }
+
+            showMessage(editingId ? 'Video updated successfully' : 'Video created successfully');
+            resetForm();
+            loadVideos();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!requireToken()) return;
+            loadVideos();
+        });
+    </script>
+</body>
+</html>
