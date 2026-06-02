@@ -5,6 +5,8 @@ User profile management: view, update, change password, and view history.
 Logs all profile changes to PROFILE_LOG for audit trail.
 """
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,16 @@ router = APIRouter()
 
 # Allow GPs and admins to view patient histories
 allow_gp = RoleChecker(allowed_roles=["gp", "admin"])
+
+
+def normalize_current_meds(user: User) -> User:
+    """Ensure current_meds is a Python list before Pydantic serializes the response."""
+    if isinstance(user.current_meds, str):
+        try:
+            user.current_meds = json.loads(user.current_meds)
+        except json.JSONDecodeError:
+            user.current_meds = []
+    return user
 
 
 def log_profile_change(db: Session, user_id: int, field_name: str, old_value: any, new_value: any):
@@ -43,7 +55,7 @@ def get_my_profile(
     user = db.query(User).filter(User.email == current_user["email"]).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return normalize_current_meds(user)
 
 
 @router.get("/me/history", response_model=ProfileHistoryOut)
@@ -156,7 +168,6 @@ def update_my_profile(
 
     # Log and update current_meds (convert list to JSON string for storage)
     if updates.current_meds is not None and updates.current_meds != user.current_meds:
-        import json
         old_meds = json.dumps(user.current_meds) if user.current_meds else None
         new_meds = json.dumps(updates.current_meds)
         log_profile_change(db, user.user_id, "current_meds", old_meds, new_meds)
@@ -169,7 +180,7 @@ def update_my_profile(
 
     db.commit()
     db.refresh(user)
-    return user
+    return normalize_current_meds(user)
 
 
 @router.post("/me/change-password", status_code=status.HTTP_200_OK)
