@@ -17,10 +17,13 @@ import numpy as np
 import tensorflow as tf
 from typing import Tuple
 
-from app.services.image_processor import preprocess_xray
+from app.services.image_processor import process_for_diagnostic
 
 # ── Model Configuration ──────────────────────────────────────────────────────
 MODEL_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "ml_assets", "cnn_weights", "CNN.-Final.keras"
+)
+LEGACY_MODEL_PATH = os.path.join(
     os.path.dirname(__file__), "..", "ml_assets", "cnn_weights", "CNN.keras"
 )
 
@@ -44,12 +47,14 @@ def _load_model() -> tf.keras.Model:
     """
     global _model
     if _model is None:
-        if not os.path.exists(MODEL_PATH):
+        model_path = MODEL_PATH if os.path.exists(MODEL_PATH) else LEGACY_MODEL_PATH
+
+        if not os.path.exists(model_path):
             raise FileNotFoundError(
-                f"CNN weights not found at {MODEL_PATH}. "
-                "Ensure CNN.keras is placed in app/ml_assets/cnn_weights/"
+                f"CNN weights not found at {MODEL_PATH} or {LEGACY_MODEL_PATH}. "
+                "Ensure CNN.-Final.keras is placed in app/ml_assets/cnn_weights/"
             )
-        _model = tf.keras.models.load_model(MODEL_PATH)
+        _model = tf.keras.models.load_model(model_path)
     return _model
 
 
@@ -58,7 +63,7 @@ def predict_kl_grade(image_bytes: bytes) -> Tuple[int, float, str]:
     Run the full diagnostic pipeline on raw X-ray bytes.
 
     Steps:
-      1. Preprocess the image (grayscale, ROI, resize, normalise)
+        1. Preprocess the image (RGB crop, resize, DenseNet preprocessing)
       2. Feed into the CNN
       3. Extract the predicted KL grade and confidence
 
@@ -73,8 +78,8 @@ def predict_kl_grade(image_bytes: bytes) -> Tuple[int, float, str]:
     """
     model = _load_model()
 
-    # Preprocess → (1, 256, 256, 1)
-    processed = preprocess_xray(image_bytes)
+    # Preprocess → (1, 224, 224, 3)
+    processed = process_for_diagnostic(image_bytes)
 
     # Inference
     predictions = model.predict(processed, verbose=0)  # shape: (1, 5)
