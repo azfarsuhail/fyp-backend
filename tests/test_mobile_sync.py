@@ -7,7 +7,22 @@ Tests for /api/v1/mobile sync endpoints.
 import pytest
 import json
 import sqlite3
-from pathlib import Path
+from pathlib import
+from unittest.mock import patch
+
+# Mock S3 presigned URL generation to avoid credential errors in tests
+MOCK_S3_URL = "https://fake-s3-url.com/image.jpg"
+
+@pytest.fixture(autouse=True)
+def mock_s3_presigned_url():
+    """
+    Automatically patch generate_presigned_url in mobile_sync service
+    to return a dummy URL instead of calling real AWS S3.
+    
+    This prevents botocore.exceptions.NoCredentialsError in test environment.
+    """
+    with patch('app.services.mobile_sync.generate_presigned_url', return_value=MOCK_S3_URL) as mock_url:
+        yield mock_url
 
 
 class TestSyncDataEndpoint:
