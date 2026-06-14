@@ -20,16 +20,17 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set test environment variables
+        run: |
+          echo "SECRET_KEY=test-secret-key-for-testing-only-32chars!" >> $GITHUB_ENV
+          echo "TESTING=1" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
 
-      - name: Run pytest (skip env-dependent tests)
-        run: |
-          # Run tests with warnings disabled and ignore environment variable failures
-          pytest tests/ -v --tb=short -W ignore::DeprecationWarning --disable-warnings
-          # Exit 0 even if some tests fail due to missing env vars
-          echo "Tests completed (some may have been skipped due to environment)"
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short --disable-warnings
 
   build:
     runs-on: ubuntu-latest
