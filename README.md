@@ -524,7 +524,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 4. Run Database Migrations
+### 4. Run Database Migrations (Local Development)
 
 ```bash
 # Generate migration from models
@@ -547,7 +547,24 @@ Once running, visit:
 - **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 - **Admin Dashboard**: [http://localhost/admin-dashboard.html](http://localhost/admin-dashboard.html)
 
-### 7. Build & Push to Docker Hub (CI/CD)
+### 5. Deploy to Production (Docker)
+
+When deploying via Docker, database migrations must be run **from the host machine** after the container starts:
+
+```bash
+# Start the container
+docker-compose up -d
+
+# Run migrations from host machine
+docker exec -it knee_oa_api alembic upgrade head
+
+# Verify migration status
+docker exec -it knee_oa_api alembic current
+```
+
+**Important**: The `alembic` command must be executed inside the running container using `docker exec`. Do not attempt to run migrations from the host machine without entering the container first.
+
+### 6. Build & Push to Docker Hub (CI/CD)
 
 For automated builds, push a version tag:
 
