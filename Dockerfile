@@ -40,7 +40,6 @@ COPY --chown=appuser:appgroup alembic.ini .
 COPY --chown=appuser:appgroup scripts/ ./scripts/
 COPY --chown=appuser:appgroup migrations/ ./migrations/
 COPY --chown=appuser:appgroup static/ ./static/
-COPY --chown=appuser:appgroup ml_assets/ ./ml_assets/
 COPY --chown=appuser:appgroup download/ ./download/
 
 
