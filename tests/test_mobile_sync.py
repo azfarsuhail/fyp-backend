@@ -7,7 +7,7 @@ Tests for /api/v1/mobile sync endpoints.
 import pytest
 import json
 import sqlite3
-from pathlib import
+from pathlib import Path
 from unittest.mock import patch
 
 # Mock S3 presigned URL generation to avoid credential errors in tests
