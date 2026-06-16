@@ -8,6 +8,7 @@
 
 ### Architecture
 - [architecture/STRUCTURE.md](architecture/STRUCTURE.md) - System structure and module layout
+- [architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md](architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md) - Critical TensorFlow XLA compiler bug fix
 
 ### Agents & AI
 - [agents/RECOMMENDATION_AGENT_UPDATE.md](agents/RECOMMENDATION_AGENT_UPDATE.md) - Recommendation agent architecture

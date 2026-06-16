@@ -1,43 +1,30 @@
-# Documentation Structure
+# Architecture Documentation
 
-## 📁 Complete Documentation Organization
+## 📋 Architecture Decision Records (ADRs)
 
-All documentation has been organized into logical folders for easy navigation.
+Architecture Decision Records document critical technical decisions, their rationale, and constraints for future developers.
 
-## 🗂️ Folder Structure
+| ADR | Title | Status | Date |
+|-----|-------|--------|------|
+| [ADR-001](ADR-001-TensorFlow-XLA-ptxas-Fix.md) | TensorFlow XLA ptxas Compiler Bug Fix | ✅ Accepted | 2026-06-16 |
+
+---
+
+## 🗂️ Documentation Structure
 
 ```
-docs/
-├── README.md                          # Documentation index and navigation
-├── security/                          # Security documentation
-│   ├── README.md                      # Security overview
-│   ├── SECURITY_AUDIT.md             # Security audit report
-│   ├── SECURITY_FIXES.md             # Security fixes guide
-│   └── SECURITY_APPLIED.md           # Applied security fixes
-├── docker/                            # Docker & deployment documentation
-│   ├── README.md                      # Docker overview
-│   ├── DOCKER_AUDIT.md               # Docker configuration audit
-│   └── DOCKER_QUICKREF.md            # Docker quick reference
-├── mobile/                            # Mobile integration documentation
-│   ├── README.md                      # Mobile sync overview
-│   └── MOBILE_SYNC_GUIDE.md          # Mobile app integration guide
-├── git/                               # Git & version control documentation
-│   ├── README.md                      # Git overview
-│   └── GIT_GUIDE.md                  # Git configuration guide
-└── code-quality/                      # Code quality documentation
-    ├── README.md                      # Code quality overview
-    └── CODE_QUALITY_REPORT.md        # Code quality audit report
+docs/architecture/
+├── STRUCTURE.md              # System structure and module layout
+└── ADR-001-TensorFlow-XLA-ptxas-Fix.md  # Critical bug fix documentation
 ```
 
-## 📚 Documentation Categories
+---
 
-### 🔒 Security Documentation (`docs/security/`)
-- **SECURITY_AUDIT.md** - Comprehensive security audit with vulnerabilities and recommendations
-- **SECURITY_FIXES.md** - Step-by-step guide for implementing security fixes
-- **SECURITY_APPLIED.md** - Documentation of all security fixes that have been applied
-- **Status**: ✅ All critical security issues resolved
+## 📚 Related Documentation
 
-### 🐳 Docker Documentation (`docs/docker/`)
+- [Main Documentation Index](../README.md) - Complete documentation navigation
+- [Docker Guide](../docker/) - Docker configuration and deployment
+- [Security Guide](../security/) - Security documentation and audits
 - **DOCKER_AUDIT.md** - Complete Docker configuration audit with fixes
 - **DOCKER_QUICKREF.md** - Quick reference for Docker commands and best practices
 - **Status**: ✅ Production-ready Docker configuration

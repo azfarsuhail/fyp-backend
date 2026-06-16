@@ -18,13 +18,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # ===== RUNTIME STAGE =====
 FROM tensorflow/tensorflow:2.15.0-gpu as runtime
 
-# ADDED TF_XLA_FLAGS HERE TO BYPASS THE PTXAS NVIDIA COMPILER BUG
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH="/code" \
-    HF_HOME=/tmp/huggingface \
-    TF_XLA_FLAGS="--tf_xla_auto_jit=-1"
+    HF_HOME=/tmp/huggingface
 
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
@@ -38,6 +36,16 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /code
 
 COPY --from=builder /opt/venv /opt/venv
+
+# =====================================================================
+# THE BULLETPROOF FIX: Search and Destroy the broken compiler
+# 1. Finds exactly where pip installed the patched ptxas binary
+# 2. Forcefully overwrites the broken one inside NVIDIA's locked folder
+# =====================================================================
+RUN PATCHED_PTXAS=$(find /opt/venv -name ptxas -type f | head -n 1) && \
+    rm -f /usr/local/cuda/bin/ptxas && \
+    ln -s $PATCHED_PTXAS /usr/local/cuda/bin/ptxas && \
+    ln -s $PATCHED_PTXAS /usr/local/bin/ptxas
 
 COPY --chown=appuser:appgroup app/ ./app/
 COPY --chown=appuser:appgroup alembic/ ./alembic/

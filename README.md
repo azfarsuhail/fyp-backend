@@ -645,6 +645,31 @@ pytest tests/ --cov=app --cov-report=term-missing
 
 ## ⚠️ Known Issues & Notes
 
+### 🚨 Critical Bug Fix: TensorFlow XLA Compiler Crash (2026-06-16)
+
+**Issue**: Container crashes during TensorFlow inference with `ptxas 12.3.103 has a bug` error.
+
+**Root Cause**: The `tensorflow:2.15.0-gpu` base image ships with a broken NVIDIA compiler (`ptxas` version 12.3.103) that computes math incorrectly. TensorFlow's XLA optimizer has a hardcoded kill-switch for this version.
+
+**Solution**: A "Search and Destroy" command in the Dockerfile's RUNTIME stage replaces the broken binary with a patched version installed via pip.
+
+**⚠️ DO NOT REMOVE**: The following Dockerfile command is **critical** and must not be removed or modified:
+
+```dockerfile
+RUN PATCHED_PTXAS=$(find /opt/venv -name ptxas -type f | head -n 1) && \
+    rm -f /usr/local/cuda/bin/ptxas && \
+    ln -s $PATCHED_PTXAS /usr/local/cuda/bin/ptxas && \
+    ln -s $PATCHED_PTXAS /usr/local/bin/ptxas
+```
+
+**Impact if Removed**: Complete container crashes during diagnostic model inference.
+
+**Full Details**: See [ADR-001: TensorFlow XLA ptxas Compiler Bug Fix](docs/architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md)
+
+---
+
+### Other Known Issues
+
 - **bcrypt must be pinned to `4.0.1`** — newer versions break `passlib`'s bcrypt backend.
 - **`datetime.utcnow()` deprecation** — Python 3.12+ warns about this; will be migrated to `datetime.now(UTC)` in a future update.
 - **Pydantic `class Config` deprecation** — will be migrated to `model_config = ConfigDict(...)` in a future update.
@@ -670,7 +695,10 @@ This project is part of a Final Year Project (FYP) for academic purposes.
 
 Comprehensive documentation is now organized in the [`docs/`](docs/) folder:
 
-### 🔒 Security
+### � Architecture Decision Records
+- [ADR-001: TensorFlow XLA Compiler Bug Fix](docs/architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md) - Critical runtime bug fix documentation
+
+### �🔒 Security
 - [Security Audit](docs/security/SECURITY_AUDIT.md) - Vulnerability assessment
 - [Security Fixes](docs/security/SECURITY_FIXES.md) - Implementation guide
 - [Applied Fixes](docs/security/SECURITY_APPLIED.md) - Current security status

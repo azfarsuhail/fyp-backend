@@ -10,6 +10,7 @@
 | **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
 | **Image Validation** | ✅ CLIP Zero-Shot Gatekeeper (June 2026) |
 | **API Contract Check** | ✅ Verified (April 2026) |
+| **XLA Compiler Fix** | ✅ ptxas Bug Resolved (June 2026) |
 | **Production Ready** | ✅ Yes |
 
 ## Tech Stack
@@ -45,6 +46,14 @@
 - ✅ **Multi-Stage Dockerfile**: Builder + runtime stages, non-root user (appuser)
 - ✅ **Resource Limits**: 3.5 CPU, 14GB memory reservation (2 CPU, 4GB)
 - ✅ **Health Checks**: NGINX depends on API health (urllib-based)
+
+## Critical Bug Fix: TensorFlow XLA Compiler (June 2026)
+- ✅ **ptxas 12.3.103 Bug Resolved**: Replaced broken NVIDIA compiler in `tensorflow:2.15.0-gpu` base image
+- ✅ **Search and Destroy Fix**: Dockerfile RUNTIME stage command replaces broken `/usr/local/cuda/bin/ptxas` with patched version from pip
+- ✅ **XLA Compilation**: TensorFlow diagnostic model now runs without container crashes
+- ✅ **Full Pipeline Stability**: CLIP gatekeeper + CNN inference pipeline operates reliably
+- ✅ **Documentation**: ADR-001 created with complete technical details and warnings
+- ⚠️ **CRITICAL**: DO NOT remove the Dockerfile ptxas replacement command - causes immediate container crash
 
 ## Advanced Clinical RAG Upgrades (April 2026)
 - ✅ **New Patient Profile Fields**: kinesiophobia, occupation_type, has_stairs, current_meds, sleep_quality
@@ -189,6 +198,20 @@ Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocon
 - **GPU Support**: Automatic GPU acceleration when available
 - **Error Handling**: Gracefully rejects corrupt/invalid files with detailed debug logging
 
+### Infrastructure: Docker & XLA Compiler Fix ⭐ CRITICAL (June 2026)
+- **Base Image**: `tensorflow/tensorflow:2.15.0-gpu` (ships with broken ptxas 12.3.103)
+- **Bug**: Container crashes during TensorFlow inference with `ptxas 12.3.103 has a bug` error
+- **Root Cause**: NVIDIA's ptxas compiler version 12.3.103 computes math incorrectly; TensorFlow has hardcoded kill-switch
+- **Solution**: "Search and Destroy" command in Dockerfile RUNTIME stage:
+  ```dockerfile
+  RUN PATCHED_PTXAS=$(find /opt/venv -name ptxas -type f | head -n 1) && \
+      rm -f /usr/local/cuda/bin/ptxas && \
+      ln -s $PATCHED_PTXAS /usr/local/cuda/bin/ptxas && \
+      ln -s $PATCHED_PTXAS /usr/local/bin/ptxas
+  ```
+- **Impact if Removed**: Complete container crashes during diagnostic model inference
+- **Full Details**: See [ADR-001: TensorFlow XLA ptxas Compiler Bug Fix](docs/architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md)
+
 ### Recommendation Agent (`app/agents/recommendation_agent.py`)
 - **Parametric RAG** (hallucination-free): Structured parameter table with embeddings
 - **Original Fields**: `id`, `category`, `action`, `frequency`, `duration_min`, `intensity`, `kl_grade_min/max`, `pain_threshold`, `mobility_req`, `contraindications`, `evidence_level`, `source`
@@ -302,6 +325,8 @@ pytest -v
 - **Security**: No-new-privileges, minimal base image, cached layers
 - **Health Check**: urllib-based HTTP check to `/health` endpoint (30s interval, 10s timeout)
 - **CMD**: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+- **CRITICAL FIX**: ptxas compiler replacement command in RUNTIME stage (see Infrastructure section above)
+- ⚠️ **DO NOT REMOVE**: The ptxas replacement command is essential for TensorFlow inference to work
 
 ### Docker Compose (Dev & Prod)
 - **NGINX Proxy**: `nginx:alpine` reverse proxy on port 80 (443 ready for SSL)
@@ -375,7 +400,27 @@ pytest -v
 - ✅ **Mobile Sync** feature for offline-first mobile apps
 - ✅ **Profile Audit Trail** with full change logging
 - ✅ **Security hardened** (March 2026)
+- ✅ **XLA compiler bug fixed** (June 2026) - TensorFlow inference stable
 - ✅ **Code quality: A- (90/100)**
 - ✅ **Production ready**
 - ⏳ Production deployment (AWS ECS/EKS or Azure Container Apps)
 - ⏳ Frontend mobile/web app integration
+
+## Documentation
+- [Main README](README.md) - Project overview and quick start
+- [Architecture Decision Records](docs/architecture/) - Critical technical decisions
+  - [ADR-001: TensorFlow XLA Compiler Bug Fix](docs/architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md) - Complete technical details
+- [Full Documentation Index](docs/README.md) - All documentation organized by category
+- ✅ **Profile Audit Trail** with full change logging
+- ✅ **Security hardened** (March 2026)
+- ✅ **XLA compiler bug fixed** (June 2026) - TensorFlow inference stable
+- ✅ **Code quality: A- (90/100)**
+- ✅ **Production ready**
+- ⏳ Production deployment (AWS ECS/EKS or Azure Container Apps)
+- ⏳ Frontend mobile/web app integration
+
+## Documentation
+- [Main README](README.md) - Project overview and quick start
+- [Architecture Decision Records](docs/architecture/) - Critical technical decisions
+  - [ADR-001: TensorFlow XLA Compiler Bug Fix](docs/architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md) - Complete technical details
+- [Full Documentation Index](docs/README.md) - All documentation organized by category
