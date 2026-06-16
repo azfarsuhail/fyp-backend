@@ -447,6 +447,21 @@ def generate_recommendation(
 ) -> dict:
     """
     Full parametric recommendation pipeline with profile-based filtering.
+    
+    FIXED PIPELINE ORDER (Prevents Post-Filtering RAG Trap):
+    All deterministic filters run BEFORE semantic ranking to ensure
+    the semantic ranker has maximum candidates to work with.
+    
+    Execution Flow:
+    1. _hard_filter (KL grade, pain threshold, mobility requirement)
+    2. _kinesiophobia_filter (kinesiophobia constraints)
+    3. _occupation_filter (occupation contraindications)
+    4. _medication_filter (medication conflicts)
+    5. _stairs_filter (stair navigation considerations)
+    6. Track original indices for embedding lookup
+    7. _semantic_rank (semantic relevance ranking)
+    8. _apply_modifiers (pain/mobility adjustments)
+    9. _format_record (clean output)
 
     Returns a structured, hallucination-free output:
     {
@@ -485,44 +500,64 @@ def generate_recommendation(
     all_records = _knowledge_base
     filtered = _hard_filter(all_records, kl_grade, pain_level, mobility_level)
 
-    # Track original indices for embedding lookup
-    filtered_indices = []
-    for rec in filtered:
-        for i, orig in enumerate(all_records):
-            if orig["id"] == rec["id"]:
-                filtered_indices.append(i)
-                break
+    if not filtered:
+        # No records passed hard filter — return empty result
+        return {
+            "lifestyle_plan": [],
+            "warnings": _WARNINGS.get(kl_grade, []),
+            "exercise_videos": get_exercise_videos(kl_grade, db),
+            "recommendation": "",
+            "exercise_video_urls": [],
+        }
 
-    # ── Step 2: Semantic ranking ──────────────────────────────────────────
-    ranked = _semantic_rank(filtered, filtered_indices, kl_grade, pain_level, mobility_level)
-
-    # ── Step 3: Profile-based clinical filtering (April 2026) ─────────────
-    # Apply kinesiophobia filter
-    kin_filtered = _kinesiophobia_filter(ranked, kinesiophobia)
-    
-    # Apply occupation filter
+    # ── Step 2: Profile-based clinical filtering (deterministic, BEFORE ranking) ──
+    # Apply all deterministic filters BEFORE semantic ranking to prevent
+    # result starvation when top_k truncation happens after filtering
+    kin_filtered = _kinesiophobia_filter(filtered, kinesiophobia)
     occupation_filtered = _occupation_filter(kin_filtered, occupation_type)
-    
-    # Apply medication filter
     med_filtered = _medication_filter(occupation_filtered, current_meds)
-    
-    # Apply stairs filter (prioritization, not strict filtering)
     stairs_filtered = _stairs_filter(med_filtered, has_stairs)
 
-    # ── Step 4: Apply pain/mobility modifiers ─────────────────────────────
-    adjusted = _apply_modifiers(stairs_filtered, pain_level, mobility_level)
+    if not stairs_filtered:
+        # All records filtered out by profile constraints
+        return {
+            "lifestyle_plan": [],
+            "warnings": _WARNINGS.get(kl_grade, []),
+            "exercise_videos": get_exercise_videos(kl_grade, db),
+            "recommendation": "",
+            "exercise_video_urls": [],
+        }
 
-    # ── Step 5: Format into clean parameter sets ──────────────────────────
+    # ── Step 3: Track original indices for embedding lookup ────────────────
+    # The semantic ranker needs indices to slice _kb_embeddings correctly
+    surviving_indices = []
+    for rec in stairs_filtered:
+        for i, orig in enumerate(all_records):
+            if orig["id"] == rec["id"]:
+                surviving_indices.append(i)
+                break
+
+    # ── Step 4: Semantic ranking (NOW has full candidate set) ──────────────
+    # With all deterministic filters applied, the ranker can select the
+    # top-k most relevant records from the surviving candidates
+    ranked = _semantic_rank(
+        stairs_filtered, surviving_indices, kl_grade, pain_level, mobility_level
+    )
+
+    # ── Step 5: Apply pain/mobility modifiers ──────────────────────────────
+    adjusted = _apply_modifiers(ranked, pain_level, mobility_level)
+
+    # ── Step 6: Format into clean parameter sets ───────────────────────────
     lifestyle_plan = [_format_record(rec) for rec in adjusted]
 
-    # ── Step 6: Get warnings ──────────────────────────────────────────────
+    # ── Step 7: Get warnings ───────────────────────────────────────────────
     warnings = _WARNINGS.get(kl_grade, [])
 
-    # ── Step 7: Get exercise videos ───────────────────────────────────────
+    # ── Step 8: Get exercise videos ────────────────────────────────────────
     exercise_videos = get_exercise_videos(kl_grade, db)
     exercise_video_urls = [v["s3_url"] for v in exercise_videos]
 
-    # ── Step 8: Build legacy text summary for backward compatibility ──────
+    # ── Step 9: Build legacy text summary for backward compatibility ───────
     recommendation_text = _build_text_summary(
         kl_grade, pain_level, mobility_level, lifestyle_plan, warnings
     )
