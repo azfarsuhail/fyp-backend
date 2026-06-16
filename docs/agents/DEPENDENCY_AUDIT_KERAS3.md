@@ -85,12 +85,16 @@ _model = tf.keras.models.load_model(model_path)
 #### `app/agents/validation_agent.py`
 ```python
 # Line 43: Type hint (Keras 3 compatible)
-_model: Optional[tf.keras.Model] = None
+_pipeline: Optional[pipeline] = None
 
-# Line 65: Model loading (Keras 3 compatible)
-ValidationAgent._model = tf.keras.models.load_model(model_path)
+# Line 65: Pipeline loading (HuggingFace transformers, not Keras)
+ValidationAgent._pipeline = pipeline(
+    "zero-shot-image-classification",
+    model="openai/clip-vit-base-patch32",
+    device=device
+)
 ```
-✅ **Status:** No changes needed.
+✅ **Status:** No changes needed. Uses HuggingFace transformers, not Keras.
 
 #### `app/services/image_processor.py`
 ```python

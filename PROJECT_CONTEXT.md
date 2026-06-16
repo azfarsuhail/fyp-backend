@@ -8,7 +8,7 @@
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened (March 2026) |
 | **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
-| **Image Validation** | ✅ Gatekeeper Model (April 2026) |
+| **Image Validation** | ✅ CLIP Zero-Shot Gatekeeper (June 2026) |
 | **API Contract Check** | ✅ Verified (April 2026) |
 | **Production Ready** | ✅ Yes |
 
@@ -57,14 +57,17 @@
 - ✅ **Enhanced Knowledge Base**: parametric_knowledge.json updated with new constraint fields
 - ✅ **Full Audit Trail**: All profile changes logged to PROFILE_LOG table
 
-## Image Validation - Gatekeeper Model (April 2026)
-- ✅ **Binary Classification Agent**: MobileNetV2 model validates knee X-ray authenticity
+## Image Validation - CLIP Zero-Shot Gatekeeper (June 2026)
+- ✅ **Zero-Shot Classification Agent**: CLIP (openai/clip-vit-base-patch32) validates knee X-ray authenticity
+- ✅ **Natural Language Labels**: Uses semantic understanding with labels like "a knee x-ray", "a hand x-ray", etc.
 - ✅ **OOD Detection**: Rejects Out-of-Distribution images (wrong body part, garbage uploads)
 - ✅ **Pre-Diagnostic Filter**: Validates images before they reach the main diagnostic CNN
-- ✅ **3-Channel RGB Processing**: Converts images to RGB (256×256×3) for MobileNetV2
-- ✅ **Singleton Pattern**: Model loaded once at startup for efficiency
-- ✅ **Error Handling**: Gracefully rejects corrupt or malformed files
+- ✅ **No Training Required**: Leverages pretrained CLIP model for immediate deployment
+- ✅ **GPU Acceleration**: Automatically uses GPU when available, falls back to CPU
+- ✅ **Singleton Pattern**: Pipeline loaded once at startup for efficiency
+- ✅ **Error Handling**: Gracefully rejects corrupt or malformed files with detailed logging
 - ✅ **User Feedback**: Clear error message when invalid images are uploaded
+- ✅ **Confidence Threshold**: 0.5 confidence for "a knee x-ray" label
 
 ## Project Overview
 Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The system uses a decoupled multi-agent architecture with a CNN-based Diagnostic Agent for KL grade prediction and a parametric RAG Recommendation Agent for evidence-based lifestyle advice.
@@ -81,7 +84,7 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 ### Authentication (`/api/v1/auth`)
 - `POST /register` - User registration (Patient, GP only; Admin disabled)
 - `POST /login` - JWT token generation (**rate-limited: 5 attempts/minute per IP**)
-
+CLIP zero-shot gatekeeper
 ### Image Upload (`/api/v1/upload`)
 - `POST /` - Upload X-ray to S3 + DB metadata (Patient/GP only)
 - **Validation**: Gatekeeper MobileNetV2 model checks image authenticity before processing
@@ -174,14 +177,17 @@ Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocon
 - KL Labels: 0=None, 1=Doubtful, 2=Minimal, 3=Moderate, 4=Severe
 - Input: 256×256 grayscale images (preprocessed)
 
-### Validation Agent (`app/agents/validation_agent.py`) ⭐ NEW
-- **Gatekeeper Model**: MobileNetV2 binary classifier for image validation
+### Validation Agent (`app/agents/validation_agent.py`) ⭐ UPDATED (June 2026)
+- **Gatekeeper Model**: CLIP zero-shot classifier (openai/clip-vit-base-patch32)
 - `validate_image(image_bytes)` → `bool` (True = valid knee X-ray, False = OOD)
 - **Purpose**: Reject Out-of-Distribution images before diagnostic CNN
-- **Preprocessing**: Converts to RGB (256×256×3), applies MobileNetV2 preprocessing
-- **Threshold**: < 0.5 = valid, ≥ 0.5 = OOD (rejected)
-- **Singleton Pattern**: Model loaded once at startup
-- **Error Handling**: Gracefully rejects corrupt/invalid files
+- **Method**: Zero-shot image classification with natural language labels
+- **Labels**: ["a knee x-ray", "a black and white logo", "a regular photo of a person", "a scanned document", "a hand x-ray", "a chest x-ray"]
+- **Threshold**: Confidence > 0.5 for "a knee x-ray" label
+- **Advantages**: No training data required, better generalization, semantic understanding
+- **Singleton Pattern**: Pipeline loaded once at startup
+- **GPU Support**: Automatic GPU acceleration when available
+- **Error Handling**: Gracefully rejects corrupt/invalid files with detailed debug logging
 
 ### Recommendation Agent (`app/agents/recommendation_agent.py`)
 - **Parametric RAG** (hallucination-free): Structured parameter table with embeddings
@@ -268,13 +274,16 @@ pytest -v
 ### CNN Model (Diagnostic Agent)
 - Path: `app/ml_assets/cnn_weights/CNN.keras`
 - Input: 256×256 grayscale images (preprocessed)
-- Output: 5-class softmax → KL grade 0-4
-- Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocontrast → Normalize → (1,256,256,1)
-
-### Gatekeeper Model (Validation Agent)
-- Path: `app/ml_assets/cnn_weights/gatekeeper.keras`
-- Architecture: MobileNetV2 (binary classifier)
-- Input: 256×256 RGB images (converted from any format)
+- OuCLIP Gatekeeper (Validation Agent)
+- Model: `openai/clip-vit-base-patch32` (HuggingFace transformers)
+- Architecture: CLIP (Contrastive Language-Image Pre-Training)
+- Method: Zero-shot image classification
+- Input: Raw image bytes (any format, converted to RGB)
+- Output: Confidence scores for candidate labels
+- Labels: 6 candidate labels including "a knee x-ray"
+- Threshold: Confidence > 0.5 for "a knee x-ray" label
+- Purpose: Reject Out-of-Distribution images before diagnostic CNN
+- Advantages: No training required, semantic understanding, robust to edge cases
 - Output: Sigmoid probability → Valid (True) or OOD (False)
 - Threshold: < 0.5 = valid, ≥ 0.5 = rejected
 - Purpose: Reject Out-of-Distribution images before diagnostic CNN

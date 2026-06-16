@@ -29,7 +29,7 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 - **Environment-based Secrets** (SECRET_KEY from .env)
 - **Admin Registration Blocked** (manual creation only)
 - **Profile Change Logging** (audit trail for all updates)
-- **Gatekeeper Validation** (MobileNetV2 image authenticity check)
+- **Gatekeeper Validation** (CLIP zero-shot image authenticity check)
 
 ### 🚨 Security Hardening Applied (March 2026)
 - ✅ SECRET_KEY now loaded from environment variable
@@ -98,8 +98,8 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
                                     │               │
                               ┌─────▼─────┐  ┌──────▼──────┐
                               │ Gatekeeper│  │ Sentence    │
-                              │MobileNetV2│  │ Transformers│
-                              │  (Binary) │  │ + VectorDB  │
+                              │   CLIP    │  │ Transformers│
+                              │(Zero-Shot)│  │ + VectorDB  │
                               └──────┬────┘  └─────────────┘
                                      │
                               ┌──────▼──────┐
@@ -115,7 +115,7 @@ The backend uses a **decoupled multi-agent architecture** where each agent has a
 
 | Agent | Responsibility | Technology |
 |-------|---------------|------------|
-| **Gatekeeper Agent** | Validates image authenticity, rejects OOD/garbage uploads | MobileNetV2 binary classifier |
+| **Gatekeeper Agent** | Validates image authenticity, rejects OOD/garbage uploads | CLIP zero-shot classifier (openai/clip-vit-base-patch32) |
 | **Diagnostic Agent** | Predicts KL severity grade (0–4) from a preprocessed knee X-ray | TensorFlow CNN (`.keras` model) |
 | **Recommendation Agent** | Generates personalised lifestyle advice and exercise video links based on KL grade, pain, and mobility | Sentence-Transformers RAG with cosine similarity retrieval |
 
@@ -159,8 +159,7 @@ knee_oa_backend/
 │   │   └── s3_service.py          # S3 upload/download/presigned URL helpers
 │   └── ml_assets/
 │       ├── cnn_weights/
-│       │   ├── CNN.keras           # Diagnostic CNN model (KL grading)
-│       │   └── gatekeeper.keras    # Gatekeeper MobileNetV2 (image validation)
+│       │   └── CNN.keras           # Diagnostic CNN model (KL grading)
 │       └── vector_store/           # RAG embeddings (auto-generated on first run)
 ├── alembic/
 │   ├── env.py                     # Alembic config (loads all models for autogenerate)
@@ -243,10 +242,11 @@ Raw X-ray bytes (PNG/JPEG)
 ┌─────────────────────────┐
 │  Gatekeeper Agent       │
 │                         │
-│  MobileNetV2 Binary     │
+│  CLIP Zero-Shot         │
 │  (Image Validation)     │
 │                         │
-│  • Converts to RGB      │
+│  • Natural language     │
+│    labels               │
 │  • Checks OOD images    │
 │  • Rejects garbage      │
 └────────────┬────────────┘
@@ -633,7 +633,7 @@ pytest tests/ --cov=app --cov-report=term-missing
 | **Auth** | JWT + bcrypt | Stateless token auth with password hashing |
 | **Storage** | AWS S3 + boto3 | X-ray images and exercise video hosting |
 | **ML Inference** | TensorFlow (CPU) | CNN model for KL grade prediction |
-| **Image Validation** | MobileNetV2 | Gatekeeper model for OOD detection |
+| **Image Validation** | CLIP (openai/clip-vit-base-patch32) | Zero-shot gatekeeper for OOD detection |
 | **Image Processing** | Pillow + NumPy | Grayscale, resize, ROI extraction, normalisation |
 | **RAG Embeddings** | Sentence-Transformers | `all-MiniLM-L6-v2` for semantic retrieval |
 | **Containerisation** | Docker + Compose | Reproducible dev/prod environments |
@@ -649,7 +649,7 @@ pytest tests/ --cov=app --cov-report=term-missing
 - **`datetime.utcnow()` deprecation** — Python 3.12+ warns about this; will be migrated to `datetime.now(UTC)` in a future update.
 - **Pydantic `class Config` deprecation** — will be migrated to `model_config = ConfigDict(...)` in a future update.
 - The CNN model file (`CNN.keras`) is not included in the repository due to size — place it in `app/ml_assets/cnn_weights/`.
-- The Gatekeeper model file (`gatekeeper.keras`) is also not included — place it in the same directory.
+- The CLIP gatekeeper uses the pretrained `openai/clip-vit-base-patch32` model from HuggingFace (automatically downloaded on first use).
 - **NGINX Rate Limiting**: Default is 10 requests/second with burst of 20 — adjust in `nginx.conf` if needed.
 - **Docker Resource Limits**: API container is limited to 3.5 CPU and 14GB memory — adjust in `docker-compose.yml` based on your instance specs.
 

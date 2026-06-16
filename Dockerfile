@@ -18,12 +18,17 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # ===== RUNTIME STAGE =====
 FROM tensorflow/tensorflow:2.15.0-gpu as runtime
 
+# ADDED TF_XLA_FLAGS HERE TO BYPASS THE PTXAS NVIDIA COMPILER BUG
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
-    PYTHONPATH="/code"
+    PYTHONPATH="/code" \
+    HF_HOME=/tmp/huggingface \
+    TF_XLA_FLAGS="--tf_xla_auto_jit=-1"
 
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+
+RUN mkdir -p /tmp/huggingface && chown -R appuser:appgroup /tmp/huggingface
 
 RUN apt-get update && apt-get install -y \
     libpq5 \
@@ -42,14 +47,12 @@ COPY --chown=appuser:appgroup migrations/ ./migrations/
 COPY --chown=appuser:appgroup static/ ./static/
 COPY --chown=appuser:appgroup download/ ./download/
 
-
 RUN chown -R appuser:appgroup /code
 
 USER appuser
 
 EXPOSE 8000
 
-# Updated to use urllib.request to avoid dependency issues
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" || exit 1
 
