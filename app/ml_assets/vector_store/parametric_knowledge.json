@@ -15,7 +15,10 @@
       "recent acute knee injury"
     ],
     "evidence_level": "High",
-    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA"
+    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA",
+    "kinesiophobia_req": "high",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_002",
@@ -33,7 +36,10 @@
       "unmanaged hip osteoarthritis"
     ],
     "evidence_level": "High",
-    "source": "ACR Guidelines for Osteoarthritis"
+    "source": "ACR Guidelines for Osteoarthritis",
+    "kinesiophobia_req": "moderate",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_003",
@@ -51,7 +57,10 @@
       "recent hamstring strain"
     ],
     "evidence_level": "Moderate",
-    "source": "Clinical Practice Guidelines for Physical Therapy"
+    "source": "Clinical Practice Guidelines for Physical Therapy",
+    "kinesiophobia_req": "high",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_004",
@@ -69,7 +78,10 @@
       "inability to achieve 90-degree knee flexion"
     ],
     "evidence_level": "High",
-    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA"
+    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_005",
@@ -88,7 +100,10 @@
       "severe cardiovascular disease"
     ],
     "evidence_level": "High",
-    "source": "Aquatic Physical Therapy Section Guidelines"
+    "source": "Aquatic Physical Therapy Section Guidelines",
+    "kinesiophobia_req": "moderate",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_006",
@@ -106,7 +121,10 @@
       "recent surgical incision instability"
     ],
     "evidence_level": "Moderate",
-    "source": "Standard Orthopedic Rehabilitation Protocols"
+    "source": "Standard Orthopedic Rehabilitation Protocols",
+    "kinesiophobia_req": "high",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_007",
@@ -124,7 +142,10 @@
       "broken or irritated skin at application site"
     ],
     "evidence_level": "High",
-    "source": "ACR Guidelines for Osteoarthritis"
+    "source": "ACR Guidelines for Osteoarthritis",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": ["oral NSAIDs"]
   },
   {
     "id": "rec_008",
@@ -143,7 +164,10 @@
       "cardiovascular disease"
     ],
     "evidence_level": "High",
-    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA"
+    "source": "OARSI Guidelines for Non-Surgical Management of Knee OA",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": ["blood thinners", "other NSAIDs", "corticosteroids"]
   },
   {
     "id": "rec_009",
@@ -161,7 +185,10 @@
       "history of specific kidney stones"
     ],
     "evidence_level": "Moderate",
-    "source": "Clinical Guidelines on Bone Health"
+    "source": "Clinical Guidelines on Bone Health",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": ["thiazide diuretics"]
   },
   {
     "id": "rec_010",
@@ -179,7 +206,10 @@
       "interactions with blood thinners (Warfarin)"
     ],
     "evidence_level": "Low to Moderate",
-    "source": "Osteoarthritis Research Society International (OARSI)"
+    "source": "Osteoarthritis Research Society International (OARSI)",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": ["Warfarin", "anticoagulants"]
   },
   {
     "id": "rec_011",
@@ -198,7 +228,10 @@
       "fish/seafood allergy"
     ],
     "evidence_level": "Moderate",
-    "source": "Journal of Rheumatology"
+    "source": "Journal of Rheumatology",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": ["anticoagulants", "antiplatelets"]
   },
   {
     "id": "rec_012",
@@ -216,7 +249,10 @@
       "severe malnutrition"
     ],
     "evidence_level": "High",
-    "source": "American College of Rheumatology (ACR) Guidelines"
+    "source": "American College of Rheumatology (ACR) Guidelines",
+    "kinesiophobia_req": "moderate",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_013",
@@ -235,7 +271,10 @@
       "cold urticaria"
     ],
     "evidence_level": "Moderate",
-    "source": "Arthritis Foundation Guidelines"
+    "source": "Arthritis Foundation Guidelines",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_014",
@@ -254,7 +293,10 @@
       "open wounds"
     ],
     "evidence_level": "Moderate",
-    "source": "Arthritis Foundation Guidelines"
+    "source": "Arthritis Foundation Guidelines",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_015",
@@ -272,7 +314,10 @@
       "skin contact allergies to brace materials"
     ],
     "evidence_level": "Moderate",
-    "source": "OARSI Guidelines"
+    "source": "OARSI Guidelines",
+    "kinesiophobia_req": "moderate",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_016",
@@ -289,7 +334,10 @@
       "custom orthotics already prescribed for other conditions (consult podiatrist)"
     ],
     "evidence_level": "Moderate",
-    "source": "ACR Guidelines"
+    "source": "ACR Guidelines",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_017",
@@ -306,7 +354,10 @@
       "severe shoulder or wrist issues on the opposing side"
     ],
     "evidence_level": "High",
-    "source": "American College of Rheumatology (ACR)"
+    "source": "American College of Rheumatology (ACR)",
+    "kinesiophobia_req": "high",
+    "contraindicated_occupations": ["heavy_manual"],
+    "medication_conflicts": []
   },
   {
     "id": "rec_018",
@@ -324,7 +375,10 @@
       "acute trochanteric bursitis"
     ],
     "evidence_level": "Moderate",
-    "source": "Journal of Orthopaedic & Sports Physical Therapy"
+    "source": "Journal of Orthopaedic & Sports Physical Therapy",
+    "kinesiophobia_req": "moderate",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_019",
@@ -342,7 +396,10 @@
       "pain exceeding 6/10 during the movement"
     ],
     "evidence_level": "High",
-    "source": "Clinical Practice Guidelines for Physical Therapy"
+    "source": "Clinical Practice Guidelines for Physical Therapy",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_020",
@@ -360,7 +417,10 @@
       "frequent falls"
     ],
     "evidence_level": "High",
-    "source": "ACR Guidelines for Osteoarthritis"
+    "source": "ACR Guidelines for Osteoarthritis",
+    "kinesiophobia_req": "high",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_021",
@@ -379,7 +439,10 @@
       "use over broken skin or areas of numbness"
     ],
     "evidence_level": "Moderate",
-    "source": "OARSI Guidelines"
+    "source": "OARSI Guidelines",
+    "kinesiophobia_req": "low",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   },
   {
     "id": "rec_022",
@@ -397,6 +460,9 @@
       "plantar fasciitis acute phase"
     ],
     "evidence_level": "Moderate",
-    "source": "Standard Orthopedic Rehabilitation Protocols"
+    "source": "Standard Orthopedic Rehabilitation Protocols",
+    "kinesiophobia_req": "moderate",
+    "contraindicated_occupations": [],
+    "medication_conflicts": []
   }
 ]

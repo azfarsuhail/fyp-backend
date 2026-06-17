@@ -1,21 +1,27 @@
 # Validation Agent (Gatekeeper) - Implementation Guide
 
-**Date:** April 18, 2026  
+**Date:** June 16, 2026 (Updated from April 18, 2026)  
 **Status:** ✅ Complete  
-**Model:** MobileNetV2 Binary Classifier  
+**Model:** CLIP Zero-Shot Classifier (openai/clip-vit-base-patch32)  
 **Purpose:** Reject Out-of-Distribution (OOD) images before diagnostic pipeline
 
 ---
 
 ## 📋 Overview
 
-The **Validation Agent** (also called "Gatekeeper") is a binary classification model that validates whether an uploaded image is a valid knee X-ray before it reaches the main diagnostic CNN.
+The **Validation Agent** (also called "Gatekeeper") is a zero-shot image classification model that validates whether an uploaded image is a valid knee X-ray before it reaches the main diagnostic CNN.
 
 **Why it's needed:**
 - Prevents garbage uploads (random photos, documents, etc.)
 - Blocks wrong body part images (hands, feet, hips, etc.)
 - Rejects corrupt or malformed files
 - Protects the diagnostic CNN from OOD inputs that could cause false predictions
+
+**Why CLIP instead of MobileNetV2:**
+- No training data required (uses pretrained model)
+- Better generalization to diverse OOD images
+- Semantic understanding of "knee x-ray" concept
+- More robust to edge cases and novel OOD types
 
 ---
 
@@ -25,16 +31,18 @@ The **Validation Agent** (also called "Gatekeeper") is a binary classification m
 `app/agents/validation_agent.py`
 
 ### Model Details
-- **Architecture:** MobileNetV2 (pretrained, fine-tuned for binary classification)
+- **Architecture:** CLIP (Contrastive Language-Image Pre-Training)
+- **Model:** openai/clip-vit-base-patch32 (from HuggingFace)
+- **Method:** Zero-shot image classification
 - **Input:** Raw image bytes (any format: JPEG, PNG, etc.)
-- **Output:** Single probability (sigmoid activation)
-- **Threshold:** 0.5 (< 0.5 = valid, ≥ 0.5 = OOD)
-- **Input Size:** 256×256×3 (RGB)
+- **Output:** Confidence scores for candidate labels
+- **Threshold:** Confidence > 0.5 for "a knee x-ray" label
+- **Candidate Labels:** 6 labels including "a knee x-ray", "a hand x-ray", "a chest x-ray", etc.
 
 ### Design Pattern: Singleton
-- Model loaded **once** at module initialization
+- Pipeline loaded **once** at module initialization
 - Reused across all requests for efficiency
-- No repeated disk I/O or model loading overhead
+- Automatic GPU acceleration when available, falls back to CPU
 
 ---
 
@@ -45,7 +53,16 @@ The **Validation Agent** (also called "Gatekeeper") is a binary classification m
 ```python
 class ValidationAgent:
     _instance: Optional["ValidationAgent"] = None
-    _model: Optional[tf.keras.Model] = None
+    _pipeline: Optional[pipeline] = None
+    
+    LABELS = [
+        "a knee x-ray",
+        "a black and white logo",
+        "a regular photo of a person",
+        "a scanned document",
+        "a hand x-ray",
+        "a chest x-ray",
+    ]
     
     def __new__(cls):
         """Singleton pattern - ensure only one instance exists."""
@@ -54,27 +71,33 @@ class ValidationAgent:
         return cls._instance
     
     def __init__(self):
-        """Initialize or reuse the loaded model."""
-        if ValidationAgent._model is None:
+        """Initialize or reuse the loaded pipeline."""
+        if ValidationAgent._pipeline is None:
             self._load_model()
     
     def _load_model(self):
-        """Load the Gatekeeper model from disk (called once)."""
-        model_path = "app/ml_assets/cnn_weights/gatekeeper.keras"
-        ValidationAgent._model = tf.keras.models.load_model(model_path)
+        """Load the CLIP zero-shot classification pipeline."""
+        device = 0 if torch.cuda.is_available() else -1
+        ValidationAgent._pipeline = pipeline(
+            "zero-shot-image-classification",
+            model="openai/clip-vit-base-patch32",
+            device=device
+        )
 ```
 
 **Key Points:**
-- Model path: `app/ml_assets/cnn_weights/gatekeeper.keras`
+- Uses HuggingFace transformers pipeline
+- Automatically detects and uses GPU if available
+- Model downloaded from HuggingFace on first use (cached in `/tmp/huggingface`)
 - Loaded on first initialization
 - Shared across all requests
 - Raises `RuntimeError` if loading fails
 
 ---
 
-### 2. Image Preprocessing (CRITICAL)
+### 2. Image Preprocessing (SIMPLIFIED)
 
-**IMPORTANT:** The Gatekeeper uses **MobileNetV2** which requires **3-channel RGB**, while the main Diagnostic CNN uses **1-channel Grayscale**.
+**IMPORTANT:** CLIP handles image preprocessing internally, so we only need to load and convert to RGB.
 
 ```python
 def validate_image(self, image_bytes: bytes) -> bool:
@@ -83,26 +106,21 @@ def validate_image(self, image_bytes: bytes) -> bool:
         # Step 1: Load image from bytes using PIL
         image = Image.open(io.BytesIO(image_bytes))
         
-        # Step 2: Convert to RGB (MobileNetV2 requires 3 channels)
+        # Step 2: Convert to RGB (CLIP expects RGB)
         image = image.convert("RGB")
         
-        # Step 3: Resize to model input size (256, 256)
-        image = image.resize((256, 256), Image.Resampling.LANCZOS)
+        # CLIP pipeline handles resizing and normalization internally
         
-        # Step 4: Convert to numpy array
-        image_array = np.array(image, dtype=np.float32)
+        # Step 3: Run zero-shot classification
+        results = ValidationAgent._pipeline(image, candidate_labels=self.LABELS)
         
-        # Step 5: Add batch dimension → (1, 256, 256, 3)
-        image_array = np.expand_dims(image_array, axis=0)
+        # Step 4: Get top prediction
+        best_guess = results[0]['label']
+        confidence = results[0]['score']
         
-        # Step 6: Apply MobileNetV2 preprocessing (scale to [-1, 1])
-        image_array = tf.keras.applications.mobilenet_v2.preprocess_input(image_array)
-        
-        # Step 7: Run inference
-        prediction = ValidationAgent._model.predict(image_array, verbose=0)[0][0]
-        
-        # Step 8: Apply threshold
-        return prediction < 0.5
+        # Step 5: Apply threshold
+        is_valid = best_guess == "a knee x-ray" and confidence > 0.5
+        return is_valid
         
     except Exception as e:
         # Any error (corrupt file, invalid format, etc.) → reject
@@ -114,21 +132,22 @@ def validate_image(self, image_bytes: bytes) -> bool:
 | Step | Operation | Purpose |
 |------|-----------|---------|
 | 1 | `PIL.Image.open(io.BytesIO(image_bytes))` | Load image from raw bytes |
-| 2 | `.convert("RGB")` | Convert to 3-channel RGB (critical!) |
-| 3 | `.resize((256, 256), LANCZOS)` | Resize to model input size |
-| 4 | `np.array(..., dtype=np.float32)` | Convert to numpy array |
-| 5 | `np.expand_dims(..., axis=0)` | Add batch dimension |
-| 6 | `mobilenet_v2.preprocess_input()` | Apply MobileNetV2-specific scaling |
-| 7 | `model.predict()` | Run inference |
-| 8 | `prediction < 0.5` | Apply threshold |
+| 2 | `.convert("RGB")` | Convert to 3-channel RGB |
+| 3 | `pipeline(image, candidate_labels=LABELS)` | CLIP handles preprocessing + inference |
+| 4 | `results[0]['label']` | Get top predicted label |
+| 5 | `results[0]['score']` | Get confidence score |
+| 6 | `best_guess == "a knee x-ray" and confidence > 0.5` | Apply threshold |
 
 ---
 
 ### 3. Inference & Return Logic
 
 ```python
-# Sigmoid output: [0.0, 1.0]
-if prediction < 0.5:
+# Zero-shot classification output: confidence scores for each label
+best_guess = results[0]['label']  # e.g., "a knee x-ray"
+confidence = results[0]['score']  # e.g., 0.87
+
+if best_guess == "a knee x-ray" and confidence > 0.5:
     return True  # Valid knee X-ray → proceed to diagnostic CNN
 else:
     return False  # OOD/invalid → reject
@@ -138,6 +157,7 @@ else:
 - Wrapped in `try/except` block
 - Any exception (corrupt file, invalid format, parsing error) → returns `False`
 - Gracefully rejects problematic images without crashing
+- Detailed debug logging for troubleshooting
 
 ---
 
@@ -280,16 +300,19 @@ HTTP Status: `400 Bad Request`
 ## 📊 Performance Considerations
 
 ### Model Loading
-- **Cost:** ~50-100ms (first request only)
+- **Cost:** ~2-5 seconds (first request only, downloads from HuggingFace)
 - **Strategy:** Singleton pattern avoids repeated loading
+- **Caching:** Model cached in `/tmp/huggingface` directory
 
 ### Inference Time
-- **Per Image:** ~10-30ms (on CPU)
-- **Impact:** Minimal added latency to pipeline
+- **Per Image:** ~50-150ms (on GPU), ~200-500ms (on CPU)
+- **Impact:** Moderate added latency to pipeline
+- **Optimization:** GPU acceleration significantly improves performance
 
 ### Memory Usage
-- **Model Size:** ~15-20MB (MobileNetV2)
+- **Model Size:** ~600MB (CLIP ViT-B/32)
 - **Strategy:** Shared across all requests
+- **GPU Memory:** ~1-2GB VRAM when using GPU
 
 ---
 
@@ -323,14 +346,14 @@ if not validate_image(image_bytes):
 
 ## 🚀 Deployment Checklist
 
-- [ ] Gatekeeper model (`gatekeeper.keras`) exists in `app/ml_assets/cnn_weights/`
-- [ ] Model was trained on knee X-rays (positive) and OOD images (negative)
-- [ ] Model architecture matches MobileNetV2 input requirements (256×256×3)
-- [ ] Model threshold validated on test set (aim for >95% accuracy on OOD detection)
-- [ ] Singleton pattern tested (model loaded only once)
+- [ ] HuggingFace cache directory writable (`/tmp/huggingface`)
+- [ ] Internet access available for first-time model download (or model pre-cached)
+- [ ] GPU drivers installed (optional, but recommended for performance)
+- [ ] Singleton pattern tested (pipeline loaded only once)
 - [ ] Error handling tested (corrupt files, invalid formats)
 - [ ] Integration tested with full diagnostic pipeline
-- [ ] Performance tested (inference time <50ms per image)
+- [ ] Performance tested (inference time <200ms per image on GPU)
+- [ ] Confidence threshold validated on test set (aim for >95% accuracy on OOD detection)
 
 ---
 
@@ -345,16 +368,19 @@ if not validate_image(image_bytes):
 ## 🔍 Troubleshooting
 
 ### Issue: Model loading fails at startup
-**Solution:** Check that `gatekeeper.keras` exists in the correct path and is not corrupted.
+**Solution:** Check internet connection for HuggingFace download. Verify `/tmp/huggingface` directory is writable. Check Docker logs for detailed error messages.
 
 ### Issue: All images rejected (even valid ones)
-**Solution:** Verify model threshold and check if model was trained correctly. May need to adjust threshold.
+**Solution:** Check confidence scores in debug logs. May need to lower threshold from 0.5 to 0.4. Verify candidate labels are appropriate.
 
 ### Issue: OOD images not being rejected
-**Solution:** Check model accuracy on validation set. May need retraining with more diverse OOD examples.
+**Solution:** Check confidence scores in debug logs. May need to raise threshold from 0.5 to 0.6. Consider adding more specific candidate labels.
 
 ### Issue: Slow inference time
-**Solution:** Consider using GPU acceleration or model quantization.
+**Solution:** Ensure GPU is available and being used (check logs for "Loading CLIP gatekeeper on device: GPU"). Consider using a smaller CLIP model variant.
+
+### Issue: HuggingFace cache permission errors
+**Solution:** Ensure `HF_HOME=/tmp/huggingface` is set in Dockerfile and directory has correct permissions (`chown -R appuser:appgroup /tmp/huggingface`).
 
 ---
 

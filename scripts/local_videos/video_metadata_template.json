@@ -1,0 +1,38 @@
+{
+  "description": "Template for bulk video upload metadata. Each entry must include a 'filename' that exists in the same directory as this file.",
+  "entries": [
+    {
+      "filename": "quadriceps-set-001.mp4",
+      "title": "Quadriceps Sets (Isometric Tightening)",
+      "description": "Sit with your leg straight and tighten the thigh muscle, pressing the back of the knee downward.",
+      "kl_grade_min": 0,
+      "kl_grade_max": 3,
+      "category": "strengthening",
+      "difficulty": "beginner",
+      "duration_seconds": 300,
+      "thumbnail_url": "https://example.com/thumbnails/quads-set.jpg"
+    },
+    {
+      "filename": "straight-leg-raise-001.mp4",
+      "title": "Straight Leg Raises",
+      "description": "Lie on your back, bend one knee, and keep the other straight. Slowly lift the straight leg about 12 inches off the floor.",
+      "kl_grade_min": 1,
+      "kl_grade_max": 2,
+      "category": "strengthening",
+      "difficulty": "beginner",
+      "duration_seconds": 600,
+      "thumbnail_url": null
+    },
+    {
+      "filename": "heel-slide-001.mp4",
+      "title": "Heel Slides",
+      "description": "Lie on your back or sit, and slowly slide your heel toward your buttocks to bend the knee, then slide it back out.",
+      "kl_grade_min": 0,
+      "kl_grade_max": 4,
+      "category": "flexibility",
+      "difficulty": "beginner",
+      "duration_seconds": 450,
+      "thumbnail_url": null
+    }
+  ]
+}

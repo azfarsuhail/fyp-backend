@@ -33,7 +33,18 @@ def generate_embeddings(knowledge_base: List[Dict[str, Any]]) -> np.ndarray:
                f"Intensity: {item['intensity']}. " \
                f"KL grades: {item['kl_grade_min']}-{item['kl_grade_max']}. " \
                f"Pain threshold: {item['pain_threshold']}. " \
-               f"Mobility required: {item['mobility_req']}."
+               f"Mobility required: {item['mobility_req']}. "
+        
+        # Include new constraint fields (April 2026)
+        if item.get('kinesiophobia_req'):
+            text += f"Kinesiophobia required: {item['kinesiophobia_req']}. "
+        if item.get('contraindicated_occupations'):
+            occs = ', '.join(item['contraindicated_occupations'])
+            text += f"Contraindicated occupations: {occs}. "
+        if item.get('medication_conflicts'):
+            meds = ', '.join(item['medication_conflicts'])
+            text += f"Medication conflicts: {meds}. "
+        
         texts.append(text)
     
     # Generate embeddings
@@ -49,9 +60,17 @@ def save_embeddings(embeddings: np.ndarray, output_path: str):
     print(f"✅ Successfully saved {embeddings.shape[0]} embeddings with dimension {embeddings.shape[1]}")
 
 def main():
-    # File paths
-    knowledge_base_path = 'app/ml_assets/vector_store/parametric_knowledge.json'
-    embeddings_path = 'app/ml_assets/vector_store/parametric_embeddings.npy'
+    # Get the script's directory to construct absolute paths
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)  # Go up from scripts/ to project root
+    
+    # File paths (absolute)
+    knowledge_base_path = os.path.join(
+        project_root, 'app', 'ml_assets', 'vector_store', 'parametric_knowledge.json'
+    )
+    embeddings_path = os.path.join(
+        project_root, 'app', 'ml_assets', 'vector_store', 'parametric_embeddings.npy'
+    )
     
     # Create directory if it doesn't exist
     os.makedirs(os.path.dirname(embeddings_path), exist_ok=True)
