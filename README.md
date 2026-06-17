@@ -466,6 +466,13 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 |--------|----------|-------------|
 | `GET` | `/api/v1/admin/analytics/dashboard` | Dashboard statistics (Admin only) |
 
+### Mobile Sync
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/mobile/sync/data` | Sync full user data (images, reports, history) |
+| `GET` | `/api/v1/mobile/sync/summary` | Get sync summary (counts only) |
+| `POST` | `/api/v1/mobile/sync/export` | Export user data to JSON file |
+
 ---
 
 ## 🚀 Getting Started

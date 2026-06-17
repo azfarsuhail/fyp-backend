@@ -75,15 +75,6 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
-# ── Session Setup ────────────────────────────────────────────────────────────
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_app():
-    """Set up test app overrides once per session."""
-    yield
-    # Clean up overrides after all tests
-    app.dependency_overrides.clear()
-
-
 # ── Core Database Fixtures ───────────────────────────────────────────────────
 
 @pytest.fixture(scope="function")
