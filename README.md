@@ -10,7 +10,7 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 
 | Metric | Status |
 |--------|--------|
-| **Tests** | ✅ 105/105 Passing (100%) |
+| **Tests** | ✅ 115/115 Passing (100%) |
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened |
 | **Production Ready** | ✅ Yes |
@@ -24,6 +24,7 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 - **RBAC** (Patient, GP, Admin) with role-based endpoint access
 - **Rate Limiting** (5 login attempts per minute per IP)
 - **Password Validation** (8+ chars, uppercase, lowercase, numbers, special chars)
+- **Password Reset Flow** (secure JWT-based forgot/reset password with email)
 - **Security Headers** (X-Frame-Options, CSP, X-XSS-Protection, etc.)
 - **CORS Configuration** (configurable allowed origins)
 - **Environment-based Secrets** (SECRET_KEY from .env)
@@ -133,7 +134,7 @@ knee_oa_backend/
 │   │   ├── diagnostic_agent.py    # CNN model loader + KL grade inference
 │   │   └── recommendation_agent.py# RAG pipeline + exercise video retrieval
 │   ├── api/v1/
-│   │   ├── auth.py                # POST /register, POST /login
+│   │   ├── auth.py                # POST /register, POST /login, POST /forgot-password, POST /reset-password
 │   │   ├── upload.py              # POST / (X-ray upload to S3)
 │   │   ├── diagnostic.py          # POST /analyze, GET /reports, GET /reports/{id}
 │   │   ├── recommendation.py      # GET / (standalone recommendations)
@@ -143,18 +144,19 @@ knee_oa_backend/
 │   ├── core/
 │   │   ├── config.py              # SQLAlchemy engine, session, Base (Neon DB)
 │   │   ├── dependencies.py        # get_db, get_current_user, RoleChecker
-│   │   └── security.py            # bcrypt hashing, JWT creation/validation
+│   │   └── security.py            # bcrypt hashing, JWT creation/validation, password reset tokens
 │   ├── models/
 │   │   ├── user.py                # USER table
 │   │   ├── image.py               # IMAGE table (uploaded X-rays)
 │   │   ├── report.py              # REPORT table (diagnosis + recommendations)
 │   │   └── library.py             # EXERCISE_VIDEO table
 │   ├── schemas/
-│   │   ├── user_schema.py         # UserCreate, UserOut, Token
+│   │   ├── user_schema.py         # UserCreate, UserOut, Token, ForgotPasswordRequest, ResetPasswordRequest
 │   │   ├── image_schema.py        # ImageUploadResponse, ImageOut
 │   │   ├── report_schema.py       # DiagnosticRequest, ReportOut, RecommendationResult
 │   │   └── profile_schema.py      # ProfileUpdate, ProfileOut, PasswordChange
 │   ├── services/
+│   │   ├── email.py               # Email service (Resend integration, password reset emails)
 │   │   ├── image_processor.py     # Grayscale → ROI → Resize → CLAHE → Normalise
 │   │   └── s3_service.py          # S3 upload/download/presigned URL helpers
 │   └── ml_assets/
@@ -173,9 +175,10 @@ knee_oa_backend/
 │   ├── test_recommendation.py     # 9 tests — standalone recommendations
 │   ├── test_profile.py            # 26 tests — profile CRUD + password + **logging & history**
 │   ├── test_video.py              # 19 tests — video library CRUD + RBAC
-│   └── test_health.py             # 2 tests — root + health check
+│   ├── test_health.py             # 2 tests — root + health check
+│   └── test_password_reset.py     # 10 tests — forgot/reset password flow + token validation
 │
-│ **Total: 105 tests, ALL PASSING**
+│ **Total: 115 tests, ALL PASSING**
 ├── Dockerfile                     # Python 3.10-slim, ML-optimised
 ├── docker-compose.yml             # Dev setup with hot-reload volume mount
 ├── requirements.txt               # All dependencies with version pins

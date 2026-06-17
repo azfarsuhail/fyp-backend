@@ -8,7 +8,8 @@ load_dotenv()
 
 # Configuration - Load from environment variables
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-APP_URL = os.getenv("APP_URL", "http://localhost:8000")
+# Default to production domain - override with APP_URL env var for local dev
+APP_URL = os.getenv("APP_URL", "https://kneeoa.online")
 
 if not RESEND_API_KEY:
     print("WARNING: RESEND_API_KEY not set! Email functionality will be disabled.")

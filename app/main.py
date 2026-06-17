@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 import os
 from contextlib import asynccontextmanager
 
@@ -74,3 +75,32 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "version": "1.0.0"}
+
+
+# ── Android App Links Verification ────────────────────────────────────────────
+# This endpoint is required for Android App Links to work with password reset deep linking
+@app.get("/.well-known/assetlinks.json")
+def android_assetlinks():
+    """
+    Serve Android App Links verification file.
+    
+    This allows the Android app to receive deep links for password reset URLs.
+    The app can then handle URLs like: https://kneeoa.online/reset-password?token={token}
+    """
+    assetlinks_data = [
+        {
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": "com.azfarsuhail.kneeoaapp",
+                "sha256_cert_fingerprints": [
+                    "93:1A:94:70:8D:C3:EB:8B:67:64:E9:64:54:34:28:1E:7D:66:7A:60:27:8E:1E:D4:1E:0E:5E:FA:1C:79:AE:A5"
+                ]
+            }
+        }
+    ]
+    
+    return Response(
+        content=str(assetlinks_data).replace("'", '"'),
+        media_type="application/json"
+    )

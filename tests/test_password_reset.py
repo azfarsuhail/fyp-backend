@@ -48,7 +48,7 @@ class TestPasswordResetEndpoints:
         # Override the first() method to return our mock user
         mock_db_session.query.return_value.filter.return_value.first = MagicMock(return_value=mock_user)
         
-        # Mock email sending function
+        # Mock email sending function - patch where it's used (in auth module)
         with patch("app.api.v1.auth.send_reset_password_email") as send_email_mock:
             response = test_client.post(
                 "/api/v1/auth/forgot-password",

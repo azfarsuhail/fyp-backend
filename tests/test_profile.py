@@ -1,8 +1,9 @@
 """
-Tests for /api/v1/profile — Profile Management
+Tests for /api/v1/profile - Profile Management
 """
 
 import pytest
+import uuid
 from app.models.profile_log import ProfileLog
 
 
@@ -13,7 +14,8 @@ class TestGetProfile:
         response = client.get("/api/v1/profile/me", headers=patient_headers)
         assert response.status_code == 200
         data = response.json()
-        assert data["email"] == "patient@test.com"
+        assert data["email"].startswith("patient_")
+        assert data["email"].endswith("@test.com")
         assert data["full_name"] == "Test Patient"
         assert data["role"] == "patient"
         assert "user_id" in data
@@ -45,37 +47,43 @@ class TestUpdateProfile:
         )
         assert response.status_code == 200
         assert response.json()["full_name"] == "Updated Name"
-        assert response.json()["email"] == "patient@test.com"  # Unchanged
+        email = response.json()["email"]
+        assert email.startswith("patient_")
+        assert email.endswith("@test.com")  # Unchanged
 
     def test_update_email(self, client, patient_headers, seed_patient):
+        unique_email = f"newemail_{uuid.uuid4().hex[:8]}@test.com"
         response = client.put(
             "/api/v1/profile/me",
-            json={"email": "newemail@test.com"},
+            json={"email": unique_email},
             headers=patient_headers,
         )
         assert response.status_code == 200
-        assert response.json()["email"] == "newemail@test.com"
+        assert response.json()["email"] == unique_email
 
     def test_update_email_duplicate(self, client, patient_headers, seed_patient, seed_gp):
         """Should reject if the new email is already taken by another user."""
+        # Get the actual email of seed_gp
+        gp_email = seed_gp.email
         response = client.put(
             "/api/v1/profile/me",
-            json={"email": "gp@test.com"},  # Already taken by seed_gp
+            json={"email": gp_email},  # Already taken by seed_gp
             headers=patient_headers,
         )
         assert response.status_code == 400
         assert response.json()["detail"] == "Email already in use"
 
     def test_update_both_fields(self, client, patient_headers, seed_patient):
+        unique_email = f"brand_new_{uuid.uuid4().hex[:8]}@test.com"
         response = client.put(
             "/api/v1/profile/me",
-            json={"full_name": "New Name", "email": "brand_new@test.com"},
+            json={"full_name": "New Name", "email": unique_email},
             headers=patient_headers,
         )
         assert response.status_code == 200
         data = response.json()
         assert data["full_name"] == "New Name"
-        assert data["email"] == "brand_new@test.com"
+        assert data["email"] == unique_email
 
     def test_update_no_auth(self, client):
         response = client.put("/api/v1/profile/me", json={"full_name": "Hacker"})
@@ -108,9 +116,9 @@ class TestChangePassword:
         assert response.status_code == 200
         assert response.json()["message"] == "Password updated successfully"
 
-        # Verify new password works for login
+        # Verify new password works for login (use actual patient email from fixture)
         login_resp = client.post("/api/v1/auth/login", data={
-            "username": "patient@test.com",
+            "username": seed_patient.email,
             "password": "NewPass456!@#",
         })
         assert login_resp.status_code == 200
@@ -172,7 +180,8 @@ class TestProfileHistory:
         )
         db.add(log1)
         db.add(log2)
-        db.commit()
+        # Use flush() instead of commit() to preserve parallel test isolation
+        db.flush()
 
         response = client.get("/api/v1/profile/me/history", headers=patient_headers)
         assert response.status_code == 200
@@ -206,7 +215,8 @@ class TestProfileHistory:
             new_value="4",
         )
         db.add(log)
-        db.commit()
+        db.commit()  # Commit within transaction so API can see it
+        db.refresh(log)  # Ensure log has ID
 
         # GP access
         gp_resp = client.get(f"/api/v1/profile/patients/{seed_patient.user_id}/history", headers=gp_headers)
@@ -366,21 +376,23 @@ class TestProfileLogging:
 
     def test_log_email_change(self, client, patient_headers, seed_patient, db):
         """Changing email should create a log entry."""
+        old_email = seed_patient.email
+        new_email = f"newemail_{uuid.uuid4().hex[:8]}@test.com"  # Guaranteed Unique
         response = client.put(
             "/api/v1/profile/me",
-            json={"email": "newemail@test.com"},
+            json={"email": new_email},
             headers=patient_headers,
         )
         assert response.status_code == 200
-        assert response.json()["email"] == "newemail@test.com"
+        assert response.json()["email"] == new_email
 
         log = db.query(ProfileLog).filter(
             ProfileLog.user_id == seed_patient.user_id,
             ProfileLog.field_name == "email"
         ).first()
         assert log is not None
-        assert log.old_value == "patient@test.com"
-        assert log.new_value == "newemail@test.com"
+        assert log.old_value == old_email
+        assert log.new_value == new_email
 
     def test_update_with_all_fields(self, client, patient_headers, seed_patient, db):
         """Updating all patient context fields should log each one."""

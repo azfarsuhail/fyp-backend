@@ -158,7 +158,7 @@ The code gracefully handles missing `RESEND_API_KEY`:
 
 | File | Purpose |
 |------|---------|
-| `app/utils/email.py` | Email template and Resend integration |
+| `app/services/email.py` | Email service with Resend integration |
 | `app/core/security.py` | Token creation and verification functions |
 | `app/schemas/user_schema.py` | Pydantic models for requests/responses |
 | `app/api/v1/auth.py` | Endpoint implementations |

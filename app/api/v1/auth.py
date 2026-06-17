@@ -9,7 +9,7 @@ from app.core.security import get_password_hash, verify_password, create_access_
 from app.core.security_middleware import require_strong_password
 from app.core.dependencies import get_db
 from app.models.user import User
-from app.utils.email import send_reset_password_email
+from app.services.email import send_reset_password_email
 
 router = APIRouter()
 

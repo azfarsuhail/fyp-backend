@@ -44,7 +44,7 @@ class TestSyncDataEndpoint:
         
         # Check user data
         assert data["user"]["user_id"] == seed_patient.user_id
-        assert data["user"]["email"] == "patient@test.com"
+        assert data["user"]["email"] == seed_patient.email
         assert data["user"]["full_name"] == "Test Patient"
         
         # Check images
@@ -149,7 +149,7 @@ class TestMobileSyncService:
         
         # Check user data
         assert user_data["user"]["user_id"] == seed_patient.user_id
-        assert user_data["user"]["email"] == "patient@test.com"
+        assert user_data["user"]["email"] == seed_patient.email
         
         # Check images
         assert len(user_data["images"]) >= 1
@@ -325,4 +325,4 @@ class TestMobileSyncRBAC:
         
         # Should only contain patient's data
         assert data["user"]["user_id"] == seed_patient.user_id
-        assert data["user"]["email"] == "patient@test.com"
+        assert data["user"]["email"] == seed_patient.email

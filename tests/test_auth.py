@@ -25,7 +25,7 @@ class TestRegister:
 
     def test_register_duplicate_email(self, client, seed_patient):
         response = client.post("/api/v1/auth/register", json={
-            "email": "patient@test.com",  # Already exists via seed_patient
+            "email": seed_patient.email,  # Already exists
             "password": "SecurePass123!@#",
             "full_name": "Duplicate User",
             "role": "patient",
@@ -74,7 +74,7 @@ class TestLogin:
 
     def test_login_success(self, client, seed_patient):
         response = client.post("/api/v1/auth/login", data={
-            "username": "patient@test.com",
+            "username": seed_patient.email,
             "password": "SecurePass123!@#",
         })
         assert response.status_code == 200
@@ -84,7 +84,7 @@ class TestLogin:
 
     def test_login_wrong_password(self, client, seed_patient):
         response = client.post("/api/v1/auth/login", data={
-            "username": "patient@test.com",
+            "username": seed_patient.email,
             "password": "wrongpassword",
         })
         assert response.status_code == 401
@@ -108,7 +108,7 @@ class TestLogin:
         assert seed_patient.last_login is None
 
         client.post("/api/v1/auth/login", data={
-            "username": "patient@test.com",
+            "username": seed_patient.email,
             "password": "SecurePass123!@#",
         })
 

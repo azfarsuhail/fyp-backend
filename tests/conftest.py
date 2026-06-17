@@ -1,13 +1,14 @@
 """
 Test Configuration & Fixtures
 ------------------------------
-Sets up an in-memory SQLite database for testing so we never touch Neon DB.
-Provides reusable fixtures for the test client, DB sessions, and authenticated users.
+Sets up transactional isolation for pytest-xdist parallel test execution.
+Each test runs in a nested transaction with automatic rollback to prevent
+database state leakage between concurrent workers.
 """
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -27,36 +28,107 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-# ── Override the DB dependency ───────────────────────────────────────────────
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# ── Transaction Stack for Nested Rollbacks ───────────────────────────────────
+# Each thread gets its own stack of transaction/savepoint objects
+_transaction_stack = {}
 
+
+def get_transaction_stack():
+    """Get or create a transaction stack for the current thread."""
+    import threading
+    if threading.current_thread() not in _transaction_stack:
+        _transaction_stack[threading.current_thread()] = []
+    return _transaction_stack[threading.current_thread()]
+
+
+# ── Override the DB dependency with Transactional Isolation ──────────────────
+@pytest.fixture(autouse=True)
+def transactional_db(db):
+    """
+    Wrap each test in a nested transaction that rolls back after the test.
+    This ensures complete isolation between parallel test executions.
+    """
+    # Begin a transaction
+    trans = db.begin_nested()
+    
+    # Yield control to test
+    yield db
+    
+    # Rollback the transaction (discards all changes)
+    db.rollback()
+
+
+# ── Module-level override for tests that don't use fixtures ──────────────────
+# This ensures the override is set even before any fixtures run
+def override_get_db():
+    """Override for FastAPI dependency injection."""
+    stack = get_transaction_stack()
+    if stack:
+        yield stack[-1]
+    else:
+        session = TestingSessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
 
 app.dependency_overrides[get_db] = override_get_db
 
 
-# ── Fixtures ─────────────────────────────────────────────────────────────────
-
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Create all tables before each test, drop them after."""
-    Base.metadata.create_all(bind=engine)
+# ── Session Setup ────────────────────────────────────────────────────────────
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_app():
+    """Set up test app overrides once per session."""
     yield
-    Base.metadata.drop_all(bind=engine)
+    # Clean up overrides after all tests
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture
+# ── Core Database Fixtures ───────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
 def db():
-    """Provide a clean DB session for direct model manipulation in tests."""
+    """
+    Provide a database session bound to a nested transaction.
+    The transaction automatically rolls back after each test, ensuring
+    complete isolation between concurrent pytest-xdist workers.
+    """
+    import threading
     session = TestingSessionLocal()
+    
+    # Create tables if they don't exist (first time setup)
+    Base.metadata.create_all(bind=engine)
+    
+    # Begin a nested transaction (savepoint) for this test
+    trans = session.begin_nested()
+    
+    # Push transaction onto thread-local stack
+    stack = get_transaction_stack()
+    stack.append(session)
+    
     try:
         yield session
     finally:
+        # Pop from stack
+        if stack:
+            stack.pop()
+        
+        # Rollback to discard all changes (critical for isolation)
+        session.rollback()
         session.close()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def module_teardown():
+    """Final cleanup after each test module."""
+    yield
+    # Clear transaction stacks for this thread
+    import threading
+    if threading.current_thread() in _transaction_stack:
+        _transaction_stack[threading.current_thread()].clear()
+    # Clean up engine
+    session = TestingSessionLocal()
+    session.close()
 
 
 @pytest.fixture
@@ -66,12 +138,23 @@ def client():
 
 
 @pytest.fixture
-def seed_patient(db):
-    """Create a patient user in the test DB and return their data."""
+def seed_patient(db, request):
+    """
+    Create a patient user in the test DB and return their data.
+    Function-scoped to ensure each test gets its own isolated user.
+    
+    Always uses unique email based on test function name to prevent
+    duplicate creation errors when multiple tests use this fixture.
+    """
     from app.models.user import User
 
+    # Always use test function name for uniqueness (works for both sequential and parallel)
+    test_name = request.node.name if hasattr(request, 'node') else 'test'
+    worker_id = getattr(pytest, 'workerid', '') if hasattr(pytest, 'workerid') else ''
+    suffix = f"{test_name}_{worker_id}" if worker_id else test_name
+    
     user = User(
-        email="patient@test.com",
+        email=f"patient_{suffix}@test.com",
         full_name="Test Patient",
         password_hash=get_password_hash("SecurePass123!@#"),
         role="patient",
@@ -83,12 +166,23 @@ def seed_patient(db):
 
 
 @pytest.fixture
-def seed_gp(db):
-    """Create a GP user in the test DB."""
+def seed_gp(db, request):
+    """
+    Create a GP user in the test DB.
+    Function-scoped to ensure each test gets its own isolated user.
+    
+    Always uses unique email based on test function name to prevent
+    duplicate creation errors when multiple tests use this fixture.
+    """
     from app.models.user import User
 
+    # Always use test function name for uniqueness
+    test_name = request.node.name if hasattr(request, 'node') else 'test'
+    worker_id = getattr(pytest, 'workerid', '') if hasattr(pytest, 'workerid') else ''
+    suffix = f"{test_name}_{worker_id}" if worker_id else test_name
+    
     user = User(
-        email="gp@test.com",
+        email=f"gp_{suffix}@test.com",
         full_name="Test GP",
         password_hash=get_password_hash("SecurePass123!@#"),
         role="gp",
@@ -100,29 +194,23 @@ def seed_gp(db):
 
 
 @pytest.fixture
-def seed_admin(db):
-    """Create an admin user in the test DB."""
+def seed_admin(db, request):
+    """
+    Create an admin user in the test DB.
+    Function-scoped to ensure each test gets its own isolated user.
+    
+    Always uses unique email based on test function name to prevent
+    duplicate creation errors when multiple tests use this fixture.
+    """
     from app.models.user import User
 
+    # Always use test function name for uniqueness
+    test_name = request.node.name if hasattr(request, 'node') else 'test'
+    worker_id = getattr(pytest, 'workerid', '') if hasattr(pytest, 'workerid') else ''
+    suffix = f"{test_name}_{worker_id}" if worker_id else test_name
+    
     user = User(
-        email="admin@test.com",
-        full_name="Test Admin",
-        password_hash=get_password_hash("SecurePass123!@#"),
-        role="admin",
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-@pytest.fixture
-def seed_admin(db):
-    """Create an admin user in the test DB."""
-    from app.models.user import User
-
-    user = User(
-        email="admin@test.com",
+        email=f"admin_{suffix}@test.com",
         full_name="Test Admin",
         password_hash=get_password_hash("SecurePass123!@#"),
         role="admin",
@@ -158,13 +246,22 @@ def admin_headers(seed_admin):
 
 
 @pytest.fixture
-def seed_image(db, seed_patient):
-    """Create a test image record in the DB."""
+def seed_image(db, seed_patient, request):
+    """
+    Create a test image record in the DB.
+    Function-scoped to ensure isolation between parallel tests.
+    """
     from app.models.image import Image
+
+    # Use test function name + worker ID for unique filename
+    test_name = request.node.name if hasattr(request, 'node') else 'test'
+    worker_id = getattr(pytest, 'workerid', 'gw0') if hasattr(pytest, 'workerid') else 'gw0'
+    unique_suffix = f"{test_name}_{worker_id}"
+    
     image = Image(
         user_id=seed_patient.user_id,
-        s3_url="xrays/test.png",
-        file_name="test_xray.png",
+        s3_url=f"xrays/test_{unique_suffix}.png",
+        file_name=f"test_xray_{unique_suffix}.png",
         content_type="image/png",
     )
     db.add(image)
@@ -174,11 +271,19 @@ def seed_image(db, seed_patient):
 
 
 @pytest.fixture
-def seed_report(db, seed_image, seed_patient):
-    """Create a test report record in the DB."""
+def seed_report(db, seed_image, seed_patient, request):
+    """
+    Create a test report record in the DB.
+    Function-scoped to ensure isolation between parallel tests.
+    """
     import json
     from app.models.report import Report
 
+    # Use test function name + worker ID for unique URL
+    test_name = request.node.name if hasattr(request, 'node') else 'test'
+    worker_id = getattr(pytest, 'workerid', 'gw0') if hasattr(pytest, 'workerid') else 'gw0'
+    unique_suffix = f"{test_name}_{worker_id}"
+    
     report = Report(
         image_id=seed_image.image_id,
         user_id=seed_patient.user_id,
@@ -193,7 +298,7 @@ def seed_report(db, seed_image, seed_patient):
         warnings=json.dumps([
             {"level": "caution", "message": "Avoid high-impact activities."}
         ]),
-        exercise_video_urls=json.dumps(["https://s3.amazonaws.com/videos/v1.mp4"]),
+        exercise_video_urls=json.dumps([f"https://s3.amazonaws.com/videos/v1_{unique_suffix}.mp4"]),
     )
     db.add(report)
     db.commit()
@@ -202,15 +307,23 @@ def seed_report(db, seed_image, seed_patient):
 
 
 @pytest.fixture
-def seed_video(db):
-    """Create a test exercise video in the DB."""
+def seed_video(db, request):
+    """
+    Create a test exercise video in the DB.
+    Function-scoped to ensure isolation between parallel tests.
+    """
     from app.models.library import ExerciseVideo
 
+    # Use test function name + worker ID for unique title
+    test_name = request.node.name if hasattr(request, 'node') else 'test'
+    worker_id = getattr(pytest, 'workerid', 'gw0') if hasattr(pytest, 'workerid') else 'gw0'
+    unique_suffix = f"{test_name}_{worker_id}"
+    
     video = ExerciseVideo(
-        title="Gentle Knee Stretches",
+        title=f"Gentle Knee Stretches_{unique_suffix}",
         description="Low-impact stretching for KL Grade 1-2",
-        s3_url="videos/stretch.mp4",
-        thumbnail_url="thumbs/stretch.jpg",
+        s3_url=f"videos/stretch_{unique_suffix}.mp4",
+        thumbnail_url=f"thumbs/stretch_{unique_suffix}.jpg",
         kl_grade_min=0,
         kl_grade_max=2,
         category="flexibility",

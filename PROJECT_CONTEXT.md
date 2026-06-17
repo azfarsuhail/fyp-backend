@@ -4,7 +4,7 @@
 
 | Metric | Status |
 |--------|--------|
-| **Tests** | ✅ 105/105 Passing (100%) |
+| **Tests** | ✅ 115/115 Passing (100%) |
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened (March 2026) |
 | **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
@@ -35,6 +35,17 @@
 - ✅ Profile change logging (audit trail)
 - ✅ CORS configurable via environment
 - ✅ Input sanitization for error messages
+
+## Password Reset Flow (June 2026)
+- ✅ **Secure JWT-based tokens**: Short-lived (30 min), type-scoped reset tokens
+- ✅ **Email integration**: Resend SDK for professional HTML password reset emails
+- ✅ **Email enumeration prevention**: Generic success messages for all emails
+- ✅ **Asynchronous email sending**: FastAPI BackgroundTasks for non-blocking delivery
+- ✅ **Password validation**: Reuses existing `require_strong_password()` function
+- ✅ **Graceful error handling**: API continues working even if email service fails
+- ✅ **Type-scoped tokens**: Reset tokens cannot be reused as access tokens
+- ✅ **Comprehensive testing**: 10 test cases covering all scenarios
+- ✅ **Professional email template**: HTML email with security warnings and clear instructions
 
 ## Infrastructure & Deployment (April 2026)
 - ✅ **NGINX Reverse Proxy**: Rate limiting (10r/s, burst=20), proxy headers (X-Forwarded-For, X-Real-IP)
@@ -93,7 +104,8 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 ### Authentication (`/api/v1/auth`)
 - `POST /register` - User registration (Patient, GP only; Admin disabled)
 - `POST /login` - JWT token generation (**rate-limited: 5 attempts/minute per IP**)
-CLIP zero-shot gatekeeper
+- `POST /forgot-password` - Request password reset email (secure, prevents email enumeration)
+- `POST /reset-password` - Reset password with JWT token (validates strength, updates hash)
 ### Image Upload (`/api/v1/upload`)
 - `POST /` - Upload X-ray to S3 + DB metadata (Patient/GP only)
 - **Validation**: Gatekeeper MobileNetV2 model checks image authenticity before processing

@@ -80,3 +80,10 @@ curl -X POST http://localhost:8000/api/v1/auth/reset-password \
 - **API Reference:** `docs/password-reset-flow.md`
 - **Implementation Summary:** `docs/PASSWORD_RESET_IMPLEMENTATION.md`
 - **Tests:** `tests/test_password_reset.py`
+
+## 🔄 Refactoring Notes
+
+- Email service moved from `app/utils/email.py` to `app/services/email.py`
+- All imports updated to use `app.services.email`
+- Tests updated to reflect new import paths
+- All 10 tests passing ✅
