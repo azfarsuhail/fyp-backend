@@ -1,8 +1,15 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-import os
-from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+# Load environment variables early
+load_dotenv()
+
+from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics
+from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitLoginMiddleware
 
 
 @asynccontextmanager
@@ -14,6 +21,7 @@ async def lifespan(app: FastAPI):
     # This runs when the server shuts down
     print("Shutting down server and cleaning up resources...")
 
+
 app = FastAPI(
     title="Medical Image Analysis API",
     description="Backend for Knee OA Detection and Management",
@@ -21,12 +29,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ── Load environment variables ────────────────────────────────────────────────
-from dotenv import load_dotenv
-load_dotenv()
-from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics
-from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitLoginMiddleware
-# ── CORS Configuration ────────────────────────────────────────────────────────
+# ── CORS Configuration Setup ──────────────────────────────────────────────────
 # Get allowed origins from environment variable
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "")
 dev_origins = os.getenv("ALLOW_DEV_ORIGINS", "")
@@ -39,22 +42,35 @@ if allowed_origins:
 if os.getenv("DEBUG", "false").lower() == "true" and dev_origins:
     origins.extend([origin.strip() for origin in dev_origins.split(",")])
 
-# Add localhost for local development
+# Add localhost for local development (Including Expo port 8081)
 if os.getenv("DEBUG", "false").lower() == "true":
-    origins.extend(["http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:3000"])
+    origins.extend([
+        "http://localhost:3000", 
+        "http://localhost:8080", 
+        "http://localhost:8081", # <-- Expo Port
+        "http://127.0.0.1:3000"
+    ])
 
+
+# ── Security Middleware (MUST BE ADDED FIRST) ─────────────────────────────────
+# Because FastAPI executes middleware in reverse order, adding these first 
+# means they run AFTER the CORSMiddleware.
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitLoginMiddleware)
+
+
+# ── CORS Configuration (MUST BE ADDED LAST) ───────────────────────────────────
+# Adding this last means it runs FIRST. It will catch the OPTIONS preflight 
+# request and return a 200 OK before the security middlewares can block it.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins if origins else ["*"],  # Fallback to * only in dev
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    allow_methods=["*"], # Catch everything, including OPTIONS
+    allow_headers=["*"], # Allow all headers
     max_age=3600,
 )
 
-# ── Security Middleware ───────────────────────────────────────────────────────
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitLoginMiddleware)
 
 # ── Include Routers ───────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
