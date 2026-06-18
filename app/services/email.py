@@ -10,7 +10,7 @@ load_dotenv()
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 # Default to production domain - override with APP_URL env var for local dev
 APP_URL = os.getenv("APP_URL", "https://kneeoa.online")
-
+MAIL_FROM = os.getenv("MAIL_FROM", "Knee OA Backend <onboarding@resend.dev>")
 if not RESEND_API_KEY:
     print("WARNING: RESEND_API_KEY not set! Email functionality will be disabled.")
 
@@ -134,7 +134,7 @@ def send_reset_password_email(email_to: str, token: str) -> bool:
     
     try:
         Emails.send({
-            "from": "Knee OA Backend <onboarding@resend.dev>",
+            "from": MAIL_FROM,
             "to": [email_to],
             "subject": "Password Reset Request",
             "html": email_html
