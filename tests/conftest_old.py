@@ -1,23 +1,23 @@
 """
 Test Configuration & Fixtures
 ------------------------------
-Uses Nested Transaction (Savepoint) pattern for complete database isolation.
-Each test runs in a connection-level transaction with nested savepoints.
-FastAPI TestClient and fixtures share the exact same session.
+Sets up transactional isolation for pytest-xdist parallel test execution.
+Each test runs in a nested transaction with automatic rollback to prevent
+database state leakage between concurrent workers.
 """
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine, text, event
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.config import Base
-from app.core.dependencies import get_db
+from app.core.dependencies import get_db, get_current_user
 from app.core.security import get_password_hash, create_access_token
 from app.main import app
 
-# ── Test Database Engine ─────────────────────────────────────────────────────
+# ── In-memory SQLite for tests ───────────────────────────────────────────────
 SQLALCHEMY_TEST_URL = "sqlite://"
 
 engine = create_engine(
@@ -25,79 +25,109 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-# ── Database Session Fixture with Nested Transaction (Savepoint) ──────────────
+# ── Transaction Stack for Nested Rollbacks ───────────────────────────────────
+# Each thread gets its own stack of transaction/savepoint objects
+_transaction_stack = {}
+
+
+def get_transaction_stack():
+    """Get or create a transaction stack for the current thread."""
+    import threading
+    if threading.current_thread() not in _transaction_stack:
+        _transaction_stack[threading.current_thread()] = []
+    return _transaction_stack[threading.current_thread()]
+
+
+# ── Override the DB dependency with Transactional Isolation ──────────────────
+@pytest.fixture(autouse=True)
+def transactional_db(db):
+    """
+    Wrap each test in a nested transaction that rolls back after the test.
+    This ensures complete isolation between parallel test executions.
+    """
+    # Begin a transaction
+    trans = db.begin_nested()
+    
+    # Yield control to test
+    yield db
+    
+    # Rollback the transaction (discards all changes)
+    db.rollback()
+
+
+# ── Module-level override for tests that don't use fixtures ──────────────────
+# This ensures the override is set even before any fixtures run
+def override_get_db():
+    """Override for FastAPI dependency injection."""
+    stack = get_transaction_stack()
+    if stack:
+        yield stack[-1]
+    else:
+        session = TestingSessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+
+app.dependency_overrides[get_db] = override_get_db
+
+
+# ── Core Database Fixtures ───────────────────────────────────────────────────
+
 @pytest.fixture(scope="function")
 def db():
     """
-    Create a database session with connection-level transaction and nested savepoint.
-    
-    This pattern allows:
-    1. FastAPI and fixtures to share the EXACT same session
-    2. Application code to call commit() safely (commits to savepoint)
-    3. Automatic rollback of all changes after each test
-    4. No database state leakage between tests
-    
-    The event listener restarts the savepoint if the app calls commit().
+    Provide a database session bound to a nested transaction.
+    The transaction automatically rolls back after each test, ensuring
+    complete isolation between concurrent pytest-xdist workers.
     """
-    # Create connection and outer transaction
-    connection = engine.connect()
-    transaction = connection.begin()
-    
-    # Create session bound to the connection
-    session = Session(bind=connection)
+    import threading
+    session = TestingSessionLocal()
     
     # Create tables if they don't exist (first time setup)
     Base.metadata.create_all(bind=engine)
     
-    # Begin nested transaction (savepoint)
-    session.begin_nested()
+    # Begin a nested transaction (savepoint) for this test
+    trans = session.begin_nested()
     
-    # Event listener to restart savepoint if app calls commit()
-    @event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(sess, trans):
-        # Only restart if this is a nested transaction and parent is not nested
-        if trans.nested and not trans._parent.nested:
-            sess.begin_nested()
+    # Push transaction onto thread-local stack
+    stack = get_transaction_stack()
+    stack.append(session)
     
     try:
         yield session
-        
-        # Commit the savepoint (will be rolled back when test ends)
-        session.commit()
-        
     finally:
-        # Clean up: rollback outer transaction (discards everything)
-        transaction.rollback()
+        # Pop from stack
+        if stack:
+            stack.pop()
+        
+        # Rollback to discard all changes (critical for isolation)
+        session.rollback()
         session.close()
-        connection.close()
 
 
-# ── Client Fixture with Dependency Override ───────────────────────────────────
-@pytest.fixture(scope="function")
-def client(db):
-    """
-    Create FastAPI TestClient that uses the SAME session as the db fixture.
-    
-    This ensures that when fixtures create data, the API can see it immediately,
-    and when the test ends, everything is rolled back together.
-    """
-    def override_get_db():
-        yield db
-    
-    # Override FastAPI's get_db dependency
-    app.dependency_overrides[get_db] = override_get_db
-    
-    # Create test client
-    with TestClient(app) as c:
-        yield c
-    
-    # Clean up overrides
-    app.dependency_overrides.clear()
+@pytest.fixture(scope="module", autouse=True)
+def module_teardown():
+    """Final cleanup after each test module."""
+    yield
+    # Clear transaction stacks for this thread
+    import threading
+    if threading.current_thread() in _transaction_stack:
+        _transaction_stack[threading.current_thread()].clear()
+    # Clean up engine
+    session = TestingSessionLocal()
+    session.close()
 
 
-# ── User Seed Fixtures ────────────────────────────────────────────────────────
+@pytest.fixture
+def client():
+    """FastAPI TestClient with DB override."""
+    return TestClient(app)
+
+
 @pytest.fixture
 def seed_patient(db, request):
     """
@@ -182,7 +212,6 @@ def seed_admin(db, request):
     return user
 
 
-# ── Authentication Header Fixtures ────────────────────────────────────────────
 def _auth_header(email: str, role: str) -> dict:
     """Generate a Bearer token header for a given user."""
     token = create_access_token(data={"sub": email, "role": role})
@@ -207,7 +236,6 @@ def admin_headers(seed_admin):
     return _auth_header(seed_admin.email, seed_admin.role)
 
 
-# ── Image and Report Seed Fixtures ───────────────────────────────────────────
 @pytest.fixture
 def seed_image(db, seed_patient, request):
     """
@@ -269,7 +297,6 @@ def seed_report(db, seed_image, seed_patient, request):
     return report
 
 
-# ── Video Seed Fixture ────────────────────────────────────────────────────────
 @pytest.fixture
 def seed_video(db, request):
     """
