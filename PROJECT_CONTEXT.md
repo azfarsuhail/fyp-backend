@@ -36,6 +36,16 @@
 - ✅ CORS configurable via environment
 - ✅ Input sanitization for error messages
 
+## Security Hardening (June 2026)
+- ✅ **Event Loop Protection**: Replaced synchronous `requests.get()` with `httpx.AsyncClient()` in diagnostic pipeline
+- ✅ **Expanded Rate Limiting**: Added rate limits for `/register` (5/hour) and `/forgot-password` (3/hour) in addition to `/login` (5/minute)
+- ✅ **Global Exception Handlers**: Added three exception handlers to prevent stack trace leakage:
+  - `global_exception_handler`: Catches all unexpected exceptions, returns safe `"Internal server error"`
+  - `validation_exception_handler`: Returns structured validation errors for 422 responses
+  - `http_exception_handler`: Passes through standard HTTP exceptions (401, 403, 404)
+- ✅ **Middleware Consolidation**: Renamed `RateLimitLoginMiddleware` to `RateLimitAuthMiddleware` for unified auth endpoint protection
+- ✅ **IP Proxy Forwarding**: Real client IP extraction from `X-Forwarded-For` header for accurate rate limiting
+
 ## Password Reset Flow (June 2026)
 - ✅ **Secure JWT-based tokens**: Short-lived (30 min), type-scoped reset tokens
 - ✅ **Email integration**: Resend SDK for professional HTML password reset emails
@@ -50,13 +60,19 @@
 ## Infrastructure & Deployment (April 2026)
 - ✅ **NGINX Reverse Proxy**: Rate limiting (10r/s, burst=20), proxy headers (X-Forwarded-For, X-Real-IP)
 - ✅ **IP Proxy Forwarding**: Real client IP extraction from X-Forwarded-For header
-- ✅ **Login Rate Limiting**: 5 attempts per minute per IP address
 - ✅ **SSL/TLS**: Let's Encrypt configuration (docker-compose ready)
 - ✅ **Cloud Hosting**: AWS EC2 c6a.xlarge (4 vCPU, 16GB RAM)
 - ✅ **CI/CD**: GitHub Actions automated Docker build with semver tagging (v1.0.0)
 - ✅ **Multi-Stage Dockerfile**: Builder + runtime stages, non-root user (appuser)
 - ✅ **Resource Limits**: 3.5 CPU, 14GB memory reservation (2 CPU, 4GB)
 - ✅ **Health Checks**: NGINX depends on API health (urllib-based)
+
+## Rate Limiting (June 2026)
+- ✅ **Login Rate Limiting**: 5 attempts per minute per IP address
+- ✅ **Registration Rate Limiting**: 5 attempts per hour per IP address
+- ✅ **Forgot Password Rate Limiting**: 3 attempts per hour per IP address
+- ✅ **Unified Middleware**: `RateLimitAuthMiddleware` handles all auth endpoints
+- ✅ **IP-Based Tracking**: Uses `X-Forwarded-For` header for accurate client IP in production
 
 ## Critical Bug Fix: TensorFlow XLA Compiler (June 2026)
 - ✅ **ptxas 12.3.103 Bug Resolved**: Replaced broken NVIDIA compiler in `tensorflow:2.15.0-gpu` base image
@@ -92,7 +108,17 @@
 ## Project Overview
 Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The system uses a decoupled multi-agent architecture with a CNN-based Diagnostic Agent for KL grade prediction and a parametric RAG Recommendation Agent for evidence-based lifestyle advice.
 
-## Latest Maintenance Update (2026-04-21)
+## Latest Maintenance Update (2026-06-19)
+- ✅ **Event Loop Blocking Fix**: Replaced synchronous `requests.get()` with `httpx.AsyncClient()` in diagnostic pipeline to prevent server freezes
+- ✅ **Expanded Rate Limiting**: Added `/register` and `/forgot-password` endpoints to rate limiter (prevents email abuse and mass registration)
+- ✅ **Global Exception Handlers**: Implemented three exception handlers to prevent stack trace leakage and ensure consistent error formatting
+- ✅ **Test Suite Updates**: Fixed 3 failing tests to work with new async HTTP client and rate limiter changes
+- ✅ **Zero-Trust Security Audit**: Comprehensive review of JWT validation, error handling, and abuse vectors completed
+- ✅ **Production Ready**: All security fixes verified and deployed
+
+## Previous Maintenance Updates
+
+### April 2026
 - ✅ **API Contract Verification Completed**: Documented frontend/backend contract was cross-checked against implemented FastAPI routes and dependencies.
 - ✅ **Route Connectivity Confirmed**: Endpoints in auth, upload, diagnostic, recommendation, profile, videos, mobile sync, and health are correctly registered and tested.
 - ✅ **Regression Test Confirmation**: API test suites passed after verification run (105/105).

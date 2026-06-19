@@ -22,7 +22,7 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 ### ✅ Implemented Security Measures
 - **JWT Authentication** with bcrypt password hashing
 - **RBAC** (Patient, GP, Admin) with role-based endpoint access
-- **Rate Limiting** (5 login attempts per minute per IP)
+- **Rate Limiting** (5 login attempts/minute, 5 register/hour, 3 forgot-password/hour per IP)
 - **Password Validation** (8+ chars, uppercase, lowercase, numbers, special chars)
 - **Password Reset Flow** (secure JWT-based forgot/reset password with email)
 - **Security Headers** (X-Frame-Options, CSP, X-XSS-Protection, etc.)
@@ -31,6 +31,8 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 - **Admin Registration Blocked** (manual creation only)
 - **Profile Change Logging** (audit trail for all updates)
 - **Gatekeeper Validation** (CLIP zero-shot image authenticity check)
+- **Global Exception Handlers** (prevents stack trace leakage)
+- **Async HTTP Client** (httpx for non-blocking S3 downloads)
 
 ### 🚨 Security Hardening Applied (March 2026)
 - ✅ SECRET_KEY now loaded from environment variable
@@ -40,14 +42,27 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 - ✅ Security middleware with headers and rate limiting
 - ✅ Input sanitization for error messages
 
+### 🚨 Security Hardening Applied (June 2026)
+- ✅ **Event Loop Protection**: Replaced synchronous `requests.get()` with `httpx.AsyncClient()` in diagnostic pipeline
+- ✅ **Expanded Rate Limiting**: Added `/register` (5/hour) and `/forgot-password` (3/hour) endpoints
+- ✅ **Global Exception Handlers**: Three handlers prevent stack trace leakage and ensure consistent error formatting
+- ✅ **Middleware Consolidation**: `RateLimitAuthMiddleware` handles all auth endpoints uniformly
+- ✅ **IP Proxy Forwarding**: Real client IP extraction from `X-Forwarded-For` header for accurate rate limiting
+
 ### 🏗️ Infrastructure & Deployment (April 2026)
 - ✅ **NGINX Reverse Proxy**: Rate limiting (10r/s, burst=20), proxy headers (X-Forwarded-For, X-Real-IP)
 - ✅ **IP Proxy Forwarding**: Real client IP extraction from X-Forwarded-For header
-- ✅ **Login Rate Limiting**: 5 attempts per minute per IP address
 - ✅ **SSL/TLS**: Let's Encrypt configuration (docker-compose ready)
 - ✅ **Cloud Hosting**: AWS EC2 c6a.xlarge (4 vCPU, 16GB RAM)
 - ✅ **CI/CD**: GitHub Actions automated Docker build with semver tagging (v1.0.0)
 - ✅ **Multi-Stage Dockerfile**: Builder + runtime stages, non-root user (appuser)
+
+### 🔒 Rate Limiting (June 2026)
+- ✅ **Login Rate Limiting**: 5 attempts per minute per IP address
+- ✅ **Registration Rate Limiting**: 5 attempts per hour per IP address
+- ✅ **Forgot Password Rate Limiting**: 3 attempts per hour per IP address
+- ✅ **Unified Middleware**: `RateLimitAuthMiddleware` handles all auth endpoints
+- ✅ **IP-Based Tracking**: Uses `X-Forwarded-For` header for accurate client IP in production
 - ✅ **Resource Limits**: 3.5 CPU, 14GB memory reservation (2 CPU, 4GB)
 - ✅ **Health Checks**: NGINX depends on API health (urllib-based)
 
