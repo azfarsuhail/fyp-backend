@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -10,6 +11,8 @@ from app.core.security_middleware import require_strong_password
 from app.core.dependencies import get_db
 from app.models.user import User
 from app.services.email import send_reset_password_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -117,23 +120,53 @@ def reset_password(
     token = request.token
     new_password = request.new_password
     
+    # Log incoming request details for debugging
+    logger.info(f"Reset password request received. Request body: token={token[:20]}..., new_password length={len(new_password)}")
+    logger.info(f"Token value: {token}")
+    
     # Verify the reset token
     email = verify_password_reset_token(token)
     
+    logger.info(f"verify_password_reset_token result: email={email}, token_valid={email is not None}")
+    
     if not email:
+        logger.warning(f"Invalid or expired reset token provided. Token: {token[:50]}...")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token"
         )
     
+    # Additional check: verify the email from token is valid and properly formatted
+    if not email or not isinstance(email, str):
+        logger.error(f"Invalid email extracted from token: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token payload: email not found"
+        )
+    
+    # Validate email format before querying database
+    from email.utils import parseaddr
+    parsed_email = parseaddr(email)[1]
+    if not parsed_email or '@' not in parsed_email:
+        logger.error(f"Email validation failed: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email format in token"
+        )
+    
+    logger.info(f"Email validated from token: {parsed_email}")
+    
     # Find the user by email
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == parsed_email).first()
     
     if not user:
+        logger.warning(f"User not found for email: {parsed_email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    
+    logger.info(f"User found for email: {parsed_email}, user_id={user.user_id}")
     
     # Validate password strength
     password_errors = require_strong_password(new_password)
