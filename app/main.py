@@ -1,16 +1,16 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 
 # Load environment variables early
 load_dotenv()
 
 from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics
-from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitLoginMiddleware
-
+from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitAuthMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,7 +20,6 @@ async def lifespan(app: FastAPI):
     yield
     # This runs when the server shuts down
     print("Shutting down server and cleaning up resources...")
-
 
 app = FastAPI(
     title="Medical Image Analysis API",
@@ -51,13 +50,11 @@ if os.getenv("DEBUG", "false").lower() == "true":
         "http://127.0.0.1:3000"
     ])
 
-
 # ── Security Middleware (MUST BE ADDED FIRST) ─────────────────────────────────
 # Because FastAPI executes middleware in reverse order, adding these first 
 # means they run AFTER the CORSMiddleware.
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitLoginMiddleware)
-
+app.add_middleware(RateLimitAuthMiddleware)
 
 # ── CORS Configuration (MUST BE ADDED LAST) ───────────────────────────────────
 # Adding this last means it runs FIRST. It will catch the OPTIONS preflight 
@@ -71,6 +68,31 @@ app.add_middleware(
     max_age=3600,
 )
 
+# ── Global Exception Handlers ─────────────────────────────────────────────────
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unexpected exceptions to prevent stack trace leakage."""
+    print(f"Unhandled exception: {exc}") # Or use your logger here
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle FastAPI validation errors cleanly."""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": [{"loc": err["loc"], "msg": err["msg"]} for err in exc.errors()]},
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Pass through standard HTTP exceptions (401, 403, 404, etc.)."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
 
 # ── Include Routers ───────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
@@ -82,16 +104,13 @@ app.include_router(video.router, prefix="/api/v1/videos", tags=["Video Library"]
 app.include_router(mobile_sync.router, prefix="/api/v1/mobile", tags=["Mobile Sync"])
 app.include_router(admin_analytics.router, prefix="/api/v1/admin", tags=["Admin Analytics"])
 
-
 @app.get("/")
 def root():
     return {"message": "Welcome to the Medical Image Analysis API"}
 
-
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "version": "1.0.0"}
-
 
 # ── Android App Links Verification ────────────────────────────────────────────
 # This endpoint is required for Android App Links to work with password reset deep linking
@@ -116,7 +135,4 @@ def android_assetlinks():
         }
     ]
     
-    return Response(
-        content=str(assetlinks_data).replace("'", '"'),
-        media_type="application/json"
-    )
+    return JSONResponse(content=assetlinks_data)

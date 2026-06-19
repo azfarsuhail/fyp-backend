@@ -14,40 +14,56 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class RateLimiter:
-    """Simple in-memory rate limiter for login attempts."""
+    """Simple in-memory rate limiter for auth endpoints."""
     
-    def __init__(self, max_attempts: int = 5, window_minutes: int = 1):
-        self.max_attempts = max_attempts
-        self.window = timedelta(minutes=window_minutes)
+    def __init__(self):
+        # Config: endpoint -> (max_attempts, window_minutes)
+        self.config = {
+            "/api/v1/auth/login": (5, 1),
+            "/api/v1/auth/register": (5, 60),
+            "/api/v1/auth/forgot-password": (3, 60),
+        }
         self.attempts: dict[str, list[datetime]] = defaultdict(list)
     
-    def _clean_old_attempts(self, identifier: str, now: datetime):
+    def _clean_old_attempts(self, identifier: str, endpoint: str, now: datetime):
         """Helper to remove timestamps older than the window."""
-        self.attempts[identifier] = [
-            ts for ts in self.attempts[identifier]
-            if now - ts < self.window
-        ]
+        key = f"{endpoint}:{identifier}"
+        max_attempts, window_minutes = self.config.get(endpoint, (float("inf"), 1))
+        window = timedelta(minutes=window_minutes)
+        self.attempts[key] = [ts for ts in self.attempts[key] if now - ts < window]
 
-    def is_allowed(self, identifier: str) -> bool:
-        """Check if identifier is allowed to make request."""
-        now = datetime.now(timezone.utc)
-        self._clean_old_attempts(identifier, now)
+    def is_allowed(self, identifier: str, endpoint: str) -> bool:
+        """Check if identifier is allowed to make request to endpoint."""
+        if endpoint not in self.config:
+            return True
         
-        if len(self.attempts[identifier]) >= self.max_attempts:
+        now = datetime.now(timezone.utc)
+        max_attempts, _ = self.config[endpoint]
+        self._clean_old_attempts(identifier, endpoint, now)
+        
+        key = f"{endpoint}:{identifier}"
+        if len(self.attempts[key]) >= max_attempts:
             return False
         
-        self.attempts[identifier].append(now)
+        self.attempts[key].append(now)
         return True
     
-    def get_remaining(self, identifier: str) -> int:
-        """Get remaining attempts for identifier."""
+    def get_remaining(self, identifier: str, endpoint: str) -> int:
+        """Get remaining attempts for identifier on endpoint."""
+        if endpoint not in self.config:
+            return float("inf")
+        
         now = datetime.now(timezone.utc)
-        self._clean_old_attempts(identifier, now)
-        return max(0, self.max_attempts - len(self.attempts[identifier]))
+        max_attempts, window_minutes = self.config[endpoint]
+        window = timedelta(minutes=window_minutes)
+        
+        key = f"{endpoint}:{identifier}"
+        self.attempts[key] = [ts for ts in self.attempts[key] if now - ts < window]
+        return max(0, max_attempts - len(self.attempts[key]))
 
 
 # Global rate limiter instance
-login_rate_limiter = RateLimiter(max_attempts=5, window_minutes=1)
+auth_rate_limiter = RateLimiter()
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -83,12 +99,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class RateLimitLoginMiddleware(BaseHTTPMiddleware):
-    """Rate limit login attempts."""
+class RateLimitAuthMiddleware(BaseHTTPMiddleware):
+    """Rate limit auth endpoints (login, register, forgot-password)."""
     
     async def dispatch(self, request: Request, call_next):
-        # Only apply to login endpoint
-        if request.url.path == "/api/v1/auth/login" and request.method == "POST":
+        # Only apply to POST auth endpoints
+        if request.url.path in ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password"] and request.method == "POST":
             
             # Attempt to get the real IP from NGINX headers first
             forwarded_for = request.headers.get("X-Forwarded-For")
@@ -99,15 +115,18 @@ class RateLimitLoginMiddleware(BaseHTTPMiddleware):
                 # Fallback if accessed directly
                 identifier = request.client.host if request.client else "unknown"
             
-            if not login_rate_limiter.is_allowed(identifier):
-                remaining = login_rate_limiter.get_remaining(identifier)
+            if not auth_rate_limiter.is_allowed(identifier, request.url.path):
+                remaining = auth_rate_limiter.get_remaining(identifier, request.url.path)
+                max_attempts, window_minutes = auth_rate_limiter.config.get(request.url.path, (5, 1))
+                retry_after = window_minutes * 60  # seconds
+                
                 return JSONResponse(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     content={
-                        "detail": "Too many login attempts. Please try again later.",
-                        "retry_after": 60  # seconds
+                        "detail": f"Too many requests. Please try again in {window_minutes} minutes.",
+                        "retry_after": retry_after
                     },
-                    headers={"Retry-After": "60"}
+                    headers={"Retry-After": str(retry_after)}
                 )
         
         return await call_next(request)

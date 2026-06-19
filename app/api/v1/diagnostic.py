@@ -12,7 +12,7 @@ Orchestrates the full diagnostic pipeline:
 """
 
 import json
-import requests
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -76,7 +76,8 @@ async def analyze_xray(
     # ── 2. Download image bytes from S3 ──────────────────────────────────
     try:
         presigned = generate_presigned_url(image.s3_url)
-        response = requests.get(presigned, timeout=30)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(presigned, timeout=30.0)
         response.raise_for_status()
         image_bytes = response.content
     except Exception as e:
