@@ -3,6 +3,13 @@ Tests for /api/v1/auth — Registration & Login
 """
 
 import pytest
+from app.core.security_middleware import auth_rate_limiter
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Clear rate limiter state before each test to prevent 429 errors."""
+    auth_rate_limiter.attempts.clear()
 
 
 class TestRegister:

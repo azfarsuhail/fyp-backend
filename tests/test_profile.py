@@ -105,8 +105,8 @@ class TestChangePassword:
 
     def test_change_password_success(self, client, patient_headers, seed_patient, db):
         # Reset rate limiter to avoid blocking the login after password change
-        from app.core.security_middleware import login_rate_limiter
-        login_rate_limiter.attempts.clear()
+        from app.core.security_middleware import auth_rate_limiter
+        auth_rate_limiter.attempts.clear()
         
         response = client.post(
             "/api/v1/profile/me/change-password",
