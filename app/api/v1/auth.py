@@ -5,12 +5,21 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from fastapi.background import BackgroundTasks
 
-from app.schemas.user_schema import UserCreate, UserOut, Token, ForgotPasswordRequest, ResetPasswordRequest
+from app.schemas.user_schema import (
+    UserCreate, UserOut, Token, ForgotPasswordRequest, ResetPasswordRequest,
+    OTPRequestSchema, OTPVerifyAndResetSchema
+)
 from app.core.security import get_password_hash, verify_password, create_access_token, create_password_reset_token, verify_password_reset_token
 from app.core.security_middleware import require_strong_password
 from app.core.dependencies import get_db
 from app.models.user import User
-from app.services.email import send_reset_password_email
+from app.models.profile_log import ProfileLog
+from app.services.email import send_reset_password_email, send_otp_email
+from app.services.otp_service import (
+    create_otp_record,
+    verify_otp_and_increment_attempts,
+    delete_otp_for_user
+)
 
 logger = logging.getLogger(__name__)
 
@@ -185,3 +194,153 @@ def reset_password(
     return {
         "message": "Your password has been successfully reset. You can now log in with your new password."
     }
+
+
+@router.post("/request-otp", status_code=status.HTTP_200_OK)
+def request_otp(
+    request: OTPRequestSchema,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Request an OTP for password reset.
+    
+    Security Features:
+    - Rate limited by IP (3 requests per hour via RateLimitAuthMiddleware)
+    - Prevents email enumeration by returning generic success message
+    - OTP is hashed before storage
+    - OTP expires in 5 minutes
+    
+    Args:
+        request: OTPRequestSchema with email
+        background_tasks: FastAPI background tasks for email sending
+        db: Database session
+        
+    Returns:
+        Generic success message to prevent email enumeration
+    """
+    email = request.email
+    
+    # Check if user exists (but don't reveal this information for security)
+    db_user = db.query(User).filter(User.email == email).first()
+    
+    if db_user:
+        try:
+            # Create OTP record and get the plain-text code
+            otp_record, otp_code = create_otp_record(db, db_user.user_id)
+            
+            logger.info(f"OTP generated for user {db_user.user_id}, email: {email}")
+            
+            # Send email asynchronously using FastAPI's BackgroundTasks
+            # Pass the plain-text OTP code for the email template
+            background_tasks.add_task(
+                send_otp_email,
+                email_to=email,
+                otp_code=otp_code
+            )
+            
+            logger.info(f"OTP email queued for delivery to {email}")
+            
+        except Exception as e:
+            # Log the error but don't reveal details
+            logger.error(f"Error generating OTP for {email}: {str(e)}")
+            # Still return success to prevent enumeration
+            pass
+    
+    # Always return same response to prevent email enumeration attacks
+    return {
+        "message": "If an account with that email address exists, a password reset code has been sent."
+    }
+
+
+@router.post("/verify-otp-and-reset", status_code=status.HTTP_200_OK)
+def verify_otp_and_reset_password(
+    request: OTPVerifyAndResetSchema,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify OTP and reset password in a single endpoint.
+    
+    Security Features:
+    - Validates new password strength using require_strong_password()
+    - Verifies OTP via service layer with attempt tracking
+    - Locks OTP after 3 failed attempts
+    - Logs password change in PROFILE_LOG audit table
+    - Deletes OTP record after successful reset
+    
+    Args:
+        request: OTPVerifyAndResetSchema with email, otp_code, and new_password
+        db: Database session
+        
+    Returns:
+        Success message confirming password reset
+    """
+    email = request.email
+    otp_code = request.otp_code
+    new_password = request.new_password
+    
+    logger.info(f"OTP verification request for email: {email}")
+    
+    # Find the user by email
+    user = db.query(User).filter(User.email == email).first()
+    
+    if not user:
+        # Don't reveal if user exists - return generic error
+        logger.warning(f"User not found for email: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP or email address"
+        )
+    
+    # Validate password strength
+    password_errors = require_strong_password(new_password)
+    if password_errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"password_validation_errors": password_errors}
+        )
+    
+    # Verify the OTP
+    success, message = verify_otp_and_increment_attempts(db, user.user_id, otp_code)
+    
+    if not success:
+        logger.warning(f"OTP verification failed for user {user.user_id}: {message}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message
+        )
+    
+    # OTP is valid - proceed with password reset
+    try:
+        # Hash and update password
+        hashed_password = get_password_hash(new_password)
+        user.password_hash = hashed_password
+        
+        # Log the password change in PROFILE_LOG audit table
+        password_log = ProfileLog(
+            user_id=user.user_id,
+            field_name="password_hash",
+            old_value="***hidden***",  # Don't log actual password
+            new_value="***updated***",
+            changed_at=datetime.now(timezone.utc)
+        )
+        db.add(password_log)
+        
+        # Delete the OTP record after successful use
+        delete_otp_for_user(db, user.user_id)
+        
+        db.commit()
+        
+        logger.info(f"Password successfully reset for user {user.user_id}")
+        
+        return {
+            "message": "Your password has been successfully reset using the OTP code. You can now log in with your new password."
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error resetting password for user {user.user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password. Please try again."
+        )

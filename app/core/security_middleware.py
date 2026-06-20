@@ -22,6 +22,7 @@ class RateLimiter:
             "/api/v1/auth/login": (5, 1),
             "/api/v1/auth/register": (5, 60),
             "/api/v1/auth/forgot-password": (3, 60),
+            "/api/v1/auth/request-otp": (3, 60),  # 3 OTP requests per hour per IP
         }
         self.attempts: dict[str, list[datetime]] = defaultdict(list)
     
@@ -100,11 +101,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitAuthMiddleware(BaseHTTPMiddleware):
-    """Rate limit auth endpoints (login, register, forgot-password)."""
+    """Rate limit auth endpoints (login, register, forgot-password, request-otp)."""
     
     async def dispatch(self, request: Request, call_next):
         # Only apply to POST auth endpoints
-        if request.url.path in ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password"] and request.method == "POST":
+        if request.url.path in ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/request-otp"] and request.method == "POST":
             
             # Attempt to get the real IP from NGINX headers first
             forwarded_for = request.headers.get("X-Forwarded-For")

@@ -25,6 +25,7 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 - **Rate Limiting** (5 login attempts/minute, 5 register/hour, 3 forgot-password/hour per IP)
 - **Password Validation** (8+ chars, uppercase, lowercase, numbers, special chars)
 - **Password Reset Flow** (secure JWT-based forgot/reset password with email)
+- **OTP Password Reset** (June 2026) — Secure 6-digit OTP code via email with 5-minute expiration, bcrypt hashing, and brute-force protection (3-attempt lockout)
 - **Security Headers** (X-Frame-Options, CSP, X-XSS-Protection, etc.)
 - **CORS Configuration** (configurable allowed origins)
 - **Environment-based Secrets** (SECRET_KEY from .env)
@@ -757,7 +758,8 @@ Comprehensive documentation is now organized in the [`docs/`](docs/) folder:
 - [Quick Reference](docs/docker/DOCKER_QUICKREF.md) - Commands & best practices
 
 ### 📱 Mobile Integration
-- [Mobile Sync Guide](docs/mobile/MOBILE_SYNC_GUIDE.md) - Complete integration guide
+- [Mobile API Integration Guide](docs/mobile/API_INTEGRATION_GUIDE.md) - Complete API reference for mobile developers (authentication, OTP reset, sync, diagnostics)
+- [Mobile Sync Guide](docs/mobile/MOBILE_SYNC_GUIDE.md) - Offline-first architecture guide
 
 ### 📦 Git & Version Control
 - [Git Guide](docs/git/GIT_GUIDE.md) - Workflow & security checklist

@@ -33,7 +33,7 @@ class User(Base):
 # Configure relationships after all models are loaded
 def _configure_relationships():
     """Post-import configuration to avoid circular import issues."""
-    from app.models import image, report, profile_log
+    from app.models import image, report, profile_log, otp_verification
     
     # Image.user already has backref="images"
     # Report.user already has backref="reports"
@@ -41,6 +41,14 @@ def _configure_relationships():
     User.profile_logs = relationship(
         "ProfileLog", 
         back_populates="user", 
+        lazy="dynamic"
+    )
+    
+    # Configure OTPVerification relationship with cascade delete
+    User.otp_verifications = relationship(
+        "OTPVerification", 
+        back_populates="user", 
+        cascade="all, delete-orphan",
         lazy="dynamic"
     )
 

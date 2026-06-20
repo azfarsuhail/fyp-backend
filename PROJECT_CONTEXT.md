@@ -4,13 +4,15 @@
 
 | Metric | Status |
 |--------|--------|
-| **Tests** | ✅ 115/115 Passing (100%) |
+| **Tests** | ✅ 145/145 Passing (100%) |
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened (March 2026) |
+| **OTP Password Reset** | ✅ Completed (June 2026) |
 | **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
 | **Image Validation** | ✅ CLIP Zero-Shot Gatekeeper (June 2026) |
 | **API Contract Check** | ✅ Verified (April 2026) |
 | **XLA Compiler Fix** | ✅ ptxas Bug Resolved (June 2026) |
+| **Alembic Schema** | ✅ Verified & Aligned (June 2026) |
 | **Production Ready** | ✅ Yes |
 
 ## Tech Stack
@@ -56,6 +58,20 @@
 - ✅ **Type-scoped tokens**: Reset tokens cannot be reused as access tokens
 - ✅ **Comprehensive testing**: 10 test cases covering all scenarios
 - ✅ **Professional email template**: HTML email with security warnings and clear instructions
+
+## OTP Password Reset Flow (June 2026) ✅ Completed
+- ✅ **6-Digit Numeric OTP Codes**: Secure random generation using Python's `secrets` module
+- ✅ **Bcrypt Hashing**: OTP codes hashed before database storage (never stored in plain text)
+- ✅ **5-Minute Expiration**: Automatic TTL-based expiration for security
+- ✅ **Brute-Force Protection**: 3-attempt limit with automatic lockout
+- ✅ **Email Integration**: Professional HTML email template with OTP code and expiration notice
+- ✅ **Rate Limiting**: 3 OTP requests per hour per IP address
+- ✅ **Email Enumeration Prevention**: Generic success messages regardless of email existence
+- ✅ **Audit Trail**: Password changes logged to PROFILE_LOG table
+- ✅ **Database Schema**: New `otp_verification` table with composite index on `(user_id, expires_at)`
+- ✅ **Alembic Migration**: Verified and applied (revision: 2026_06_20_7a875adc648a)
+- ✅ **Comprehensive Testing**: 30 test cases covering all scenarios (100% pass rate)
+- ✅ **Mobile Integration**: Full API documentation in `docs/mobile/API_INTEGRATION_GUIDE.md`
 
 ## Infrastructure & Deployment (April 2026)
 - ✅ **NGINX Reverse Proxy**: Rate limiting (10r/s, burst=20), proxy headers (X-Forwarded-For, X-Real-IP)

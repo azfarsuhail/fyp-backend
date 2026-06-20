@@ -34,6 +34,8 @@ from app.models.user import User          # noqa: F401
 from app.models.image import Image        # noqa: F401
 from app.models.report import Report      # noqa: F401
 from app.models.library import ExerciseVideo  # noqa: F401
+from app.models.profile_log import ProfileLog  # noqa: F401
+from app.models.otp_verification import OTPVerification  # noqa: F401
 
 target_metadata = Base.metadata
 

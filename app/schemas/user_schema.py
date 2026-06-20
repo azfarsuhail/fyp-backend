@@ -1,6 +1,83 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, StringConstraints
 from typing import Optional
 from datetime import datetime
+
+
+class OTPRequestSchema(BaseModel):
+    """Schema for OTP request endpoint."""
+    model_config = ConfigDict(str_strip_whitespace=True)
+    
+    email: EmailStr = Field(
+        ...,
+        description="User email address",
+        min_length=1  # Ensure non-empty
+    )
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email_not_empty(cls, v: str) -> str:
+        """Ensure email is not just whitespace."""
+        if not v or len(v.strip()) == 0:
+            raise ValueError('Email cannot be empty or whitespace only')
+        return v.strip()
+
+
+class OTPVerifyAndResetSchema(BaseModel):
+    """Schema for OTP verification and password reset endpoint."""
+    model_config = ConfigDict(str_strip_whitespace=True)
+    
+    email: EmailStr = Field(
+        ...,
+        description="User email address",
+        min_length=1
+    )
+    
+    otp_code: str = Field(
+        ...,
+        description="6-digit OTP code",
+        min_length=6,
+        max_length=6,
+        pattern=r'^\d{6}$'
+    )
+    
+    new_password: str = Field(
+        ...,
+        description="New password (minimum 8 characters)",
+        min_length=8,
+        max_length=128
+    )
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_password_not_empty(cls, v: str) -> str:
+        """Ensure password is not empty."""
+        if not v or len(v.strip()) == 0:
+            raise ValueError('Password cannot be empty')
+        return v.strip()
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email_not_empty(cls, v: str) -> str:
+        """Ensure email is not just whitespace."""
+        if not v or len(v.strip()) == 0:
+            raise ValueError('Email cannot be empty or whitespace only')
+        return v.strip()
+    
+    @field_validator('otp_code')
+    @classmethod
+    def validate_otp_code_not_empty(cls, v: str) -> str:
+        """Ensure OTP code is not empty."""
+        if not v or len(v.strip()) == 0:
+            raise ValueError('OTP code cannot be empty')
+        return v.strip()
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_password_not_empty(cls, v: str) -> str:
+        """Ensure password is not empty."""
+        if not v or len(v.strip()) == 0:
+            raise ValueError('Password cannot be empty')
+        return v.strip()
 
 
 class UserCreate(BaseModel):
