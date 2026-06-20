@@ -148,13 +148,16 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 - `GET /me` - Get current user profile
 - `PUT /me` - Update profile (name, email, age, pain_level, mobility_level, has_support, **kinesiophobia, occupation_type, has_stairs, current_meds, sleep_quality**) - **logs all changes**
 - `GET /me/history` - Get profile change history (audit trail)
+- `GET /patients/{patient_id}/history` - Get another user's profile history (GP/Admin only)
 - `POST /me/change-password` - Change password
 
 ### Video Library (`/api/v1/videos`)
 - `GET /` - Browse exercise videos (filter by KL grade, category)
 - `GET /{id}` - Get specific video
-- `POST /` - Create video (Admin only)
-- `PUT /{id}` - Update video (Admin only)
+- `POST /` - Create video metadata (Admin only)
+- `POST /upload` - Upload video file to S3 (Admin only)
+- `PUT /{id}` - Update video metadata (Admin only)
+- `PUT /{id}/upload` - Update video file (Admin only)
 - `DELETE /{id}` - Delete video (Admin only)
 
 ### Mobile Sync (`/api/v1/mobile`)
@@ -171,6 +174,16 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
   - KL grade distribution
   - Average confidence score
   - Recent reports (last 10)
+- `GET /analytics/users` - Get user list with filters (Admin only)
+  - Filter by role, date range, activity status
+  - Pagination support
+- `GET /analytics/reports` - Get diagnostic reports with filters (Admin only)
+  - Filter by KL grade, date range, confidence threshold
+  - Pagination support
+- `GET /analytics/activity` - Get activity metrics (Admin only)
+  - Daily/weekly/monthly activity trends
+  - User engagement metrics
+  - Upload and diagnosis statistics
 
 ## Mobile Sync Feature
 - **Purpose**: Sync only authenticated user's data to mobile devices

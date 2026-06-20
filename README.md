@@ -51,26 +51,17 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 
 ### 🏗️ Infrastructure & Deployment (April 2026)
 - ✅ **NGINX Reverse Proxy**: Rate limiting (10r/s, burst=20), proxy headers (X-Forwarded-For, X-Real-IP)
-- ✅ **IP Proxy Forwarding**: Real client IP extraction from X-Forwarded-For header
 - ✅ **SSL/TLS**: Let's Encrypt configuration (docker-compose ready)
 - ✅ **Cloud Hosting**: AWS EC2 c6a.xlarge (4 vCPU, 16GB RAM)
 - ✅ **CI/CD**: GitHub Actions automated Docker build with semver tagging (v1.0.0)
 - ✅ **Multi-Stage Dockerfile**: Builder + runtime stages, non-root user (appuser)
-
-### 🔒 Rate Limiting (June 2026)
-- ✅ **Login Rate Limiting**: 5 attempts per minute per IP address
-- ✅ **Registration Rate Limiting**: 5 attempts per hour per IP address
-- ✅ **Forgot Password Rate Limiting**: 3 attempts per hour per IP address
-- ✅ **Unified Middleware**: `RateLimitAuthMiddleware` handles all auth endpoints
-- ✅ **IP-Based Tracking**: Uses `X-Forwarded-For` header for accurate client IP in production
 - ✅ **Resource Limits**: 3.5 CPU, 14GB memory reservation (2 CPU, 4GB)
 - ✅ **Health Checks**: NGINX depends on API health (urllib-based)
 
-### S3 Storage & Access (June 2026)
-
-- ✅ **Private S3 objects:** Uploaded images and video assets are stored private in S3. The database stores the S3 object key (e.g. `xrays/abc123.png`) rather than a public URL.
-- ✅ **Presigned URLs:** API endpoints now return short-lived presigned URLs for clients to download objects. This improves security and auditability — objects remain private in the bucket and access is granted only via temporary URLs.
-- ✅ **IAM guidance:** The service requires an IAM role or credentials with `s3:PutObject`, `s3:GetObject`, and `s3:GeneratePresignedUrl` (via `s3:GetObject`) permissions for the bucket. Update `S3_BUCKET_NAME`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` in your `.env` or use instance profiles.
+### ☁️ S3 Storage & Access (June 2026)
+- ✅ **Private S3 Objects**: Uploaded images and video assets are stored private in S3. The database stores the S3 object key (e.g., `xrays/abc123.png`) rather than a public URL.
+- ✅ **Presigned URLs**: API endpoints now return short-lived presigned URLs for clients to download objects. This improves security and auditability — objects remain private in the bucket and access is granted only via temporary URLs.
+- ✅ **IAM Guidance**: The service requires an IAM role or credentials with `s3:PutObject`, `s3:GetObject`, and `s3:GeneratePresignedUrl` (via `s3:GetObject`) permissions for the bucket. Update `S3_BUCKET_NAME`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` in your `.env` or use instance profiles.
 
 ---
 
@@ -98,24 +89,25 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 │  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌─────────┐ ┌─────────┐   │
 │  │  Auth    │ │  Upload  │ │ Diagnostic │ │ Recomm. │ │  Video  │   │
 │  │ /auth/*  │ │ /upload/ │ │ /diagnos./*│ │ /recom./│ │ /videos │   │
-│  └────┬─────┘ └────┬─────┘ └─────┬──────┘ └────┬────┘ └────┬────┘   │
-│       │             │             │              │           │      │
+│  │ /admin/* │ │ /mobile/*│ │ /profile/* │         │         │   │
+│  └────┬─────┘ └────┬─────┘ └─────┬──────┘ └────┬────┘ └────┬────┘ └────┬────┘
+│       │             │             │              │           │           │
 │  ┌────▼─────────────▼─────────────▼──────────────▼───────────▼────┐ │
 │  │              Core: JWT Auth + RBAC + DB Session                │ │
 │  └────────────────────────────────────────────────────────────────┘ │
 └──────────┬──────────┬──────────────┬──────────────┬────────────────┘
-           │          │              │              │
-           ▼          ▼              ▼              ▼
-      ┌─────────┐ ┌────────┐ ┌────────────┐ ┌────────────┐
-      │ Neon DB │ │ AWS S3 │ │ Diagnostic │ │ Recommend. │
+           │          │              │              │           │
+           ▼          ▼              ▼              ▼           ▼
+      ┌─────────┐ ┌────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
+      │ Neon DB │ │ AWS S3 │ │ Diagnostic │ │ Recommend. │ │   Admin    │
       │ (Postgres││(Images │ │   Agent    │ │   Agent    │
-      │  + ORM) │ │+Videos)│ │  (CNN)     │ │   (RAG)    │
-      └─────────┘ └────────┘ └──────┬─────┘ └──────┬─────┘
-                                    │               │
-                              ┌─────▼─────┐  ┌──────▼──────┐
-                              │ Gatekeeper│  │ Sentence    │
-                              │   CLIP    │  │ Transformers│
-                              │(Zero-Shot)│  │ + VectorDB  │
+      │  + ORM) │ │+Videos)│ │  (CNN)     │ │   (RAG)    │ │ Analytics  │
+      └─────────┘ └────────┘ └──────┬─────┘ └──────┬─────┘ └────────┘
+                                    │               │           │
+                              ┌─────▼─────┐  ┌──────▼──────┐ ┌──────┐
+                              │ Gatekeeper│  │ Sentence    │ │  Data  │
+                              │   CLIP    │  │ Transformers│ │ Export │
+                              │(Zero-Shot)│  │ + VectorDB  │ └──────┘
                               └──────┬────┘  └─────────────┘
                                      │
                               ┌──────▼──────┐
@@ -153,13 +145,17 @@ knee_oa_backend/
 │   │   ├── upload.py              # POST / (X-ray upload to S3)
 │   │   ├── diagnostic.py          # POST /analyze, GET /reports, GET /reports/{id}
 │   │   ├── recommendation.py      # GET / (standalone recommendations)
-│   │   ├── profile.py             # GET/PUT /me, POST /me/change-password
-│   │   ├── video.py               # CRUD for exercise video library
-│   │   └── mobile_sync.py         # Mobile app data sync endpoints
+│   │   ├── profile.py             # GET/PUT /me, GET /me/history, GET /patients/{patient_id}/history, POST /me/change-password
+│   │   ├── video.py               # CRUD for exercise video library (GET, POST, PUT, DELETE, upload endpoints)
+│   │   ├── mobile_sync.py         # Mobile app data sync endpoints (GET /sync/data, /sync/summary, POST /sync/export, GET /sync/status)
+│   │   └── admin_analytics.py     # Admin analytics endpoints (GET /analytics/dashboard, /analytics/users, /analytics/reports, /analytics/activity)
 │   ├── core/
 │   │   ├── config.py              # SQLAlchemy engine, session, Base (Neon DB)
 │   │   ├── dependencies.py        # get_db, get_current_user, RoleChecker
 │   │   └── security.py            # bcrypt hashing, JWT creation/validation, password reset tokens
+│   ├── middleware/
+│   │   ├── security_headers.py    # Security headers middleware (CSP, X-Frame-Options, etc.)
+│   │   └── rate_limiting.py       # Rate limiting middleware for auth endpoints
 │   ├── models/
 │   │   ├── user.py                # USER table
 │   │   ├── image.py               # IMAGE table (uploaded X-rays)
@@ -173,7 +169,8 @@ knee_oa_backend/
 │   ├── services/
 │   │   ├── email.py               # Email service (Resend integration, password reset emails)
 │   │   ├── image_processor.py     # Grayscale → ROI → Resize → CLAHE → Normalise
-│   │   └── s3_service.py          # S3 upload/download/presigned URL helpers
+│   │   ├── s3_service.py          # S3 upload/download/presigned URL helpers
+│   │   └── mobile_sync.py         # Mobile sync data export and aggregation
 │   └── ml_assets/
 │       ├── cnn_weights/
 │       │   └── CNN.keras           # Diagnostic CNN model (KL grading)
@@ -182,6 +179,9 @@ knee_oa_backend/
 │   ├── env.py                     # Alembic config (loads all models for autogenerate)
 │   ├── script.py.mako             # Migration template
 │   └── versions/                  # Auto-generated migration files
+├── scripts/
+│   ├── init_admin.py              # Initialize default admin account
+│   └── cleanup_test_db.py         # Test database cleanup utility
 ├── tests/
 │   ├── conftest.py                # In-memory SQLite, fixtures, auth helpers
 │   ├── test_auth.py               # 12 tests — registration + login (admin blocked)
@@ -190,20 +190,23 @@ knee_oa_backend/
 │   ├── test_recommendation.py     # 9 tests — standalone recommendations
 │   ├── test_profile.py            # 26 tests — profile CRUD + password + **logging & history**
 │   ├── test_video.py              # 19 tests — video library CRUD + RBAC
+│   ├── test_mobile_sync.py        # 20 tests — mobile sync endpoints + data export
 │   ├── test_health.py             # 2 tests — root + health check
 │   └── test_password_reset.py     # 10 tests — forgot/reset password flow + token validation
 │
 │ **Total: 115 tests, ALL PASSING**
-├── Dockerfile                     # Python 3.10-slim, ML-optimised
+├── Dockerfile                     # Python 3.10-slim, ML-optimised, multi-stage build
 ├── docker-compose.yml             # Dev setup with hot-reload volume mount
+├── docker-compose.prod.yml        # Production setup with NGINX reverse proxy
 ├── requirements.txt               # All dependencies with version pins
 ├── alembic.ini                    # Alembic configuration
+├── pytest.ini                     # Pytest configuration
 └── .env                           # (You create this) — secrets & DB URL
 ```
 
 ---
 
-## 🔐 Authentication & Authorisation
+## 🔐 Authentication & Authorization
 
 ### JWT Token Flow
 
@@ -233,19 +236,35 @@ Client                          Server
 
 | Endpoint | Patient | GP | Admin |
 |----------|---------|-----|-------|
-| `POST /auth/register` | ✅ | ✅ | ✅ |
+| `POST /auth/register` | ✅ | ✅ | ❌ (disabled) |
 | `POST /auth/login` | ✅ | ✅ | ✅ |
+| `POST /auth/forgot-password` | ✅ | ✅ | ✅ |
+| `POST /auth/reset-password` | ✅ | ✅ | ✅ |
 | `POST /upload/` | ✅ | ✅ | ❌ |
 | `POST /diagnostic/analyze` | ✅ (own images) | ✅ (any image) | ❌ |
 | `GET /diagnostic/reports` | ✅ (own) | ✅ (own) | ❌ |
+| `GET /diagnostic/reports/{id}` | ✅ (own) | ✅ (own) | ❌ |
 | `GET /recommendation/` | ✅ | ✅ | ❌ |
-| `GET/PUT /profile/me` | ✅ | ✅ | ✅ |
+| `GET /profile/me` | ✅ | ✅ | ✅ |
+| `PUT /profile/me` | ✅ | ✅ | ✅ |
+| `GET /profile/me/history` | ✅ | ✅ | ✅ |
+| `GET /profile/patients/{patient_id}/history` | ❌ | ✅ | ✅ |
+| `POST /profile/me/change-password` | ✅ | ✅ | ✅ |
 | `GET /videos/` | ✅ | ✅ | ✅ |
-| `POST/PUT/DELETE /videos/` | ❌ | ❌ | ✅ |
-
-| GET /mobile/sync/data | ✅ | ✅ | ❌ |
-| GET /mobile/sync/summary | ✅ | ✅ | ❌ |
-| POST /mobile/sync/export | ✅ | ✅ | ❌ |
+| `GET /videos/{id}` | ✅ | ✅ | ✅ |
+| `POST /videos/` | ❌ | ❌ | ✅ |
+| `POST /videos/upload` | ❌ | ❌ | ✅ |
+| `PUT /videos/{id}` | ❌ | ❌ | ✅ |
+| `PUT /videos/{id}/upload` | ❌ | ❌ | ✅ |
+| `DELETE /videos/{id}` | ❌ | ❌ | ✅ |
+| `GET /mobile/sync/data` | ✅ | ✅ | ❌ |
+| `GET /mobile/sync/summary` | ✅ | ✅ | ❌ |
+| `POST /mobile/sync/export` | ✅ | ✅ | ❌ |
+| `GET /mobile/sync/status` | ✅ | ✅ | ❌ |
+| `GET /admin/analytics/dashboard` | ❌ | ❌ | ✅ |
+| `GET /admin/analytics/users` | ❌ | ❌ | ✅ |
+| `GET /admin/analytics/reports` | ❌ | ❌ | ✅ |
+| `GET /admin/analytics/activity` | ❌ | ❌ | ✅ |
 
 ---
 
@@ -434,8 +453,10 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 ### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/auth/register` | Register a new user (Patient, GP only) |
-| `POST` | `/api/v1/auth/login` | Login and receive JWT token (rate-limited) |
+| `POST` | `/api/v1/auth/register` | Register a new user (Patient, GP only; Admin disabled) |
+| `POST` | `/api/v1/auth/login` | Login and receive JWT token (rate-limited: 5 attempts/minute) |
+| `POST` | `/api/v1/auth/forgot-password` | Request password reset email (rate-limited: 3 attempts/hour) |
+| `POST` | `/api/v1/auth/reset-password` | Reset password with JWT token (validates strength) |
 
 ### Image Upload
 | Method | Endpoint | Description |
@@ -458,7 +479,9 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/v1/profile/me` | Get current user's profile |
-| `PUT` | `/api/v1/profile/me` | Update profile (name, email) |
+| `PUT` | `/api/v1/profile/me` | Update profile (name, email, age, pain_level, mobility_level, kinesiophobia, occupation_type, has_stairs, current_meds, sleep_quality) |
+| `GET` | `/api/v1/profile/me/history` | Get profile change history (audit trail) |
+| `GET` | `/api/v1/profile/patients/{patient_id}/history` | Get another user's profile history (GP/Admin only) |
 | `POST` | `/api/v1/profile/me/change-password` | Change password |
 
 ### Video Library
@@ -466,8 +489,10 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 |--------|----------|-------------|
 | `GET` | `/api/v1/videos/` | List videos (filter by KL grade, category) |
 | `GET` | `/api/v1/videos/{id}` | Get a specific video |
-| `POST` | `/api/v1/videos/` | Create video entry (Admin only) |
-| `PUT` | `/api/v1/videos/{id}` | Update video entry (Admin only) |
+| `POST` | `/api/v1/videos/` | Create video metadata entry (Admin only) |
+| `POST` | `/api/v1/videos/upload` | Upload video file to S3 (Admin only) |
+| `PUT` | `/api/v1/videos/{id}` | Update video metadata (Admin only) |
+| `PUT` | `/api/v1/videos/{id}/upload` | Update video file (Admin only) |
 | `DELETE` | `/api/v1/videos/{id}` | Delete video entry (Admin only) |
 
 ### System
@@ -479,7 +504,10 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 ### Admin Analytics
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/admin/analytics/dashboard` | Dashboard statistics (Admin only) |
+| `GET` | `/api/v1/admin/analytics/dashboard` | Dashboard statistics (Admin only) - Total users, users by role, new users, images/reports, KL distribution, recent reports |
+| `GET` | `/api/v1/admin/analytics/users` | Get user list with filters (Admin only) - Filter by role, date range, activity status |
+| `GET` | `/api/v1/admin/analytics/reports` | Get diagnostic reports with filters (Admin only) - Filter by KL grade, date range, confidence threshold |
+| `GET` | `/api/v1/admin/analytics/activity` | Get activity metrics (Admin only) - Daily/weekly/monthly trends, user engagement, upload statistics |
 
 ### Mobile Sync
 | Method | Endpoint | Description |
@@ -487,6 +515,7 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 | `GET` | `/api/v1/mobile/sync/data` | Sync full user data (images, reports, history) |
 | `GET` | `/api/v1/mobile/sync/summary` | Get sync summary (counts only) |
 | `POST` | `/api/v1/mobile/sync/export` | Export user data to JSON file |
+| `GET` | `/api/v1/mobile/sync/status` | Get sync status and availability |
 
 ---
 
@@ -709,21 +738,16 @@ RUN PATCHED_PTXAS=$(find /opt/venv -name ptxas -type f | head -n 1) && \
 
 This project is part of a Final Year Project (FYP) for academic purposes.
 
-| **Mobile Sync** | ✅ Implemented | 20 tests passing |
-| **Admin Dashboard** | ✅ Created | Analytics & monitoring |
-| **Docker** | ✅ Production Ready | Multi-stage build |
-| **Documentation** | ✅ Organized | Structured docs folder |
-
 ---
 
 ## 📚 Documentation
 
 Comprehensive documentation is now organized in the [`docs/`](docs/) folder:
 
-### � Architecture Decision Records
+### 🏛️ Architecture Decision Records
 - [ADR-001: TensorFlow XLA Compiler Bug Fix](docs/architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md) - Critical runtime bug fix documentation
 
-### �🔒 Security
+### 🔒 Security
 - [Security Audit](docs/security/SECURITY_AUDIT.md) - Vulnerability assessment
 - [Security Fixes](docs/security/SECURITY_FIXES.md) - Implementation guide
 - [Applied Fixes](docs/security/SECURITY_APPLIED.md) - Current security status
