@@ -2,7 +2,7 @@
 
 > **Final Year Project** — A backend system for Knee Osteoarthritis detection and management using AI-powered multi-agent architecture.
 
-The system allows users to upload knee X-rays, receive an automated **Kellgren-Lawrence (KL) severity grade** from a custom-trained CNN, and get **personalised lifestyle recommendations** via a Retrieval-Augmented Generation (RAG) pipeline — all through a secure, role-based REST API.
+The system allows users to upload knee X-rays, receive an automated **Kellgren-Lawrence (KL) severity grade** from a custom-trained CNN, and get **personalised lifestyle recommendations** plus a structured **medication catalog** via a Retrieval-Augmented Generation (RAG) pipeline — all through a secure, role-based REST API.
 
 ---
 
@@ -10,7 +10,7 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 
 | Metric | Status |
 |--------|--------|
-| **Tests** | ✅ 115/115 Passing (100%) |
+| **Tests** | ✅ 145/145 Passing (100%) |
 | **Code Quality** | ✅ A- (90/100) |
 | **Security** | ✅ Hardened |
 | **Production Ready** | ✅ Yes |
@@ -148,6 +148,7 @@ knee_oa_backend/
 │   │   ├── recommendation.py      # GET / (standalone recommendations)
 │   │   ├── profile.py             # GET/PUT /me, GET /me/history, GET /patients/{patient_id}/history, POST /me/change-password
 │   │   ├── video.py               # CRUD for exercise video library (GET, POST, PUT, DELETE, upload endpoints)
+│   │   ├── medications.py         # Public medication catalog + admin medication creation
 │   │   ├── mobile_sync.py         # Mobile app data sync endpoints (GET /sync/data, /sync/summary, POST /sync/export, GET /sync/status)
 │   │   └── admin_analytics.py     # Admin analytics endpoints (GET /analytics/dashboard, /analytics/users, /analytics/reports, /analytics/activity)
 │   ├── core/
@@ -161,16 +162,19 @@ knee_oa_backend/
 │   │   ├── user.py                # USER table
 │   │   ├── image.py               # IMAGE table (uploaded X-rays)
 │   │   ├── report.py              # REPORT table (diagnosis + recommendations)
-│   │   └── library.py             # EXERCISE_VIDEO table
+│   │   ├── library.py             # EXERCISE_VIDEO table
+│   │   └── medication.py          # MEDICATION table
 │   ├── schemas/
 │   │   ├── user_schema.py         # UserCreate, UserOut, Token, ForgotPasswordRequest, ResetPasswordRequest
 │   │   ├── image_schema.py        # ImageUploadResponse, ImageOut
-│   │   ├── report_schema.py       # DiagnosticRequest, ReportOut, RecommendationResult
+│   │   ├── report_schema.py       # DiagnosticRequest, ReportOut
+│   │   ├── recommendation_schema.py # Medication + RecommendationResult output schemas
 │   │   └── profile_schema.py      # ProfileUpdate, ProfileOut, PasswordChange
 │   ├── services/
 │   │   ├── email.py               # Email service (Resend integration, password reset emails)
 │   │   ├── image_processor.py     # Grayscale → ROI → Resize → CLAHE → Normalise
 │   │   ├── s3_service.py          # S3 upload/download/presigned URL helpers
+│   │   ├── medication_service.py  # Medication catalog queries and serialization
 │   │   └── mobile_sync.py         # Mobile sync data export and aggregation
 │   └── ml_assets/
 │       ├── cnn_weights/
@@ -195,7 +199,7 @@ knee_oa_backend/
 │   ├── test_health.py             # 2 tests — root + health check
 │   └── test_password_reset.py     # 10 tests — forgot/reset password flow + token validation
 │
-│ **Total: 115 tests, ALL PASSING**
+│ **Total: 145 tests, ALL PASSING**
 ├── Dockerfile                     # Python 3.10-slim, ML-optimised, multi-stage build
 ├── docker-compose.yml             # Dev setup with hot-reload volume mount
 ├── docker-compose.prod.yml        # Production setup with NGINX reverse proxy
@@ -447,6 +451,12 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 - `duration_seconds`
 - **Purpose**: Exercise video library for recommendations
 
+#### MEDICATION Table
+- `id` (PK)
+- `name`, `dosage`, `frequency`, `instructions`, `contraindications`
+- `kl_grade_min`, `kl_grade_max` - Validated KL range for recommendation filtering
+- **Purpose**: Structured medication catalog used by the recommendation engine and admin dashboard
+
 ---
 
 ## 📡 API Endpoints
@@ -475,6 +485,12 @@ The vector store is auto-generated on first run and cached as `embeddings.npy` +
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/v1/recommendation/` | Get standalone recommendations by KL grade |
+
+### Medication Management
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/medications/` | Get the public structured medication catalog for recommendation filtering |
+| `POST` | `/api/v1/admin/medications/` | Create a medication record (Admin only, bearer token required) |
 
 ### Profile
 | Method | Endpoint | Description |
@@ -776,12 +792,14 @@ Comprehensive documentation is now organized in the [`docs/`](docs/) folder:
 Access the admin analytics dashboard at:
 - **Login**: `http://localhost:8000/admin-login.html`
 - **Dashboard**: `http://localhost:8000/admin-dashboard.html`
+- **Medications**: `http://localhost:8000/admin-medications-upload.html`
 
 **Features**:
 - 📊 Real-time analytics charts (KL grades, user growth, confidence)
 - 👥 User statistics and role distribution
 - 📈 Activity monitoring and recent reports
 - 💚 System health monitoring
+- 💊 Medication catalog management page for admins
 - 🔐 Admin-only access (RBAC protected)
 
 **Default Credentials**:
@@ -801,11 +819,16 @@ The backend provides comprehensive mobile sync capabilities:
 - `POST /api/v1/mobile/sync/export` - Export user data as JSON
 - `GET /api/v1/mobile/sync/status` - Get sync status
 
+### Medication Management
+- `GET /api/v1/medications/` - Public medication catalog for the recommendation engine
+- `POST /api/v1/admin/medications/` - Admin-only medication creation with bearer token auth
+
 ### What Gets Synced
 - ✅ User profile (age, pain_level, mobility_level, has_support)
 - ✅ User's X-ray images (metadata + S3 URLs)
 - ✅ User's diagnostic reports (KL grades, recommendations)
 - ✅ User's profile change history (audit trail)
+- ✅ Structured medication catalog for recommendation filtering
 
 ### What Does NOT Get Synced
 - ❌ Other users' data

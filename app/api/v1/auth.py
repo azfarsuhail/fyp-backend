@@ -57,10 +57,14 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         role=user.role
     )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
     
-    return new_user
+    try:
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except Exception:
+        db.rollback()
+        raise
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -76,7 +80,12 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     
     # Update last login timestamp
     user.last_login = datetime.now(timezone.utc)
-    db.commit()
+    
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     
     # Generate Token
     access_token = create_access_token(

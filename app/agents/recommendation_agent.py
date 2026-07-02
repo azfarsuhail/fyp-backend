@@ -32,6 +32,7 @@ Architecture:
 import os
 import json
 import numpy as np
+from threading import Lock
 from typing import List, Optional, Dict, Any
 from sentence_transformers import SentenceTransformer
 from sqlalchemy.orm import Session
@@ -52,12 +53,16 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 _embedding_model = None
 _kb_embeddings = None
 _knowledge_base = None
+_embedding_model_lock = Lock()
+_knowledge_base_lock = Lock()
 
 
 def _load_embedding_model() -> SentenceTransformer:
     global _embedding_model
     if _embedding_model is None:
-        _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        with _embedding_model_lock:
+            if _embedding_model is None:
+                _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
     return _embedding_model
 
 
@@ -68,25 +73,29 @@ def _load_knowledge_base():
     if _knowledge_base is not None:
         return
 
-    if not os.path.exists(EMBEDDINGS_FILE) or not os.path.exists(KNOWLEDGE_FILE):
-        raise FileNotFoundError(
-            f"Vector store files not found. Please run: python scripts/generate_embeddings.py"
-        )
+    with _knowledge_base_lock:
+        if _knowledge_base is not None:
+            return
 
-    # Load embeddings
-    _kb_embeddings = np.load(EMBEDDINGS_FILE)
-    
-    # Load knowledge base
-    with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
-        _knowledge_base = json.load(f)
-    
-    # Verify embeddings match knowledge base
-    if len(_kb_embeddings) != len(_knowledge_base):
-        raise ValueError(
-            f"Embedding count ({len(_kb_embeddings)}) doesn't match "
-            f"knowledge base count ({len(_knowledge_base)}). "
-            "Please regenerate embeddings."
-        )
+        if not os.path.exists(EMBEDDINGS_FILE) or not os.path.exists(KNOWLEDGE_FILE):
+            raise FileNotFoundError(
+                f"Vector store files not found. Please run: python scripts/generate_embeddings.py"
+            )
+
+        # Load embeddings
+        _kb_embeddings = np.load(EMBEDDINGS_FILE)
+        
+        # Load knowledge base
+        with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
+            _knowledge_base = json.load(f)
+        
+        # Verify embeddings match knowledge base
+        if len(_kb_embeddings) != len(_knowledge_base):
+            raise ValueError(
+                f"Embedding count ({len(_kb_embeddings)}) doesn't match "
+                f"knowledge base count ({len(_knowledge_base)}). "
+                "Please regenerate embeddings."
+            )
 
 
 # ── WARNINGS TABLE (deterministic, grade-based) ──────────────────────────────

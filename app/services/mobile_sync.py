@@ -17,7 +17,7 @@ Data NOT Synced:
 - System-wide configurations
 """
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 import json
@@ -45,13 +45,21 @@ class MobileSyncService:
         from app.models.report import Report
         from app.models.profile_log import ProfileLog
         
-        # Get user profile
-        user = self.db.query(User).filter(User.user_id == self.user_id).first()
+        # Get user with eager-loaded relationships (reduces 4 queries to 1)
+        user = self.db.query(User).options(
+            joinedload(User.images),
+            joinedload(User.reports),
+            joinedload(User.profile_logs)
+        ).filter(User.user_id == self.user_id).first()
+        
         if not user:
             raise ValueError(f"User {self.user_id} not found")
         
-        # Get user's images
-        images = self.db.query(Image).filter(Image.user_id == self.user_id).all()
+        # Access pre-loaded relationships (no additional queries!)
+        images = user.images
+        reports = user.reports
+        history = user.profile_logs
+        
         images_data = [
             {
                 "image_id": img.image_id,
@@ -64,8 +72,6 @@ class MobileSyncService:
             for img in images
         ]
         
-        # Get user's reports
-        reports = self.db.query(Report).filter(Report.user_id == self.user_id).all()
         reports_data = [
             {
                 "report_id": rpt.report_id,
@@ -82,10 +88,6 @@ class MobileSyncService:
             for rpt in reports
         ]
         
-        # Get user's profile history
-        history = self.db.query(ProfileLog).filter(
-            ProfileLog.user_id == self.user_id
-        ).order_by(ProfileLog.changed_at.desc()).all()
         history_data = [
             {
                 "log_id": log.log_id,
@@ -144,38 +146,38 @@ class MobileSyncService:
         """
         user_data = self.get_user_data()
         
-        # Connect to SQLite database (creates if doesn't exist)
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        # Create tables
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS user_profile (
-                user_id INTEGER PRIMARY KEY,
-                email TEXT,
-                full_name TEXT,
-                role TEXT,
-                age INTEGER,
-                pain_level INTEGER,
-                mobility_level TEXT,
-                has_support INTEGER,
-                created_at TEXT,
-                last_login TEXT
-            )
-        ''')
-        
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS images (
-                image_id INTEGER PRIMARY KEY,
-                s3_url TEXT,
-                processed_s3_url TEXT,
-                file_name TEXT,
-                content_type TEXT,
-                uploaded_at TEXT
-            )
-        ''')
-        
-        cursor.execute('''
+        # Use context manager to ensure proper cleanup
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Create tables
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS user_profile (
+                    user_id INTEGER PRIMARY KEY,
+                    email TEXT,
+                    full_name TEXT,
+                    role TEXT,
+                    age INTEGER,
+                    pain_level INTEGER,
+                    mobility_level TEXT,
+                    has_support INTEGER,
+                    created_at TEXT,
+                    last_login TEXT
+                )
+            ''')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS images (
+                    image_id INTEGER PRIMARY KEY,
+                    s3_url TEXT,
+                    processed_s3_url TEXT,
+                    file_name TEXT,
+                    content_type TEXT,
+                    uploaded_at TEXT
+                )
+            ''')
+            
+            cursor.execute('''
             CREATE TABLE IF NOT EXISTS reports (
                 report_id INTEGER PRIMARY KEY,
                 image_id INTEGER,

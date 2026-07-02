@@ -154,8 +154,13 @@ def verify_otp_and_increment_attempts(
     if verify_otp_code(otp_code, otp_record.code_hash):
         # OTP is valid - mark as verified
         otp_record.is_verified = 1
+    
+    try:
         db.commit()
         return True, "success"
+    except Exception:
+        db.rollback()
+        raise
     
     # OTP is invalid - increment attempts
     otp_record.attempts += 1
@@ -163,14 +168,21 @@ def verify_otp_and_increment_attempts(
     # Check if max attempts reached
     if otp_record.attempts >= MAX_ATTEMPTS:
         otp_record.is_verified = 2  # Lock out the OTP
-        db.commit()
-        return False, "Too many failed attempts. OTP has been locked."
+        
+        try:
+            db.commit()
+            return False, "Too many failed attempts. OTP has been locked."
+        except Exception:
+            db.rollback()
+            raise
     
-    db.commit()
-    remaining_attempts = MAX_ATTEMPTS - otp_record.attempts
-    return False, f"Invalid OTP code. {remaining_attempts} attempts remaining."
-
-
+    try:
+        db.commit()
+        remaining_attempts = MAX_ATTEMPTS - otp_record.attempts
+        return False, f"Invalid OTP code. {remaining_attempts} attempts remaining."
+    except Exception:
+        db.rollback()
+        raise
 def cleanup_expired_otps(db: Session) -> int:
     """
     Soft-delete expired OTP records.
@@ -191,8 +203,12 @@ def cleanup_expired_otps(db: Session) -> int:
         OTPVerification.is_verified == 0
     ).update({"is_verified": 2})  # Mark as expired
     
-    db.commit()
-    return result
+    try:
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise
 
 
 def delete_otp_for_user(db: Session, user_id: int) -> None:

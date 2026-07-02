@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Load environment variables early
 load_dotenv()
 
-from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics
+from app.api.v1 import auth, upload, diagnostic, recommendation, profile, video, mobile_sync, admin_analytics, medications
 from app.core.security_middleware import SecurityHeadersMiddleware, RateLimitAuthMiddleware
 
 @asynccontextmanager
@@ -103,6 +103,7 @@ app.include_router(profile.router, prefix="/api/v1/profile", tags=["Profile"])
 app.include_router(video.router, prefix="/api/v1/videos", tags=["Video Library"])
 app.include_router(mobile_sync.router, prefix="/api/v1/mobile", tags=["Mobile Sync"])
 app.include_router(admin_analytics.router, prefix="/api/v1/admin", tags=["Admin Analytics"])
+app.include_router(medications.router, prefix="/api/v1", tags=["Medication Management"])
 
 @app.get("/")
 def root():

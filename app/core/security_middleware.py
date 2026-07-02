@@ -10,6 +10,7 @@ from functools import wraps
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import time
+from threading import Lock
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -25,6 +26,7 @@ class RateLimiter:
             "/api/v1/auth/request-otp": (3, 60),  # 3 OTP requests per hour per IP
         }
         self.attempts: dict[str, list[datetime]] = defaultdict(list)
+        self._lock = Lock()
     
     def _clean_old_attempts(self, identifier: str, endpoint: str, now: datetime):
         """Helper to remove timestamps older than the window."""
@@ -40,14 +42,16 @@ class RateLimiter:
         
         now = datetime.now(timezone.utc)
         max_attempts, _ = self.config[endpoint]
-        self._clean_old_attempts(identifier, endpoint, now)
-        
-        key = f"{endpoint}:{identifier}"
-        if len(self.attempts[key]) >= max_attempts:
-            return False
-        
-        self.attempts[key].append(now)
-        return True
+
+        with self._lock:
+            self._clean_old_attempts(identifier, endpoint, now)
+            
+            key = f"{endpoint}:{identifier}"
+            if len(self.attempts[key]) >= max_attempts:
+                return False
+            
+            self.attempts[key].append(now)
+            return True
     
     def get_remaining(self, identifier: str, endpoint: str) -> int:
         """Get remaining attempts for identifier on endpoint."""
@@ -58,9 +62,10 @@ class RateLimiter:
         max_attempts, window_minutes = self.config[endpoint]
         window = timedelta(minutes=window_minutes)
         
-        key = f"{endpoint}:{identifier}"
-        self.attempts[key] = [ts for ts in self.attempts[key] if now - ts < window]
-        return max(0, max_attempts - len(self.attempts[key]))
+        with self._lock:
+            key = f"{endpoint}:{identifier}"
+            self.attempts[key] = [ts for ts in self.attempts[key] if now - ts < window]
+            return max(0, max_attempts - len(self.attempts[key]))
 
 
 # Global rate limiter instance

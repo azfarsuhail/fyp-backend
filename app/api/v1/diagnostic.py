@@ -14,7 +14,8 @@ Orchestrates the full diagnostic pipeline:
 import json
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi.concurrency import run_in_threadpool
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import get_db, RoleChecker
 from app.schemas.report_schema import DiagnosticRequest, ReportOut
@@ -88,15 +89,26 @@ async def analyze_xray(
 
     # ── 3. Validate image is a valid knee X-ray (Gatekeeper) ────────────
     # This prevents OOD images from reaching the diagnostic CNN
-    if not validate_image(image_bytes):
+    # Run in threadpool to prevent event loop blocking (CLIP inference is CPU-intensive)
+    try:
+        is_valid = await run_in_threadpool(validate_image, image_bytes)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail="Image validation failed. Please upload a clear, weight-bearing knee X-ray.",
+            )
+    except Exception as e:
         raise HTTPException(
-            status_code=400,
-            detail="Image validation failed. Please upload a clear, weight-bearing knee X-ray.",
+            status_code=500,
+            detail=f"Image validation failed: {e}",
         )
 
     # ── 4. Diagnostic Agent — CNN Inference ──────────────────────────────
+    # Run in threadpool to prevent event loop blocking (TensorFlow inference is CPU-intensive)
     try:
-        kl_grade, confidence, diagnosis_summary = predict_kl_grade(image_bytes)
+        kl_grade, confidence, diagnosis_summary = await run_in_threadpool(
+            predict_kl_grade, image_bytes
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -114,8 +126,10 @@ async def analyze_xray(
         pass  # Non-critical — don't fail the pipeline if processed upload fails
 
     # ── 6. Recommendation Agent — RAG ────────────────────────────────────
+    # Run in threadpool to prevent event loop blocking (semantic search is CPU-intensive)
     try:
-        rec_result = generate_recommendation(
+        rec_result = await run_in_threadpool(
+            generate_recommendation,
             kl_grade=kl_grade,
             db=db,
             pain_level=request.pain_level,
@@ -176,11 +190,15 @@ def get_my_reports(
     current_user: dict = Depends(allow_diagnose),
 ):
     """Get all diagnostic reports for the current user."""
-    user = db.query(User).filter(User.email == current_user["email"]).first()
+    # Use eager loading to reduce 2 queries to 1
+    user = db.query(User).options(
+        joinedload(User.reports)
+    ).filter(User.email == current_user["email"]).first()
+    
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    reports = db.query(Report).filter(Report.user_id == user.user_id).all()
+    reports = user.reports
 
     return [
         ReportOut(

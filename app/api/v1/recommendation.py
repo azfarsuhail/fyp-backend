@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.core.dependencies import get_db, RoleChecker
-from app.schemas.report_schema import RecommendationResult
+from app.schemas.recommendation_schema import RecommendationResult
 from app.models.user import User
+from app.services.medication_service import list_medications
 from app.agents.recommendation_agent import generate_recommendation
 
 router = APIRouter()
@@ -71,10 +72,13 @@ def get_recommendation(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Recommendation generation failed: {e}")
 
+    medications = list_medications(db)
+
     return RecommendationResult(
         lifestyle_plan=result["lifestyle_plan"],
         warnings=result["warnings"],
         exercise_videos=result["exercise_videos"],
+        medications=medications,
         recommendation=result["recommendation"],
         exercise_video_urls=result["exercise_video_urls"],
     )

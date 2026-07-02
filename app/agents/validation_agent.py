@@ -33,6 +33,7 @@ Singleton Pattern:
 import io
 import sys
 import traceback
+from threading import Lock
 from typing import Optional
 
 import torch
@@ -50,6 +51,7 @@ class ValidationAgent:
     
     _instance: Optional["ValidationAgent"] = None
     _pipeline: Optional[pipeline] = None
+    _lock = Lock()
     
     # Candidate labels for zero-shot classification
     LABELS = [
@@ -64,13 +66,17 @@ class ValidationAgent:
     def __new__(cls):
         """Singleton pattern - ensure only one instance exists."""
         if cls._instance is None:
-            cls._instance = super(ValidationAgent, cls).__new__(cls)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(ValidationAgent, cls).__new__(cls)
         return cls._instance
     
     def __init__(self):
         """Initialize or reuse the loaded pipeline."""
         if ValidationAgent._pipeline is None:
-            self._load_model()
+            with ValidationAgent._lock:
+                if ValidationAgent._pipeline is None:
+                    self._load_model()
     
     def _load_model(self):
         """
@@ -137,6 +143,7 @@ class ValidationAgent:
 
 # Global singleton instance
 _gatekeeper: Optional[ValidationAgent] = None
+_gatekeeper_lock = Lock()
 
 
 def get_validation_agent() -> ValidationAgent:
@@ -148,7 +155,9 @@ def get_validation_agent() -> ValidationAgent:
     """
     global _gatekeeper
     if _gatekeeper is None:
-        _gatekeeper = ValidationAgent()
+        with _gatekeeper_lock:
+            if _gatekeeper is None:
+                _gatekeeper = ValidationAgent()
     return _gatekeeper
 
 

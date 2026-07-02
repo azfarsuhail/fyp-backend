@@ -9,6 +9,7 @@
 | **Security** | ✅ Hardened (March 2026) |
 | **OTP Password Reset** | ✅ Completed (June 2026) |
 | **Clinical RAG** | ✅ Advanced Filtering (April 2026) |
+| **Medication Management** | ✅ Structured Catalog + Admin UI (July 2026) |
 | **Image Validation** | ✅ CLIP Zero-Shot Gatekeeper (June 2026) |
 | **API Contract Check** | ✅ Verified (April 2026) |
 | **XLA Compiler Fix** | ✅ ptxas Bug Resolved (June 2026) |
@@ -132,6 +133,13 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 - ✅ **Zero-Trust Security Audit**: Comprehensive review of JWT validation, error handling, and abuse vectors completed
 - ✅ **Production Ready**: All security fixes verified and deployed
 
+## Latest Maintenance Update (2026-07-02)
+- ✅ **Medication Catalog Added**: Introduced structured `Medication` schema and `MedicationModel` table for recommendation filtering and admin maintenance
+- ✅ **Medication API Routes**: Added public `GET /api/v1/medications/` and admin-only `POST /api/v1/admin/medications/` endpoints
+- ✅ **Recommendation Output Updated**: `RecommendationResult` now includes `medications` as a structured list for the clinical RAG layer
+- ✅ **Admin UI Added**: Created `static/admin-medications-upload.html` and linked it from the main admin dashboard
+- ✅ **Alembic Support**: Added migration scaffold for the `MEDICATION` table with KL grade constraints
+
 ## Previous Maintenance Updates
 
 ### April 2026
@@ -159,6 +167,10 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 
 ### Recommendation (`/api/v1/recommendation`)
 - `GET /` - Standalone parametric recommendations by KL grade (+ pain/mobility params)
+
+### Medication Management (`/api/v1`)
+- `GET /medications/` - Public medication catalog for the recommendation engine
+- `POST /admin/medications/` - Admin-only medication creation with bearer-token auth and role check
 
 ### Profile Management (`/api/v1/profile`)
 - `GET /me` - Get current user profile
@@ -237,6 +249,11 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 - `kl_grade_min`, `kl_grade_max` (range filter)
 - `category` (strengthening/flexibility/low-impact), `difficulty` (beginner/intermediate/advanced), `duration_seconds`
 
+### Medication (`MEDICATION` table)
+- `id`, `name`, `dosage`, `frequency`, `instructions`, `contraindications`
+- `kl_grade_min`, `kl_grade_max` with check constraints to keep grade ranges valid
+- Used by the recommendation engine as a structured medication catalog
+
 ## Core Services
 
 ### S3 Service (`app/services/s3_service.py`)
@@ -296,6 +313,11 @@ Pipeline: Load → Grayscale → ROI center-crop → Resize 256×256 → Autocon
   - Has stairs → prioritize stair-friendly recommendations
 - **Safe Defaults**: Null values default to conservative settings (e.g., null kinesiophobia → 'moderate')
 - Output: List of typed JSON objects (not free-text)
+
+### Medication Catalog
+- **Schema**: Structured `Medication` Pydantic model aligned with the recommendation output contract
+- **Storage**: SQLAlchemy `MedicationModel` in `MEDICATION` table
+- **Admin Workflow**: Managed from `static/admin-medications-upload.html` using JWT bearer auth from `localStorage.adminToken`
 
 ## Authentication & RBAC
 
@@ -465,19 +487,6 @@ pytest -v
 - ✅ **GitHub Actions CI/CD** with automated Docker builds and semver tagging
 - ✅ **Admin Analytics Dashboard** endpoint for comprehensive statistics
 - ✅ **Mobile Sync** feature for offline-first mobile apps
-- ✅ **Profile Audit Trail** with full change logging
-- ✅ **Security hardened** (March 2026)
-- ✅ **XLA compiler bug fixed** (June 2026) - TensorFlow inference stable
-- ✅ **Code quality: A- (90/100)**
-- ✅ **Production ready**
-- ⏳ Production deployment (AWS ECS/EKS or Azure Container Apps)
-- ⏳ Frontend mobile/web app integration
-
-## Documentation
-- [Main README](README.md) - Project overview and quick start
-- [Architecture Decision Records](docs/architecture/) - Critical technical decisions
-  - [ADR-001: TensorFlow XLA Compiler Bug Fix](docs/architecture/ADR-001-TensorFlow-XLA-ptxas-Fix.md) - Complete technical details
-- [Full Documentation Index](docs/README.md) - All documentation organized by category
 - ✅ **Profile Audit Trail** with full change logging
 - ✅ **Security hardened** (March 2026)
 - ✅ **XLA compiler bug fixed** (June 2026) - TensorFlow inference stable

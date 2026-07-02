@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Medication Manager - Knee OA</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #166534 100%);
+            color: #0f172a;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container { max-width: 1280px; margin: 0 auto; }
+        .hero, .panel, .table-card {
+            background: rgba(255,255,255,0.96);
+            border-radius: 18px;
+            box-shadow: 0 20px 40px rgba(15,23,42,0.18);
+        }
+        .hero { padding: 24px 28px; margin-bottom: 20px; }
+        .hero-top { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; }
+        h1, h2, h3 { margin: 0; }
+        p { color: #475569; }
+        .actions { display:flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+        .btn, .link-btn {
+            border: none; border-radius: 10px; padding: 10px 14px; cursor: pointer; font-weight: 700;
+            text-decoration: none; display:inline-flex; align-items:center; justify-content:center;
+        }
+        .btn-primary { background:#166534; color:white; }
+        .btn-secondary { background:white; color:#166534; border:1px solid #166534; }
+        .panel, .table-card { padding: 20px; margin-bottom: 20px; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+        .field { display:flex; flex-direction:column; gap:6px; }
+        label { font-size: 0.85rem; color:#334155; font-weight: 700; }
+        input, textarea {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; font: inherit;
+            background: white;
+        }
+        textarea { min-height: 96px; resize: vertical; }
+        .notice { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; display:none; }
+        .notice.ok { background:#dcfce7; color:#166534; }
+        .notice.err { background:#fee2e2; color:#991b1b; }
+        .muted { color:#64748b; font-size: 0.92rem; }
+        table { width:100%; border-collapse: collapse; }
+        th, td { text-align:left; padding: 12px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        th { color:#0f172a; font-size:0.9rem; }
+        td { color:#334155; font-size:0.95rem; }
+        .badge {
+            display:inline-block; padding: 4px 10px; border-radius: 999px; background:#dcfce7; color:#166534;
+            font-size:0.8rem; font-weight:700;
+        }
+        .toolbar { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom: 14px; }
+        .empty { padding: 18px; border: 1px dashed #cbd5e1; border-radius: 12px; color:#64748b; }
+        @media (max-width: 900px) {
+            .table-wrap { overflow-x:auto; }
+            table { min-width: 900px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <div class="hero-top">
+                <div>
+                    <h1>💊 Medication Manager</h1>
+                    <p>Maintain the structured medication catalog used by the recommendation engine.</p>
+                </div>
+                <a class="btn btn-secondary" href="admin-dashboard.html">← Back to dashboard</a>
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="loadMedications()">Refresh list</button>
+            </div>
+        </div>
+
+        <div id="message" class="notice"></div>
+
+        <div class="panel">
+            <h2 style="margin-bottom:12px;">Create medication</h2>
+            <form id="medication-form">
+                <div class="grid">
+                    <div class="field">
+                        <label for="name">Name</label>
+                        <input id="name" required placeholder="e.g. Paracetamol">
+                    </div>
+                    <div class="field">
+                        <label for="dosage">Dosage</label>
+                        <input id="dosage" required placeholder="e.g. 500 mg">
+                    </div>
+                    <div class="field">
+                        <label for="frequency">Frequency</label>
+                        <input id="frequency" required placeholder="e.g. Every 6 hours as needed">
+                    </div>
+                    <div class="field">
+                        <label for="kl-grade-min">KL grade min</label>
+                        <input id="kl-grade-min" type="number" min="0" max="4" required>
+                    </div>
+                    <div class="field">
+                        <label for="kl-grade-max">KL grade max</label>
+                        <input id="kl-grade-max" type="number" min="0" max="4" required>
+                    </div>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                    <label for="instructions">Instructions</label>
+                    <textarea id="instructions" placeholder="Optional patient instructions"></textarea>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                    <label for="contraindications">Contraindications</label>
+                    <textarea id="contraindications" placeholder="Comma-separated list, e.g. aspirin allergy, severe renal impairment"></textarea>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-primary" type="submit">Save medication</button>
+                    <button class="btn btn-secondary" type="button" onclick="resetForm()">Clear</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-card">
+            <div class="toolbar">
+                <h2>Existing medications</h2>
+                <span class="muted">Loaded from <strong>/api/v1/medications/</strong></span>
+            </div>
+            <div id="table-message" class="muted" style="margin-bottom:12px;"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Dosage</th>
+                            <th>Frequency</th>
+                            <th>KL Range</th>
+                            <th>Instructions</th>
+                            <th>Contraindications</th>
+                        </tr>
+                    </thead>
+                    <tbody id="medications-table-body">
+                        <tr><td colspan="7" class="empty">Loading medications...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+
+        function getToken() {
+            return localStorage.getItem('adminToken');
+        }
+
+        function requireToken() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return null;
+            }
+            return token;
+        }
+
+        function showMessage(text, kind = 'ok') {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = `notice ${kind}`;
+            el.style.display = 'block';
+        }
+
+        function setTableMessage(text) {
+            document.getElementById('table-message').textContent = text;
+        }
+
+        function resetForm() {
+            document.getElementById('medication-form').reset();
+        }
+
+        function parseContraindications(text) {
+            if (!text) return [];
+            return text.split(',').map((item) => item.trim()).filter((item) => item.length > 0);
+        }
+
+        function renderMedications(medications) {
+            const tbody = document.getElementById('medications-table-body');
+
+            if (!medications.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty">No medications have been added yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = medications.map((medication) => `
+                <tr>
+                    <td><span class="badge">${medication.id}</span></td>
+                    <td><strong>${medication.name}</strong></td>
+                    <td>${medication.dosage}</td>
+                    <td>${medication.frequency}</td>
+                    <td>${medication.kl_grade_min} - ${medication.kl_grade_max}</td>
+                    <td>${medication.instructions || '<span class="muted">None</span>'}</td>
+                    <td>${(medication.contraindications && medication.contraindications.length) ? medication.contraindications.join(', ') : '<span class="muted">None</span>'}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadMedications() {
+            setTableMessage('Refreshing medications...');
+            try {
+                const response = await fetch(`${API_BASE}/medications/`);
+                if (!response.ok) {
+                    setTableMessage('Failed to load medications.');
+                    renderMedications([]);
+                    return;
+                }
+
+                const medications = await response.json();
+                renderMedications(medications);
+                setTableMessage(`Showing ${medications.length} medication record${medications.length === 1 ? '' : 's'}.`);
+            } catch (error) {
+                setTableMessage('Failed to load medications.');
+                renderMedications([]);
+            }
+        }
+
+        function extractValidationMessage(payload) {
+            if (!payload || !payload.detail) {
+                return 'Validation failed.';
+            }
+
+            if (Array.isArray(payload.detail)) {
+                return payload.detail.map((item) => `${item.loc ? item.loc.join('.') : 'field'}: ${item.msg || 'invalid value'}`).join(' | ');
+            }
+
+            if (typeof payload.detail === 'string') {
+                return payload.detail;
+            }
+
+            return 'Validation failed.';
+        }
+
+        document.getElementById('medication-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const token = requireToken();
+            if (!token) return;
+
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                dosage: document.getElementById('dosage').value.trim(),
+                frequency: document.getElementById('frequency').value.trim(),
+                instructions: document.getElementById('instructions').value.trim() || null,
+                contraindications: parseContraindications(document.getElementById('contraindications').value),
+                kl_grade_min: Number(document.getElementById('kl-grade-min').value),
+                kl_grade_max: Number(document.getElementById('kl-grade-max').value),
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/medications/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (response.status === 422) {
+                    const payloadError = await response.json();
+                    showMessage(extractValidationMessage(payloadError), 'err');
+                    return;
+                }
+
+                if (!response.ok) {
+                    const errorPayload = await response.json().catch(() => ({}));
+                    showMessage(errorPayload.detail || 'Failed to save medication.', 'err');
+                    return;
+                }
+
+                showMessage('Medication created successfully');
+                resetForm();
+                loadMedications();
+            } catch (error) {
+                showMessage('Failed to save medication.', 'err');
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadMedications();
+        });
+    </script>
+</body>
+</html>

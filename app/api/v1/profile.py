@@ -8,7 +8,7 @@ Logs all profile changes to PROFILE_LOG for audit trail.
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import get_db, get_current_user, RoleChecker
 from app.core.security import verify_password, get_password_hash
@@ -64,11 +64,15 @@ def get_profile_history(
     current_user: dict = Depends(get_current_user),
 ):
     """Get the change history for the current user's profile fields."""
-    user = db.query(User).filter(User.email == current_user["email"]).first()
+    # Use eager loading to reduce 2 queries to 1
+    user = db.query(User).options(
+        joinedload(User.profile_logs)
+    ).filter(User.email == current_user["email"]).first()
+    
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    logs = db.query(ProfileLog).filter(ProfileLog.user_id == user.user_id).order_by(ProfileLog.changed_at.desc()).all()
+    logs = user.profile_logs
     
     return ProfileHistoryOut(
         user_id=user.user_id,
@@ -86,13 +90,17 @@ def get_patient_history(
     current_user: dict = Depends(allow_gp),
 ):
     """GP-only: Get the change history for a specific patient by user id."""
-    patient = db.query(User).filter(User.user_id == patient_id).first()
+    # Use eager loading to reduce 2 queries to 1
+    patient = db.query(User).options(
+        joinedload(User.profile_logs)
+    ).filter(User.user_id == patient_id).first()
+    
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     if patient.role != "patient":
         raise HTTPException(status_code=400, detail="Requested user is not a patient")
 
-    logs = db.query(ProfileLog).filter(ProfileLog.user_id == patient.user_id).order_by(ProfileLog.changed_at.desc()).all()
+    logs = patient.profile_logs
 
     return ProfileHistoryOut(
         user_id=patient.user_id,

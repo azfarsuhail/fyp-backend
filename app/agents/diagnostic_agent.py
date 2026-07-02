@@ -16,6 +16,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from typing import Tuple
+from threading import Lock
 
 from app.services.image_processor import process_for_diagnostic
 
@@ -38,6 +39,7 @@ KL_LABELS = {
 
 # ── Singleton Model Loader ───────────────────────────────────────────────────
 _model = None
+_model_lock = Lock()
 
 
 def _load_model() -> tf.keras.Model:
@@ -47,14 +49,16 @@ def _load_model() -> tf.keras.Model:
     """
     global _model
     if _model is None:
-        model_path = MODEL_PATH if os.path.exists(MODEL_PATH) else LEGACY_MODEL_PATH
+        with _model_lock:
+            if _model is None:
+                model_path = MODEL_PATH if os.path.exists(MODEL_PATH) else LEGACY_MODEL_PATH
 
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(
-                f"CNN weights not found at {MODEL_PATH} or {LEGACY_MODEL_PATH}. "
-                "Ensure CNN.-Final.keras is placed in app/ml_assets/cnn_weights/"
-            )
-        _model = tf.keras.models.load_model(model_path)
+                if not os.path.exists(model_path):
+                    raise FileNotFoundError(
+                        f"CNN weights not found at {MODEL_PATH} or {LEGACY_MODEL_PATH}. "
+                        "Ensure CNN.-Final.keras is placed in app/ml_assets/cnn_weights/"
+                    )
+                _model = tf.keras.models.load_model(model_path)
     return _model
 
 
