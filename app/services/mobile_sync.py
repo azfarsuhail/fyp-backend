@@ -17,7 +17,7 @@ Data NOT Synced:
 - System-wide configurations
 """
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 import json
@@ -49,7 +49,7 @@ class MobileSyncService:
         user = self.db.query(User).options(
             joinedload(User.images),
             joinedload(User.reports),
-            joinedload(User.profile_logs)
+            selectinload(User.profile_logs)
         ).filter(User.user_id == self.user_id).first()
         
         if not user:

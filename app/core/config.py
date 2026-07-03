@@ -11,7 +11,16 @@ TESTING = os.getenv("TESTING", "0") in ("1", "true", "True")
 
 # DATABASE_URL should be set in .env for production (Neon/Postgres)
 # Example: DATABASE_URL="postgresql://user:pass@host/dbname?sslmode=require"
-DEFAULT_PG = "postgresql://localhost/knee_oa"
+# For containerized tests, DB_HOST should be set to 'db' (docker-compose service name)
+# For production with Neon, set DATABASE_URL directly in .env
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_NAME = os.getenv("DB_NAME", "knee_oa")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
+DB_PORT = os.getenv("DB_PORT", "5432")
+
+# Build DATABASE_URL from environment variables
+DEFAULT_PG = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_PG)
 
 # Create engine with sensible defaults for SQLite (tests/local) and Postgres

@@ -24,6 +24,8 @@ jobs:
         run: |
           echo "SECRET_KEY=test-secret-key-for-testing-only-32chars!" >> $GITHUB_ENV
           echo "TESTING=1" >> $GITHUB_ENV
+          echo "DB_HOST=localhost" >> $GITHUB_ENV
+          echo "DATABASE_URL=sqlite:///test.db" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |

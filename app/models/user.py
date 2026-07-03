@@ -41,7 +41,7 @@ def _configure_relationships():
     User.profile_logs = relationship(
         "ProfileLog", 
         back_populates="user", 
-        lazy="dynamic"
+        lazy="select"
     )
     
     # Configure OTPVerification relationship with cascade delete
