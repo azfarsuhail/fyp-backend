@@ -442,6 +442,37 @@ def get_exercise_videos(kl_grade: int, db: Session) -> List[Dict[str, Any]]:
     ]
 
 
+def get_medications(kl_grade: int, db: Session) -> List[Dict[str, Any]]:
+    """
+    Fetch medications from the DB that match the patient's KL grade.
+    Filters by kl_grade_min <= kl_grade <= kl_grade_max.
+    """
+    from app.models.medication import MedicationModel
+    
+    medications = (
+        db.query(MedicationModel)
+        .filter(
+            MedicationModel.kl_grade_min <= kl_grade,
+            MedicationModel.kl_grade_max >= kl_grade,
+        )
+        .all()
+    )
+    
+    return [
+        {
+            "id": m.id,
+            "name": m.name,
+            "dosage": m.dosage,
+            "frequency": m.frequency,
+            "instructions": m.instructions,
+            "contraindications": m.contraindications,
+            "kl_grade_min": m.kl_grade_min,
+            "kl_grade_max": m.kl_grade_max,
+        }
+        for m in medications
+    ]
+
+
 def generate_recommendation(
     kl_grade: int,
     db: Session,
@@ -566,7 +597,10 @@ def generate_recommendation(
     exercise_videos = get_exercise_videos(kl_grade, db)
     exercise_video_urls = [v["s3_url"] for v in exercise_videos]
 
-    # ── Step 9: Build legacy text summary for backward compatibility ───────
+    # ── Step 9: Get medications ───────────────────────────────────────────
+    medications = get_medications(kl_grade, db)
+
+    # ── Step 10: Build legacy text summary for backward compatibility ─────
     recommendation_text = _build_text_summary(
         kl_grade, pain_level, mobility_level, lifestyle_plan, warnings
     )
@@ -575,6 +609,7 @@ def generate_recommendation(
         "lifestyle_plan": lifestyle_plan,
         "warnings": warnings,
         "exercise_videos": exercise_videos,
+        "medications": medications,
         "recommendation": recommendation_text,
         "exercise_video_urls": exercise_video_urls,
     }

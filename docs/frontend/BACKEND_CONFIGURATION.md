@@ -96,6 +96,204 @@ CREATE TABLE "PROFILE_LOG" (
 
 ---
 
+## GP-Specific Endpoints (Mobile Integration)
+
+The following endpoints are **GP-only** and require authentication with a GP role token.
+
+### Patient Search
+```http
+GET /api/v1/profile/patients/search?email={email}
+Authorization: Bearer {GP_TOKEN}
+```
+
+**Response**: `200 OK`
+```json
+[
+  {
+    "user_id": 123,
+    "full_name": "John Doe",
+    "email": "john.doe@example.com"
+  },
+  {
+    "user_id": 456,
+    "full_name": "Jane Smith",
+    "email": "jane.smith@example.com"
+  }
+]
+```
+
+**Parameters**:
+- `email` (required): Email address to search for (case-insensitive partial match)
+
+**Error Responses**:
+- `403 Forbidden`: User is not a GP
+- `404 Not Found`: No patients found matching the email
+
+---
+
+### Assign Patient to GP
+```http
+POST /api/v1/profile/patients/assign/{patient_id}
+Authorization: Bearer {GP_TOKEN}
+```
+
+**Response**: `200 OK`
+```json
+{
+  "user_id": 123,
+  "email": "john.doe@example.com",
+  "full_name": "John Doe",
+  "role": "patient",
+  "age": 45,
+  "pain_level": 6,
+  "mobility_level": "moderate",
+  "has_support": true,
+  "kinesiophobia": "moderate",
+  "occupation_type": "sedentary",
+  "has_stairs": false,
+  "current_meds": ["Ibuprofen"],
+  "sleep_quality": "fair",
+  "created_at": "2026-06-15T10:30:00Z",
+  "last_login": "2026-07-02T14:20:00Z",
+  "primary_gp_id": 789
+}
+```
+
+**Parameters**:
+- `patient_id` (path): The ID of the patient to assign
+
+**Error Responses**:
+- `403 Forbidden`: User is not a GP
+- `404 Not Found`: Patient not found
+- `400 Bad Request`: Requested user is not a patient
+
+---
+
+### Get My Patients (Assigned Patients)
+```http
+GET /api/v1/profile/patients/mine
+Authorization: Bearer {GP_TOKEN}
+```
+
+**Response**: `200 OK`
+```json
+[
+  {
+    "user_id": 123,
+    "full_name": "John Doe",
+    "email": "john.doe@example.com"
+  },
+  {
+    "user_id": 456,
+    "full_name": "Jane Smith",
+    "email": "jane.smith@example.com"
+  }
+]
+```
+
+**Error Responses**:
+- `403 Forbidden`: User is not a GP
+
+---
+
+## Authentication Requirements
+
+### JWT Token Format
+All authenticated endpoints require a JWT token in the `Authorization` header:
+
+```
+Authorization: Bearer <access_token>
+```
+
+### Token Generation
+```http
+POST /api/v1/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username={email}&password={password}
+```
+
+**Response**: `200 OK`
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+### Role-Based Access
+- **Patient**: Can access patient-specific endpoints (upload, reports, profile, videos)
+- **GP**: Can access all patient endpoints PLUS GP-specific endpoints (assign, search, mine)
+- **Admin**: Can access admin analytics and medication management endpoints
+
+---
+
+## Structured Data Formats
+
+### Recommendation Result Schema
+All recommendation endpoints return structured JSON arrays instead of free-text:
+
+```json
+{
+  "lifestyle_plan": [
+    {
+      "id": "EX-001",
+      "category": "exercise",
+      "action": "Quadriceps strengthening exercises",
+      "evidence_level": "strong",
+      "source": "OARSI Guidelines 2023",
+      "frequency": "3 times per week",
+      "duration_min": 30,
+      "intensity": "moderate",
+      "contraindications": ["acute inflammation"],
+      "modifier_note": "Start with 10 minutes if pain is high"
+    }
+  ],
+  "warnings": [
+    {
+      "level": "caution",
+      "message": "Avoid high-impact activities if pain level > 7"
+    }
+  ],
+  "medications": [
+    {
+      "id": 1,
+      "name": "Ibuprofen",
+      "dosage": "400mg",
+      "frequency": "3 times daily",
+      "instructions": "Take with food",
+      "contraindications": ["peptic ulcer disease", "kidney disease"],
+      "kl_grade_min": 0,
+      "kl_grade_max": 4
+    }
+  ],
+  "exercise_video_urls": [
+    "https://bucket.s3.amazonaws.com/videos/knee-exercise-1.mp4",
+    "https://bucket.s3.amazonaws.com/videos/knee-exercise-2.mp4"
+  ]
+}
+```
+
+### Report Out Schema
+```json
+{
+  "report_id": 1,
+  "image_id": 123,
+  "user_id": 456,
+  "kl_grade": 2,
+  "confidence": 0.87,
+  "diagnosis_summary": "Moderate osteoarthritis with joint space narrowing",
+  "recommendation": "Conservative management with exercise and weight loss",
+  "lifestyle_plan": [...],
+  "warnings": [...],
+  "medications": [...],
+  "exercise_video_urls": [...],
+  "created_at": "2026-07-03T10:30:00Z"
+}
+```
+
+---
+
 ## Current Backend Route Wiring
 
 Mobile sync routes are registered in `app/main.py`:

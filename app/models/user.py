@@ -28,6 +28,9 @@ class User(Base):
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime, nullable=True)
+    
+    # GP Assignment (May 2026)
+    primary_gp_id = Column(Integer, nullable=True)
 
 
 # Configure relationships after all models are loaded

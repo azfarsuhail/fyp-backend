@@ -10,9 +10,10 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
+from typing import List
 from app.core.dependencies import get_db, get_current_user, RoleChecker
 from app.core.security import verify_password, get_password_hash
-from app.schemas.profile_schema import ProfileOut, ProfileUpdate, PasswordChange, ProfileHistoryOut, ProfileLogOut
+from app.schemas.profile_schema import ProfileOut, ProfileUpdate, PasswordChange, ProfileHistoryOut, ProfileLogOut, PatientSearchOut
 from app.models.user import User
 from app.models.profile_log import ProfileLog
 
@@ -209,3 +210,107 @@ def change_password(
     db.commit()
 
     return {"message": "Password updated successfully"}
+
+
+@router.get("/patients/search", response_model=List[PatientSearchOut])
+def search_patients_by_email(
+    email: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(allow_gp),
+):
+    """GP-only: Search for patients by email (partial match).
+    
+    Args:
+        email: Email address to search for (case-insensitive partial match)
+        db: Database session
+        current_user: Current authenticated GP user
+        
+    Returns:
+        List of matching patients with user_id, full_name, and email
+    """
+    # Use ilike for case-insensitive partial match
+    search_pattern = f"%{email}%"
+    patients = db.query(User).filter(
+        User.email.ilike(search_pattern),
+        User.role == "patient"
+    ).all()
+    
+    return [
+        PatientSearchOut(
+            user_id=patient.user_id,
+            full_name=patient.full_name,
+            email=patient.email
+        )
+        for patient in patients
+    ]
+
+
+@router.post("/patients/assign/{patient_id}", response_model=ProfileOut)
+def assign_patient_to_gp(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(allow_gp),
+):
+    """GP-only: Assign a patient to the current GP.
+    
+    Args:
+        patient_id: ID of the patient to assign
+        db: Database session
+        current_user: Current authenticated GP user
+        
+    Returns:
+        Updated patient profile
+    """
+    # Verify patient exists
+    patient = db.query(User).filter(User.user_id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    if patient.role != "patient":
+        raise HTTPException(status_code=400, detail="Requested user is not a patient")
+    
+    # Verify current user is a GP
+    gp = db.query(User).filter(User.email == current_user["email"], User.role == "gp").first()
+    if not gp:
+        raise HTTPException(status_code=403, detail="Only GPs can assign patients")
+    
+    # Assign patient to GP
+    patient.primary_gp_id = gp.user_id
+    db.commit()
+    db.refresh(patient)
+    
+    return normalize_current_meds(patient)
+
+
+@router.get("/patients/mine", response_model=List[PatientSearchOut])
+def get_my_patients(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(allow_gp),
+):
+    """GP-only: Get all patients assigned to the current GP.
+    
+    Args:
+        db: Database session
+        current_user: Current authenticated GP user
+        
+    Returns:
+        List of assigned patients with user_id, full_name, and email
+    """
+    # Verify current user is a GP
+    gp = db.query(User).filter(User.email == current_user["email"], User.role == "gp").first()
+    if not gp:
+        raise HTTPException(status_code=403, detail="Only GPs can view assigned patients")
+    
+    # Get all patients assigned to this GP
+    patients = db.query(User).filter(
+        User.primary_gp_id == gp.user_id,
+        User.role == "patient"
+    ).all()
+    
+    return [
+        PatientSearchOut(
+            user_id=patient.user_id,
+            full_name=patient.full_name,
+            email=patient.email
+        )
+        for patient in patients
+    ]

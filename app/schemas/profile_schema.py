@@ -68,3 +68,10 @@ class ProfileHistoryOut(BaseModel):
     full_name: str
     total_changes: int
     history: List[ProfileLogOut]
+
+
+class PatientSearchOut(BaseModel):
+    """Search result for patient lookup by email."""
+    user_id: int
+    full_name: str
+    email: str

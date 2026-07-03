@@ -66,6 +66,35 @@ The system allows users to upload knee X-rays, receive an automated **Kellgren-L
 
 ---
 
+## 👥 User Roles
+
+The system supports three distinct user roles with different capabilities:
+
+### **Patient**
+- Upload knee X-ray images for diagnostic analysis
+- View personal diagnostic reports with KL grades
+- Access personalized lifestyle recommendations
+- Browse exercise video library
+- Manage personal profile (name, age, pain level, mobility, etc.)
+- View exercise videos tailored to their condition
+
+### **General Practitioner (GP)**
+- **Assign patients** to their clinical panel
+- **Upload X-rays** for assigned patients
+- **View patient diagnostic reports** and history
+- **Check patient profile change history** (audit trail)
+- **Generate treatment plans** based on KL grade and patient context
+- Access exercise videos for patient education
+- Manage their own profile
+
+### **Admin** (Separate Portal)
+- View comprehensive analytics dashboard
+- Manage medication catalog
+- View system-wide statistics
+- Access is restricted to a separate admin portal (not in main UI)
+
+---
+
 ## 📐 System Architecture
 
 ```

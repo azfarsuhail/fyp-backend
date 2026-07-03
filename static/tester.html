@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Knee OA - Diagnostic System</title>
+    <title>KneeOA Online - Diagnostic System</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -37,6 +37,66 @@
         }
         .main-content { margin-left: 260px; padding: 2.5rem; }
 
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                padding: 1rem;
+            }
+            .sidebar nav {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .sidebar nav > div {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .sidebar .btn-outline {
+                width: 100%;
+                flex: 1;
+            }
+            #user-display {
+                position: relative;
+                margin-bottom: 1rem;
+                text-align: center;
+            }
+            .sidebar .btn {
+                width: 100%;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .profile-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+            .video-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .medication-form {
+                padding: 1rem;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .medication-table {
+                font-size: 0.875rem;
+            }
+            .medication-table th, .medication-table td {
+                padding: 0.5rem;
+            }
+        }
+
         /* UI Elements */
         .btn {
             background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem;
@@ -63,7 +123,113 @@
 
         .report-card {
             background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border);
-            margin-bottom: 1rem;
+            margin-bottom: 1rem; cursor: pointer; transition: all 0.3s ease;
+            position: relative;
+        }
+        .report-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+        .report-card.expanded {
+            border-left: 4px solid var(--primary);
+        }
+        .report-card .toggle-icon {
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform 0.3s ease;
+            color: var(--primary);
+        }
+        .report-card.expanded .toggle-icon {
+            transform: translateY(-50%) rotate(180deg);
+        }
+        .report-card .summary-text {
+            max-height: 100px;
+            overflow: hidden;
+            position: relative;
+        }
+        .report-card .summary-text::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(transparent, white);
+        }
+        .report-card.expanded .summary-text {
+            max-height: none;
+        }
+        .report-card.expanded .summary-text::after {
+            display: none;
+        }
+        .report-details {
+            display: none;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            margin-top: 1rem;
+        }
+        .report-card.expanded .report-details {
+            display: block;
+        }
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+        .detail-section h4 {
+            margin: 0 0 0.75rem;
+            color: var(--primary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .warning-item {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .warning-item.info {
+            background: #e0f2fe;
+            color: #075985;
+            border-left: 3px solid #0284c7;
+        }
+        .warning-item.caution {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 3px solid #f59e0b;
+        }
+        .warning-item.warning {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 3px solid #ef4444;
+        }
+        .lifestyle-item {
+            background: var(--bg);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .lifestyle-item .action {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .lifestyle-item .meta {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .medication-item {
+            background: var(--bg);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .medication-item .name {
+            font-weight: 600;
+        }
+        .medication-item .details {
+            font-size: 0.875rem;
+            color: #475569;
         }
 
         .kl-badge {
@@ -119,6 +285,27 @@
         .medication-form { background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); margin-bottom: 1rem; }
         .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
         .form-row .input-group { flex: 1; }
+        
+        /* Profile Form Grid */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .profile-grid .input-group {
+            margin-bottom: 0;
+        }
+        .profile-section {
+            margin-bottom: 2rem;
+        }
+        .profile-section h3 {
+            margin: 0 0 1rem;
+            color: var(--primary);
+            font-size: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -126,7 +313,7 @@
     <!-- Auth Overlay -->
     <div id="auth-overlay">
         <div class="auth-card">
-            <h2 style="margin-top:0">Knee OA Portal</h2>
+            <h2 style="margin-top:0">KneeOA Online</h2>
             <p style="color:#64748b; font-size: 0.9rem">Sign in to your medical account</p>
             <form id="login-form">
                 <div class="input-group">
@@ -229,15 +416,14 @@
     <!-- Dashboard -->
     <div id="dashboard" class="dashboard">
         <nav class="sidebar">
-            <h3 style="color:var(--primary)">KneeSafe AI</h3>
+            <h3 style="color:var(--primary)">KneeOA Online</h3>
             <hr style="border:0; border-top:1px solid var(--border); margin: 1.5rem 0">
             <div style="display:flex; flex-direction:column; gap:0.5rem">
-                <button class="btn btn-outline" onclick="showTab('upload')">Analyze Image</button>
-                <button class="btn btn-outline" onclick="showTab('reports')">Reports</button>
+                <button class="btn btn-outline" id="patient-upload-btn" onclick="showTab('upload')">Analyze Image</button>
+                <button class="btn btn-outline" id="gp-reports-tab" onclick="showTab('reports')">Reports</button>
                 <button class="btn btn-outline" onclick="showTab('profile')">My Profile</button>
                 <button class="btn btn-outline" onclick="showTab('videos')">Video Library</button>
-                <button class="btn btn-outline" id="admin-btn" onclick="showTab('admin')" style="display:none">Admin Dashboard</button>
-                <button class="btn btn-outline" id="medications-btn" onclick="showTab('medications')" style="display:none">Medications</button>
+                <button class="btn btn-outline" id="gp-btn" onclick="showTab('gp')" style="display:none">GP Workspace</button>
             </div>
             <div style="position:absolute; bottom:1.5rem; width:calc(100% - 3rem)">
                 <div id="user-display" style="font-size:0.8rem; margin-bottom:1rem; color:#64748b"></div>
@@ -278,78 +464,95 @@
                 <h1>My Profile</h1>
                 <p>Manage your medical context for better RAG recommendations.</p>
                 
-                <form id="profile-form" style="background:white; padding:2rem; border-radius:1rem; border:1px solid var(--border); max-width: 600px;">
-                    <div class="input-group">
-                        <label>Full Name</label>
-                        <input type="text" id="prof-name" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Email</label>
-                        <input type="email" id="prof-email" required>
-                    </div>
-                    <div style="display: flex; gap: 1rem;">
-                        <div class="input-group" style="flex: 1;">
-                            <label>Age</label>
-                            <input type="number" id="prof-age">
+                <!-- Patient ID Badge -->
+                <div id="patient-id-badge" style="background: #e0f2fe; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #0284c7; margin-bottom: 1.5rem; display: none;">
+                    <strong style="color: #0c4a6e;">Your Patient ID:</strong> <span id="patient-id-display" style="font-weight: 700; color: #0369a1; font-size: 1.1rem;"></span>
+                </div>
+                
+                <form id="profile-form" style="background:white; padding:2rem; border-radius:1rem; border:1px solid var(--border);">
+                    <!-- Basic Information -->
+                    <div class="profile-section">
+                        <h3>Basic Information</h3>
+                        <div class="profile-grid">
+                            <div class="input-group">
+                                <label>Full Name *</label>
+                                <input type="text" id="prof-name" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Email *</label>
+                                <input type="email" id="prof-email" required readonly style="background-color: #f1f5f9; color: #64748b; cursor: not-allowed; border-color: #e2e8f0;">
+                            </div>
+                            <div class="input-group">
+                                <label>Age</label>
+                                <input type="number" id="prof-age" min="1" max="120" placeholder="1-120">
+                            </div>
                         </div>
-                        <div class="input-group" style="flex: 1;">
-                            <label>Pain Level (0-10)</label>
-                            <input type="number" id="prof-pain" min="0" max="10">
+                    </div>
+
+                    <!-- Clinical Assessment -->
+                    <div class="profile-section">
+                        <h3>Clinical Assessment</h3>
+                        <div class="profile-grid">
+                            <div class="input-group">
+                                <label>Pain Level (0-10)</label>
+                                <input type="number" id="prof-pain" min="0" max="10" placeholder="0-10">
+                            </div>
+                            <div class="input-group">
+                                <label>Mobility Level</label>
+                                <select id="prof-mobility">
+                                    <option value="">Not specified</option>
+                                    <option value="limited">Limited</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="good">Good</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Sleep Quality</label>
+                                <select id="prof-sleep">
+                                    <option value="">Not specified</option>
+                                    <option value="poor">Poor</option>
+                                    <option value="fair">Fair</option>
+                                    <option value="good">Good</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+                            <input type="checkbox" id="prof-support" style="width: auto;">
+                            <label style="margin: 0; cursor: pointer;">I have personal/family support</label>
                         </div>
                     </div>
-                    <div class="input-group">
-                        <label>Mobility Level</label>
-                        <select id="prof-mobility">
-                            <option value="limited">Limited</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="good">Good</option>
-                        </select>
-                    </div>
-                    <div class="input-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="prof-support" style="width: auto;">
-                        <label style="margin: 0;">I have personal/family support</label>
-                    </div>
-                    
-                    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Advanced Clinical Context</h3>
-                    
-                    <div class="input-group">
-                        <label>Kinesiophobia (Fear of Movement)</label>
-                        <select id="prof-kinesiophobia">
-                            <option value="">Not specified</option>
-                            <option value="low">Low</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>Occupation Type</label>
-                        <select id="prof-occupation">
-                            <option value="">Not specified</option>
-                            <option value="sedentary">Sedentary (desk job)</option>
-                            <option value="light_manual">Light Manual (occasional lifting)</option>
-                            <option value="heavy_manual">Heavy Manual (frequent lifting)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="input-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="prof-stairs" style="width: auto;">
-                        <label style="margin: 0;">I have stairs at home/work</label>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>Current Medications (comma-separated)</label>
-                        <input type="text" id="prof-meds" placeholder="e.g., Ibuprofen, Aspirin">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>Sleep Quality</label>
-                        <select id="prof-sleep">
-                            <option value="">Not specified</option>
-                            <option value="poor">Poor</option>
-                            <option value="fair">Fair</option>
-                            <option value="good">Good</option>
-                        </select>
+
+                    <!-- Advanced Clinical Context -->
+                    <div class="profile-section">
+                        <h3>Advanced Clinical Context</h3>
+                        <div class="profile-grid">
+                            <div class="input-group">
+                                <label>Kinesiophobia (Fear of Movement)</label>
+                                <select id="prof-kinesiophobia">
+                                    <option value="">Not specified</option>
+                                    <option value="low">Low</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Occupation Type</label>
+                                <select id="prof-occupation">
+                                    <option value="">Not specified</option>
+                                    <option value="sedentary">Sedentary (desk job)</option>
+                                    <option value="light_manual">Light Manual (occasional lifting)</option>
+                                    <option value="heavy_manual">Heavy Manual (frequent lifting)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Current Medications</label>
+                                <input type="text" id="prof-meds" placeholder="e.g., Ibuprofen, Aspirin">
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+                            <input type="checkbox" id="prof-stairs" style="width: auto;">
+                            <label style="margin: 0; cursor: pointer;">I have stairs at home/work</label>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn" style="margin-top: 1rem;">Save Changes</button>
@@ -400,68 +603,144 @@
                 <div id="videos-list" class="video-grid"></div>
             </section>
 
-            <!-- Admin Dashboard Tab -->
-            <section id="tab-admin" class="tab-content">
-                <h1>Admin Analytics Dashboard</h1>
+            <!-- GP Workspace Tab -->
+            <section id="tab-gp" class="tab-content">
+                <h1>GP Workspace</h1>
+                <p>Manage your assigned patients and generate clinical recommendations.</p>
                 
-                <div id="admin-stats" class="stats-grid">
-                    <!-- Stats will be loaded dynamically -->
+                <!-- My Assigned Patients -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border); margin-bottom: 2rem;">
+                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">My Assigned Patients</h2>
+                    <p style="color:#64748b; margin-bottom: 1.5rem;">View all patients assigned to you.</p>
+                    <div id="my-patients-list" style="display: none;">
+                        <table class="medication-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Patient ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="my-patients-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="my-patients-empty" style="display: block; text-align: center; padding: 2rem; color: #64748b;">
+                        No patients assigned yet. Use the search tool below to find and assign patients.
+                    </div>
+                </div>
+                
+                <!-- Find & Assign Patient -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border); margin-bottom: 2rem;">
+                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Find & Assign Patient</h2>
+                    <p style="color:#64748b; margin-bottom: 1.5rem;">Search for a patient by email and assign them to your panel.</p>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 300px;">
+                            <label>Patient Email</label>
+                            <input type="text" id="gp-search-email" placeholder="Enter patient email (e.g., john@example.com)" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                        </div>
+                        <button id="gp-search-btn" class="btn" style="align-self: flex-end; min-width: 150px;">Search</button>
+                    </div>
+                    <div id="gp-search-result" style="display: none;"></div>
+                </div>
+                
+                <!-- Patient History Lookup -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border); margin-bottom: 2rem;">
+                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Patient Profile History</h2>
+                    <p style="color:#64748b; margin-bottom: 1.5rem;">View profile change history for a specific patient.</p>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Select Assigned Patient</label>
+                            <select id="gp-history-patient-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                                <option value="">-- Select a Patient --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Or Enter Patient ID Manually</label>
+                            <input type="number" id="gp-patient-id" min="1" placeholder="Enter patient ID" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                        </div>
+                        <button id="gp-lookup-btn" class="btn" style="align-self: flex-end; min-width: 150px;">Lookup History</button>
+                    </div>
+                    <div id="gp-history-result" style="display: none;"></div>
                 </div>
 
-                <h2 style="margin-top: 2rem;">Recent Reports</h2>
-                <div id="admin-recent-reports"></div>
-            </section>
-
-            <!-- Medication Management Tab (Admin Only) -->
-            <section id="tab-medications" class="tab-content">
-                <h1>Medication Management</h1>
-                <p>Manage the medication catalog for clinical recommendations.</p>
-                
-                <!-- Add Medication Form (Admin Only) -->
-                <div id="admin-medication-section" style="display:none;">
-                    <h2 style="margin-top: 0;">Add New Medication</h2>
-                    <form id="add-medication-form" class="medication-form">
+                <!-- Quick Clinical Recommendation -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border);">
+                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Generate Treatment Plan</h2>
+                    <p style="color:#64748b; margin-bottom: 1.5rem;">Create personalized clinical recommendations based on KL grade and patient context.</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                         <div class="input-group">
-                            <label>Medication Name</label>
-                            <input type="text" id="med-name" required placeholder="e.g., Ibuprofen">
-                        </div>
-                        <div class="form-row">
-                            <div class="input-group">
-                                <label>Dosage</label>
-                                <input type="text" id="med-dosage" required placeholder="e.g., 400mg">
-                            </div>
-                            <div class="input-group">
-                                <label>Frequency</label>
-                                <input type="text" id="med-frequency" required placeholder="e.g., 3 times daily">
-                            </div>
+                            <label>KL Grade (0-4)</label>
+                            <input type="number" id="gp-kl-grade" min="0" max="4" placeholder="0-4" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
                         </div>
                         <div class="input-group">
-                            <label>Instructions</label>
-                            <input type="text" id="med-instructions" placeholder="e.g., Take with food">
+                            <label>Pain Level (0-10)</label>
+                            <input type="number" id="gp-pain-level" min="0" max="10" placeholder="0-10" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
                         </div>
                         <div class="input-group">
-                            <label>Contraindications</label>
-                            <input type="text" id="med-contraindications" placeholder="e.g., Peptic ulcer disease">
+                            <label>Mobility Level</label>
+                            <select id="gp-mobility-level" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                                <option value="">Not specified</option>
+                                <option value="limited">Limited</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="good">Good</option>
+                            </select>
                         </div>
-                        <div class="form-row">
-                            <div class="input-group">
-                                <label>KL Grade Min</label>
-                                <input type="number" id="med-kl-min" min="0" max="4" value="0" placeholder="0-4">
-                            </div>
-                            <div class="input-group">
-                                <label>KL Grade Max</label>
-                                <input type="number" id="med-kl-max" min="0" max="4" value="4" placeholder="0-4">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn">Add Medication</button>
-                        <div id="medication-msg" style="margin-top: 1rem; display: none;"></div>
-                    </form>
+                    </div>
+                    <button id="gp-recommend-btn" class="btn" style="width: 100%; max-width: 300px;">Generate Treatment Plan</button>
+                    <div id="gp-recommendation-result" style="display: none; margin-top: 2rem;"></div>
                 </div>
 
-                <!-- Medication List -->
-                <h2 style="margin-top: 2rem;">Medication Catalog</h2>
-                <div id="medications-list" style="background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border);">
-                    <!-- Medications will be loaded here -->
+                <!-- GP Diagnostic Upload Tool -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border); margin-bottom: 2rem;">
+                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Upload X-ray for Patient</h2>
+                    <p style="color:#64748b; margin-bottom: 1.5rem;">Upload a new X-ray image for one of your assigned patients to trigger AI analysis.</p>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Select Assigned Patient</label>
+                            <select id="gp-upload-patient-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                                <option value="">-- Select a Patient --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Or Enter Patient ID Manually</label>
+                            <input type="number" id="gp-upload-patient-id" min="1" placeholder="Enter patient ID" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: flex-end;">
+                        <div style="flex: 1; min-width: 300px;">
+                            <label>X-ray Image (JPEG/PNG)</label>
+                            <input type="file" id="gp-xray-upload" accept="image/*" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                        </div>
+                        <button id="gp-upload-btn" class="btn" style="align-self: flex-end; min-width: 150px;">Upload & Analyze</button>
+                    </div>
+                    <div id="gp-upload-result" style="display: none;"></div>
+                </div>
+
+                <!-- GP Patient Report Viewer -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border);">
+                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Patient Diagnostic Reports</h2>
+                    <p style="color:#64748b; margin-bottom: 1.5rem;">View all diagnostic reports for a specific patient.</p>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Select Assigned Patient</label>
+                            <select id="gp-reports-patient-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                                <option value="">-- Select a Patient --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Or Enter Patient ID Manually</label>
+                            <input type="number" id="gp-reports-patient-id" min="1" placeholder="Enter patient ID" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.4rem;">
+                        </div>
+                        <button id="gp-reports-btn" class="btn" style="align-self: flex-end; min-width: 150px;">View Reports</button>
+                    </div>
+                    <div id="gp-reports-result" style="display: none;"></div>
                 </div>
             </section>
         </main>
@@ -470,6 +749,9 @@
     <script>
         // Detect if running through nginx (production) or directly (development)
         const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        
+        // FIX: Use relative path for production (inherits https:// automatically)
+        // or explicitly write https://kneeoa.online/api/v1
         const API_BASE = isProduction ? "/api/v1" : "http://localhost:8000/api/v1";
         let TOKEN = localStorage.getItem('oa_token');
         let currentResetEmail = '';
@@ -495,21 +777,29 @@
                 fetchUser().catch(err => console.error('fetchUser error:', err));
                 loadReports().catch(err => console.error('loadReports error:', err));
                 loadVideos().catch(err => console.error('loadVideos error:', err));
-                loadMedications().catch(err => console.error('loadMedications error:', err));
-                checkAdminRole();
+                checkUserRole();
             } else {
                 console.log('No token found, showing auth overlay');
             }
         }
 
-        // Check if user is admin
-        function checkAdminRole() {
+        // Check if user is GP
+        function checkUserRole() {
             try {
                 const payload = JSON.parse(atob(TOKEN.split('.')[1]));
-                if (payload.role === 'admin') {
-                    document.getElementById('admin-btn').style.display = 'block';
-                    document.getElementById('medications-btn').style.display = 'block';
-                    document.getElementById('admin-medication-section').style.display = 'block';
+                if (payload.role === 'gp') {
+                    document.getElementById('gp-btn').style.display = 'block';
+                    // Hide "Analyze Image" and "Reports" tabs for GPs
+                    document.getElementById('patient-upload-btn').style.display = 'none';
+                    document.getElementById('gp-reports-tab').style.display = 'none';
+                    // Set GP Workspace as default tab
+                    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                    document.getElementById('tab-gp').classList.add('active');
+                } else {
+                    // Show tabs for non-GP users
+                    document.getElementById('gp-btn').style.display = 'none';
+                    document.getElementById('patient-upload-btn').style.display = 'block';
+                    document.getElementById('gp-reports-tab').style.display = 'block';
                 }
             } catch (e) {
                 console.error('Error parsing token:', e);
@@ -717,30 +1007,35 @@
                 // Update sidebar
                 document.getElementById('user-display').innerText = `${data.role.toUpperCase()}: ${data.full_name}`;
                 
-                // Populate profile form
+                // Display Patient ID badge
+                const patientIdBadge = document.getElementById('patient-id-badge');
+                const patientIdDisplay = document.getElementById('patient-id-display');
+                if (data.user_id) {
+                    patientIdBadge.style.display = 'block';
+                    patientIdDisplay.textContent = data.user_id;
+                }
+                
+                // Populate profile form - handle all fields from ProfileOut schema
                 document.getElementById('prof-name').value = data.full_name || '';
                 document.getElementById('prof-email').value = data.email || '';
                 document.getElementById('prof-age').value = data.age || '';
-                document.getElementById('prof-pain').value = data.pain_level || 0;
+                document.getElementById('prof-pain').value = data.pain_level ?? '';
                 
-                if (data.mobility_level) {
-                    document.getElementById('prof-mobility').value = data.mobility_level;
-                }
+                // Select fields - use empty string if null/undefined
+                document.getElementById('prof-mobility').value = data.mobility_level || '';
+                document.getElementById('prof-sleep').value = data.sleep_quality || '';
+                document.getElementById('prof-kinesiophobia').value = data.kinesiophobia || '';
+                document.getElementById('prof-occupation').value = data.occupation_type || '';
+                
+                // Boolean fields
                 document.getElementById('prof-support').checked = data.has_support || false;
-                
-                // New fields (April 2026)
-                if (data.kinesiophobia) {
-                    document.getElementById('prof-kinesiophobia').value = data.kinesiophobia;
-                }
-                if (data.occupation_type) {
-                    document.getElementById('prof-occupation').value = data.occupation_type;
-                }
                 document.getElementById('prof-stairs').checked = data.has_stairs || false;
+                
+                // Array field (medications)
                 if (data.current_meds && Array.isArray(data.current_meds)) {
                     document.getElementById('prof-meds').value = data.current_meds.join(', ');
-                }
-                if (data.sleep_quality) {
-                    document.getElementById('prof-sleep').value = data.sleep_quality;
+                } else {
+                    document.getElementById('prof-meds').value = '';
                 }
 
             } catch (err) {
@@ -748,7 +1043,7 @@
             }
         }
 
-        // Profile Update
+        // Profile Update - sends all mutable fields from ProfileUpdate schema
         document.getElementById('profile-form').onsubmit = async (e) => {
             e.preventDefault();
             
@@ -756,19 +1051,41 @@
             btn.innerText = "Saving...";
             btn.disabled = true;
 
-            const body = {
-                full_name: document.getElementById('prof-name').value,
-                email: document.getElementById('prof-email').value,
-                age: parseInt(document.getElementById('prof-age').value) || null,
-                pain_level: parseInt(document.getElementById('prof-pain').value) || null,
-                mobility_level: document.getElementById('prof-mobility').value,
-                has_support: document.getElementById('prof-support').checked,
-                kinesiophobia: document.getElementById('prof-kinesiophobia').value || null,
-                occupation_type: document.getElementById('prof-occupation').value || null,
-                has_stairs: document.getElementById('prof-stairs').checked,
-                current_meds: document.getElementById('prof-meds').value.split(',').map(m => m.trim()).filter(m => m),
-                sleep_quality: document.getElementById('prof-sleep').value || null
-            };
+            // Build body with all fields - only send non-empty values
+            const body = {};
+            
+            const name = document.getElementById('prof-name').value.trim();
+            const email = document.getElementById('prof-email').value.trim();
+            const ageVal = document.getElementById('prof-age').value;
+            const painVal = document.getElementById('prof-pain').value;
+            
+            // Always send name and email (required fields)
+            if (name) body.full_name = name;
+            if (email) body.email = email;
+            
+            // Optional fields - only send if they have values
+            if (ageVal) body.age = parseInt(ageVal);
+            if (painVal !== '') body.pain_level = painVal === '' ? null : parseInt(painVal);
+            
+            const mobility = document.getElementById('prof-mobility').value;
+            const sleep = document.getElementById('prof-sleep').value;
+            const kinesiophobia = document.getElementById('prof-kinesiophobia').value;
+            const occupation = document.getElementById('prof-occupation').value;
+            
+            if (mobility) body.mobility_level = mobility;
+            if (sleep) body.sleep_quality = sleep;
+            if (kinesiophobia) body.kinesiophobia = kinesiophobia;
+            if (occupation) body.occupation_type = occupation;
+            
+            // Boolean fields
+            body.has_support = document.getElementById('prof-support').checked;
+            body.has_stairs = document.getElementById('prof-stairs').checked;
+            
+            // Medications array
+            const medsInput = document.getElementById('prof-meds').value.trim();
+            if (medsInput) {
+                body.current_meds = medsInput.split(',').map(m => m.trim()).filter(m => m);
+            }
 
             try {
                 const res = await fetch(apiURL('/profile/me'), {
@@ -812,7 +1129,7 @@
             }
 
             try {
-                const res = await fetch(apiURL('/profile/change-password'), {
+                const res = await fetch(apiURL('/profile/me/change-password'), {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${TOKEN}`,
@@ -849,7 +1166,7 @@
             }
         };
 
-        // Analysis Pipeline (Gatekeeper + CNN + RAG)
+        // Analysis Pipeline (Two-Step: Upload -> Analyze)
         document.getElementById('analyze-btn').onclick = async () => {
             const btn = document.getElementById('analyze-btn');
             const fileInput = document.getElementById('file-input');
@@ -860,27 +1177,49 @@
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('file', file);
-
             btn.disabled = true;
             btn.innerText = "Analyzing...";
 
             try {
-                const res = await fetch(apiURL('/diagnostic/analyze'), {
+                // STEP 1: Upload the file via FormData
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const uploadRes = await fetch(apiURL('/upload/'), {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${TOKEN}` },
                     body: formData
                 });
                 
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
-                    throw new Error(errorData.detail || 'Analysis failed');
+                if (!uploadRes.ok) throw new Error('File upload failed');
+                const uploadData = await uploadRes.json();
+
+                // STEP 2: Trigger AI Inference with the returned image_id
+                const analyzeRes = await fetch(apiURL('/diagnostic/analyze'), {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json' // CRITICAL for 422 fixes
+                    },
+                    body: JSON.stringify({ image_id: uploadData.image_id })
+                });
+                
+                if (!analyzeRes.ok) {
+                    const errorData = await analyzeRes.json();
+                    // Better error parsing to prevent [object Object]
+                    let errorMessage = 'Analysis failed';
+                    if (Array.isArray(errorData.detail)) {
+                        errorMessage = errorData.detail.map(e => `${e.loc.join('.')}: ${e.msg}`).join(', ');
+                    } else if (errorData.detail) {
+                        errorMessage = errorData.detail;
+                    }
+                    throw new Error(errorMessage);
                 }
                 
-                const report = await res.json();
+                const report = await analyzeRes.json();
                 console.log('Analysis result:', report);
                 renderResult(report);
+
             } catch (err) {
                 console.error('Analysis error:', err);
                 alert('Analysis failed: ' + err.message);
@@ -931,7 +1270,127 @@
             loadReports(); // Refresh history
         }
 
-        // Load Reports
+        // Render Result
+        function renderResult(report) {
+            const div = document.getElementById('results');
+            div.classList.remove('hidden');
+            
+            if (!report) {
+                div.innerHTML = '<p style="color:var(--danger)">Error: Invalid response from server</p>';
+                return;
+            }
+
+            // Build warnings HTML
+            let warningsHtml = '';
+            if (report.warnings && Array.isArray(report.warnings) && report.warnings.length > 0) {
+                warningsHtml = `
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 0.5rem;">Clinical Warnings</h3>
+                        ${report.warnings.map(w => `
+                            <div class="warning-item ${w.level}" style="margin-bottom: 0.5rem;">
+                                ${w.message}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Build lifestyle plan HTML
+            let lifestyleHtml = '';
+            if (report.lifestyle_plan && Array.isArray(report.lifestyle_plan) && report.lifestyle_plan.length > 0) {
+                lifestyleHtml = `
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 0.5rem;">Lifestyle Recommendations</h3>
+                        <div style="display: grid; gap: 0.75rem;">
+                            ${report.lifestyle_plan.map(item => `
+                                <div class="lifestyle-item">
+                                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${item.action || 'No action specified'}</div>
+                                            <div class="meta" style="font-size: 0.75rem; color: #64748b;">
+                                                ${item.category ? `<span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem; margin-right: 0.5rem;">${item.category}</span>` : ''}
+                                                ${item.evidence_level ? `<span style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">Evidence: ${item.evidence_level}</span>` : ''}
+                                            </div>
+                                        </div>
+                                        <div style="text-align: right; font-size: 0.875rem; color: #475569;">
+                                            ${item.frequency ? `<div>Frequency: ${item.frequency}</div>` : ''}
+                                            ${item.duration_min ? `<div>Duration: ${item.duration_min} min</div>` : ''}
+                                        </div>
+                                    </div>
+                                    ${item.contraindications && item.contraindications.length > 0 ? `
+                                        <div class="meta" style="margin-top: 0.5rem; color: #ef4444; font-size: 0.75rem;">
+                                            ⚠️ Contraindications: ${item.contraindications.join(', ')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build medications HTML
+            let medicationsHtml = '';
+            if (report.medications && Array.isArray(report.medications) && report.medications.length > 0) {
+                medicationsHtml = `
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 0.5rem;">Recommended Medications</h3>
+                        <div style="display: grid; gap: 0.5rem;">
+                            ${report.medications.map(med => `
+                                <div class="medication-item">
+                                    <div style="font-weight: 600; margin-bottom: 0.25rem;">${med.name || 'Unknown'}</div>
+                                    <div style="font-size: 0.875rem; color: #475569;">
+                                        ${med.dosage ? `<div>Dosage: ${med.dosage}</div>` : ''}
+                                        ${med.frequency ? `<div>Frequency: ${med.frequency}</div>` : ''}
+                                        ${med.instructions ? `<div style="margin-top: 0.25rem; color: #64748b;">Instructions: ${med.instructions}</div>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build exercise videos HTML
+            let videosHtml = '';
+            if (report.exercise_video_urls && Array.isArray(report.exercise_video_urls) && report.exercise_video_urls.length > 0) {
+                videosHtml = `
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 0.5rem;">Recommended Exercise Videos</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                            ${report.exercise_video_urls.map(url => `
+                                <video 
+                                    width="100%" 
+                                    height="180" 
+                                    controls 
+                                    preload="metadata"
+                                    style="object-fit: cover; background: #000; border-radius: 0.5rem; display: block;"
+                                >
+                                    <source src="${url}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <h2 style="margin:0">KL Grade ${report.kl_grade ?? 'N/A'}</h2>
+                    <span class="kl-badge">Confidence: ${report.confidence ? ((report.confidence * 100).toFixed(1)) + '%' : 'N/A'}</span>
+                </div>
+                <p style="background:var(--bg); padding:1rem; border-radius:0.5rem; margin:1.5rem 0">
+                    <strong>Diagnosis Summary:</strong><br>${report.diagnosis_summary || 'No summary available'}
+                </p>
+                ${warningsHtml}
+                ${lifestyleHtml}
+                ${medicationsHtml}
+            `;
+            loadReports(); // Refresh history
+        }
+
+        // Load Reports with Expandable Accordion
         async function loadReports() {
             try {
                 const res = await fetch(apiURL('/diagnostic/reports'), {
@@ -952,19 +1411,144 @@
                     return;
                 }
                 
-                list.innerHTML = reports.map(r => `
-                    <div class="report-card">
-                        <div style="display:flex; justify-content:space-between">
-                            <strong>Grade ${r.kl_grade}</strong>
-                            <span style="font-size:0.8rem; color:#64748b">${new Date(r.created_at).toLocaleDateString()}</span>
+                list.innerHTML = reports.map((r, index) => {
+                    // Build warnings HTML
+                    let warningsHtml = '';
+                    if (r.warnings && Array.isArray(r.warnings) && r.warnings.length > 0) {
+                        warningsHtml = `
+                            <div class="detail-section">
+                                <h4>Clinical Warnings</h4>
+                                ${r.warnings.map(w => `
+                                    <div class="warning-item ${w.level}">
+                                        ${w.message}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    // Build lifestyle plan HTML
+                    let lifestyleHtml = '';
+                    if (r.lifestyle_plan && Array.isArray(r.lifestyle_plan) && r.lifestyle_plan.length > 0) {
+                        lifestyleHtml = `
+                            <div class="detail-section">
+                                <h4>Lifestyle Recommendations</h4>
+                                <div style="display: grid; gap: 0.75rem; margin-top: 0.75rem;">
+                                    ${r.lifestyle_plan.map(item => `
+                                        <div class="lifestyle-item">
+                                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                <div style="flex: 1;">
+                                                    <div style="font-weight: 600; margin-bottom: 0.25rem;">${item.action || 'No action specified'}</div>
+                                                    <div class="meta" style="font-size: 0.75rem; color: #64748b;">
+                                                        ${item.category ? `<span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem; margin-right: 0.5rem;">${item.category}</span>` : ''}
+                                                        ${item.evidence_level ? `<span style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">Evidence: ${item.evidence_level}</span>` : ''}
+                                                    </div>
+                                                </div>
+                                                <div style="text-align: right; font-size: 0.875rem; color: #475569;">
+                                                    ${item.frequency ? `<div>Frequency: ${item.frequency}</div>` : ''}
+                                                    ${item.duration_min ? `<div>Duration: ${item.duration_min} min</div>` : ''}
+                                                </div>
+                                            </div>
+                                            ${item.contraindications && item.contraindications.length > 0 ? `
+                                                <div class="meta" style="margin-top: 0.5rem; color: #ef4444; font-size: 0.75rem;">
+                                                    ⚠️ Contraindications: ${item.contraindications.join(', ')}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Build medications HTML
+                    let medicationsHtml = '';
+                    if (r.medications && Array.isArray(r.medications) && r.medications.length > 0) {
+                        medicationsHtml = `
+                            <div class="detail-section">
+                                <h4>Recommended Medications</h4>
+                                <div style="display: grid; gap: 0.5rem; margin-top: 0.75rem;">
+                                    ${r.medications.map(med => `
+                                        <div class="medication-item">
+                                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${med.name || 'Unknown'}</div>
+                                            <div style="font-size: 0.875rem; color: #475569;">
+                                                ${med.dosage ? `<div>Dosage: ${med.dosage}</div>` : ''}
+                                                ${med.frequency ? `<div>Frequency: ${med.frequency}</div>` : ''}
+                                                ${med.instructions ? `<div style="margin-top: 0.25rem; color: #64748b;">Instructions: ${med.instructions}</div>` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Build exercise videos HTML
+                    let videosHtml = '';
+                    if (r.exercise_video_urls && Array.isArray(r.exercise_video_urls) && r.exercise_video_urls.length > 0) {
+                        videosHtml = `
+                            <div class="detail-section">
+                                <h4>Recommended Exercise Videos</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+                                    ${r.exercise_video_urls.map(url => `
+                                        <video 
+                                            width="100%" 
+                                            height="180" 
+                                            controls 
+                                            preload="metadata"
+                                            style="object-fit: cover; background: #000; border-radius: 0.5rem; display: block;"
+                                        >
+                                            <source src="${url}" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    return `
+                        <div class="report-card" onclick="toggleReportCard(this)" data-index="${index}">
+                            <div style="display:flex; justify-content:space-between; align-items:center">
+                                <div>
+                                    <strong>Grade ${r.kl_grade}</strong>
+                                    <div style="font-size:0.8rem; color:#64748b; margin-top:0.25rem">${r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown Date'}</div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:1rem">
+                                    <span class="kl-badge">Confidence: ${r.confidence ? ((r.confidence * 100).toFixed(1)) + '%' : 'N/A'}</span>
+                                    <span class="toggle-icon">▼</span>
+                                </div>
+                            </div>
+                            <div class="summary-text" style="margin-top:0.75rem">
+                                ${r.diagnosis_summary ? r.diagnosis_summary.substring(0, 150) + (r.diagnosis_summary.length > 150 ? '...' : '') : 'No summary available'}
+                            </div>
+                            <div class="report-details">
+                                ${warningsHtml}
+                                ${lifestyleHtml}
+                                <div class="detail-section">
+                                    <h4>Diagnosis Summary</h4>
+                                    <p style="font-size:0.9rem; line-height:1.6">${r.diagnosis_summary || 'No summary available'}</p>
+                                </div>
+                                ${medicationsHtml}
+                                ${videosHtml}
+                            </div>
                         </div>
-                        <p style="font-size:0.9rem; margin-top:0.5rem">${r.diagnosis_summary.substring(0, 100)}...</p>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (err) {
                 console.error('Error loading reports:', err);
                 document.getElementById('reports-list').innerHTML = '<p style="color:var(--danger)">Error loading reports: ' + err.message + '</p>';
             }
+        }
+        
+        // Toggle Report Card Expand/Collapse
+        function toggleReportCard(card) {
+            // Close all other cards
+            document.querySelectorAll('.report-card').forEach(c => {
+                if (c !== card) c.classList.remove('expanded');
+            });
+            // Toggle current card
+            card.classList.toggle('expanded');
         }
 
         // Load Videos
@@ -973,7 +1557,8 @@
                 const klFilter = document.getElementById('video-filter-kl')?.value || '';
                 const categoryFilter = document.getElementById('video-filter-category')?.value || '';
                 
-                let url = apiURL('/videos');
+                // FIX: Added trailing slash to prevent 307 redirect
+                let url = apiURL('/videos/');
                 const params = new URLSearchParams();
                 if (klFilter) params.append('kl_grade', klFilter);
                 if (categoryFilter) params.append('category', categoryFilter);
@@ -999,19 +1584,27 @@
                 
                 list.innerHTML = videos.map(v => `
                     <div class="video-card">
-                        <div class="video-thumbnail">
-                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
-                                <rect x="2" y="2" width="20" height="20" rx="2.18"/>
-                                <path d="M10 8l6 4-6 4V8z"/>
-                            </svg>
-                        </div>
+                        <!-- Replaced the static SVG with an actual HTML5 video player -->
+                        <video 
+                            width="100%" 
+                            height="180" 
+                            controls 
+                            preload="metadata"
+                            ${v.thumbnail_url ? `poster="${v.thumbnail_url}"` : ''} 
+                            style="object-fit: cover; background: #000; display: block;"
+                        >
+                            <source src="${v.s3_url}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        
                         <div class="video-info">
                             <h4 style="margin:0 0 0.5rem">${v.title || 'Untitled'}</h4>
                             <p style="font-size:0.875rem; color:#64748b; margin:0 0 0.5rem">${v.description || 'No description'}</p>
-                            <div style="display:flex; gap:0.5rem; font-size:0.75rem; color:#64748b">
-                                <span>KL: ${v.kl_grade_min || 0}-${v.kl_grade_max || 4}</span>
-                                <span>${v.category || 'General'}</span>
-                                <span>${v.duration_seconds ? Math.round(v.duration_seconds / 60) + 'min' : '-'}</span>
+                            <div style="display:flex; gap:0.5rem; font-size:0.75rem; color:#64748b; flex-wrap: wrap;">
+                                <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">KL: ${v.kl_grade_min || 0}-${v.kl_grade_max || 4}</span>
+                                <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">${v.category || 'General'}</span>
+                                <!-- Fixed to show seconds for short videos -->
+                                <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">${v.duration_seconds ? v.duration_seconds + ' sec' : '-'}</span>
                             </div>
                         </div>
                     </div>
@@ -1022,163 +1615,1114 @@
             }
         }
 
-        // Load Admin Analytics
-        async function loadAdminAnalytics() {
+
+        
+        // Load My Patients
+        async function loadMyPatients() {
             try {
-                const res = await fetch(apiURL('/admin/analytics/dashboard'), {
+                const res = await fetch(apiURL('/profile/patients/mine'), {
                     headers: { 'Authorization': `Bearer ${TOKEN}` }
                 });
                 
-                if (!res.ok) {
-                    document.getElementById('admin-btn').style.display = 'none';
-                    showTab('upload');
+                if (!res.ok) throw new Error('Failed to load assigned patients');
+                const patients = await res.json();
+                
+                const listDiv = document.getElementById('my-patients-list');
+                const emptyDiv = document.getElementById('my-patients-empty');
+                const tbody = document.getElementById('my-patients-tbody');
+                
+                if (patients.length === 0) {
+                    listDiv.style.display = 'none';
+                    emptyDiv.style.display = 'block';
+                    // Clear dropdowns
+                    document.getElementById('gp-upload-patient-select').innerHTML = '<option value="">-- No Patients Assigned --</option>';
+                    document.getElementById('gp-reports-patient-select').innerHTML = '<option value="">-- No Patients Assigned --</option>';
+                    document.getElementById('gp-history-patient-select').innerHTML = '<option value="">-- No Patients Assigned --</option>';
                     return;
                 }
                 
-                const data = await res.json();
-                const statsContainer = document.getElementById('admin-stats');
+                listDiv.style.display = 'block';
+                emptyDiv.style.display = 'none';
                 
-                statsContainer.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-value">${data.total_users}</div>
-                        <div class="stat-label">Total Users</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${data.users_by_role.patient || 0}</div>
-                        <div class="stat-label">Patients</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${data.users_by_role.gp || 0}</div>
-                        <div class="stat-label">GPs</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${data.users_by_role.admin || 0}</div>
-                        <div class="stat-label">Admins</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${data.total_reports}</div>
-                        <div class="stat-label">Total Reports</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${data.new_users_this_week}</div>
-                        <div class="stat-label">New Users (Week)</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${data.avg_confidence.toFixed(2)}</div>
-                        <div class="stat-label">Avg Confidence</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${data.recent_reports_count}</div>
-                        <div class="stat-label">Recent Reports</div>
-                    </div>
-                `;
-                
-                // Recent reports
-                const reportsContainer = document.getElementById('admin-recent-reports');
-                reportsContainer.innerHTML = data.recent_reports.map(r => `
-                    <div class="report-card">
-                        <div style="display:flex; justify-content:space-between">
-                            <strong>Patient ID: ${r.user_id}</strong>
-                            <span style="font-size:0.8rem; color:#64748b">${new Date(r.created_at).toLocaleString()}</span>
-                        </div>
-                        <div style="margin-top: 0.5rem;">
-                            <span class="kl-badge">KL Grade ${r.kl_grade}</span>
-                            <span style="font-size:0.8rem; color:#64748b">Confidence: ${(r.confidence * 100).toFixed(1)}%</span>
-                        </div>
-                        <p style="font-size:0.875rem; margin-top: 0.5rem">${r.diagnosis_summary}</p>
-                    </div>
+                tbody.innerHTML = patients.map(patient => `
+                    <tr>
+                        <td><strong>${patient.user_id}</strong></td>
+                        <td>${patient.full_name}</td>
+                        <td>${patient.email}</td>
+                        <td>
+                            <button onclick="document.getElementById('gp-patient-id').value = '${patient.user_id}'; document.getElementById('gp-patient-id').scrollIntoView({behavior: 'smooth'})" 
+                                style="background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem;">
+                                Load Profile
+                            </button>
+                        </td>
+                    </tr>
                 `).join('');
                 
+                // Populate dropdowns
+                const uploadSelect = document.getElementById('gp-upload-patient-select');
+                const reportsSelect = document.getElementById('gp-reports-patient-select');
+                const historySelect = document.getElementById('gp-history-patient-select');
+                
+                const options = patients.map(p => `<option value="${p.user_id}">${p.full_name} (ID: ${p.user_id})</option>`).join('');
+                
+                uploadSelect.innerHTML = '<option value="">-- Select a Patient --</option>' + options;
+                reportsSelect.innerHTML = '<option value="">-- Select a Patient --</option>' + options;
+                historySelect.innerHTML = '<option value="">-- Select a Patient --</option>' + options;
+                
             } catch (err) {
-                console.error('Error loading analytics:', err);
+                console.error('Error loading patients:', err);
             }
         }
 
-        // Load Medications
-        async function loadMedications() {
-            try {
-                const res = await fetch(apiURL('/medications/'), {
-                    headers: { 'Authorization': `Bearer ${TOKEN}` }
-                });
-                const medications = await res.json();
-                const list = document.getElementById('medications-list');
-                
-                if (medications.length === 0) {
-                    list.innerHTML = '<p>No medications in catalog.</p>';
-                    return;
-                }
-                
-                list.innerHTML = `
-                    <table class="medication-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Dosage</th>
-                                <th>Frequency</th>
-                                <th>Instructions</th>
-                                <th>Contraindications</th>
-                                <th>KL Range</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${medications.map(med => `
-                                <tr>
-                                    <td><strong>${med.name}</strong></td>
-                                    <td>${med.dosage}</td>
-                                    <td>${med.frequency}</td>
-                                    <td>${med.instructions || '-'}</td>
-                                    <td>${med.contraindications || '-'}</td>
-                                    <td>${med.kl_grade_min}-${med.kl_grade_max}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            } catch (err) {
-                console.error('Error loading medications:', err);
-            }
-        }
-
-        // Add Medication (Admin Only)
-        document.getElementById('add-medication-form').onsubmit = async (e) => {
-            e.preventDefault();
+        // GP Diagnostic Upload Function
+        document.getElementById('gp-upload-btn').onclick = async () => {
+            const patientId = document.getElementById('gp-upload-patient-id').value;
+            const fileInput = document.getElementById('gp-xray-upload');
+            const resultDiv = document.getElementById('gp-upload-result');
             
-            const body = {
-                name: document.getElementById('med-name').value,
-                dosage: document.getElementById('med-dosage').value,
-                frequency: document.getElementById('med-frequency').value,
-                instructions: document.getElementById('med-instructions').value || null,
-                contraindications: document.getElementById('med-contraindications').value || null,
-                kl_grade_min: parseInt(document.getElementById('med-kl-min').value),
-                kl_grade_max: parseInt(document.getElementById('med-kl-max').value)
-            };
+            if (!patientId) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter a Patient ID.</p>';
+                return;
+            }
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please select an X-ray image file.</p>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
 
             try {
-                const res = await fetch(apiURL('/admin/medications/'), {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:#64748b">Uploading and analyzing... Please wait.</p>';
+                
+                // Step 1: Upload the image
+                const uploadRes = await fetch(apiURL('/upload/'), {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` },
+                    body: formData
+                });
+                
+                if (!uploadRes.ok) throw new Error('File upload failed');
+                const uploadData = await uploadRes.json();
+
+                // Step 2: Trigger analysis with patient_id context
+                const analyzeRes = await fetch(apiURL('/diagnostic/analyze'), {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${TOKEN}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify({ 
+                        image_id: uploadData.image_id,
+                        patient_id: parseInt(patientId)
+                    })
                 });
                 
-                if (!res.ok) throw new Error('Failed to add medication');
+                if (!analyzeRes.ok) throw new Error('Analysis failed');
+                const report = await analyzeRes.json();
                 
-                const msg = document.getElementById('medication-msg');
-                msg.style.display = 'block';
-                msg.className = 'message success';
-                msg.textContent = 'Medication added successfully!';
+                // Render the report result
+                resultDiv.innerHTML = `
+                    <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #22c55e;">
+                        <h3 style="margin-top: 0; color: #166534;">Analysis Complete!</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0;">
+                            <div>
+                                <strong style="font-size: 1.5rem; color: #166534;">KL Grade ${report.kl_grade}</strong>
+                                <span style="margin-left: 1rem; background: #e0f2fe; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; color: #0369a1;">
+                                    Confidence: ${(report.confidence * 100).toFixed(1)}%
+                                </span>
+                            </div>
+                        </div>
+                        <p style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+                            <strong>Diagnosis:</strong><br>${report.diagnosis_summary || 'No summary available'}
+                        </p>
+                        <button onclick="document.getElementById('gp-reports-patient-id').value = '${patientId}'; document.getElementById('gp-reports-btn').click()" 
+                            style="background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">
+                            View All Patient Reports
+                        </button>
+                    </div>
+                `;
                 
-                document.getElementById('add-medication-form').reset();
-                loadMedications(); // Refresh list
+                // Refresh the reports list
+                await loadPatientReports(patientId);
                 
-                setTimeout(() => msg.style.display = 'none', 3000);
             } catch (err) {
-                const msg = document.getElementById('medication-msg');
-                msg.style.display = 'block';
-                msg.className = 'message error';
-                msg.textContent = err.message;
+                console.error('Analysis error:', err);
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        };
+
+        // Load Patient Reports Function
+        async function loadPatientReports(patientId) {
+            try {
+                const res = await fetch(apiURL(`/diagnostic/reports?user_id=${patientId}`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to load patient reports');
+                const reports = await res.json();
+                
+                const resultDiv = document.getElementById('gp-reports-result');
+                
+                if (!reports || reports.length === 0) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<p style="color:#64748b">No diagnostic reports found for this patient.</p>';
+                    return;
+                }
+                
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                        ${reports.map((r, index) => `
+                            <div class="report-card" onclick="toggleReportCard(this)" data-index="${index}">
+                                <div style="display:flex; justify-content:space-between; align-items:center">
+                                    <div>
+                                        <strong>Grade ${r.kl_grade}</strong>
+                                        <div style="font-size:0.8rem; color:#64748b; margin-top:0.25rem">${r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown Date'}</div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:1rem">
+                                        <span class="kl-badge">Confidence: ${r.confidence ? ((r.confidence * 100).toFixed(1)) + '%' : 'N/A'}</span>
+                                        <span class="toggle-icon">▼</span>
+                                    </div>
+                                </div>
+                                <div class="summary-text" style="margin-top:0.75rem">
+                                    ${r.diagnosis_summary ? r.diagnosis_summary.substring(0, 150) + (r.diagnosis_summary.length > 150 ? '...' : '') : 'No summary available'}
+                                </div>
+                                <div class="report-details">
+                                    <div class="detail-section">
+                                        <h4>Diagnosis Summary</h4>
+                                        <p style="font-size:0.9rem; line-height:1.6">${r.diagnosis_summary || 'No summary available'}</p>
+                                    </div>
+                                    <div class="detail-section">
+                                        <h4>Recommendation</h4>
+                                        <p style="font-style:italic; border-left:3px solid var(--primary); padding-left:1rem; font-size:0.9rem; line-height:1.6">
+                                            ${r.recommendation || 'No recommendations available'}
+                                        </p>
+                                    </div>
+                                    ${r.warnings && r.warnings.length > 0 ? `
+                                        <div class="detail-section">
+                                            <h4>Clinical Warnings</h4>
+                                            ${r.warnings.map(w => `
+                                                <div class="warning-item ${w.level}" style="margin-bottom: 0.5rem;">
+                                                    ${w.message}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    ${r.lifestyle_plan && r.lifestyle_plan.length > 0 ? `
+                                        <div class="detail-section">
+                                            <h4>Lifestyle Recommendations</h4>
+                                            <div style="display: grid; gap: 0.75rem; margin-top: 0.75rem;">
+                                                ${r.lifestyle_plan.map(item => `
+                                                    <div class="lifestyle-item">
+                                                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                            <div style="flex: 1;">
+                                                                <div style="font-weight: 600; margin-bottom: 0.25rem;">${item.action || 'No action specified'}</div>
+                                                                <div class="meta" style="font-size: 0.75rem; color: #64748b;">
+                                                                    ${item.category ? `<span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem; margin-right: 0.5rem;">${item.category}</span>` : ''}
+                                                                    ${item.evidence_level ? `<span style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">Evidence: ${item.evidence_level}</span>` : ''}
+                                                                </div>
+                                                            </div>
+                                                            <div style="text-align: right; font-size: 0.875rem; color: #475569;">
+                                                                ${item.frequency ? `<div>Frequency: ${item.frequency}</div>` : ''}
+                                                                ${item.duration_min ? `<div>Duration: ${item.duration_min} min</div>` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ${item.contraindications && item.contraindications.length > 0 ? `
+                                                            <div class="meta" style="margin-top: 0.5rem; color: #ef4444; font-size: 0.75rem;">
+                                                                ⚠️ Contraindications: ${item.contraindications.join(', ')}
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                console.error('Error loading patient reports:', err);
+                const resultDiv = document.getElementById('gp-reports-result');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        }
+
+        // GP Reports Button Click Handler
+        document.getElementById('gp-reports-btn').onclick = async () => {
+            const patientId = document.getElementById('gp-reports-patient-id').value;
+            const resultDiv = document.getElementById('gp-reports-result');
+            
+            if (!patientId) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter a Patient ID.</p>';
+                return;
+            }
+            
+            await loadPatientReports(patientId);
+        };
+
+        // GP Workspace - Find Patient Search with Assign
+                // 1. GP Workspace - Find & Assign Patient
+        document.getElementById('gp-search-btn').onclick = async () => {
+            const email = document.getElementById('gp-search-email').value.trim();
+            const resultDiv = document.getElementById('gp-search-result');
+            
+            if (!email) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter an email address.</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(apiURL(`/profile/patients/search?email=${encodeURIComponent(email)}`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to search for patients');
+                const patients = await res.json();
+                
+                if (patients.length === 0) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<p style="color:#64748b">No patients found matching that email.</p>';
+                    return;
+                }
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                        ${patients.map(patient => `
+                            <div style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #22c55e;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 1rem; color: #166534;">${patient.full_name}</div>
+                                        <div style="font-size: 0.875rem; color: #15803d; margin-top: 0.25rem;">${patient.email}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 0.75rem; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Patient ID</div>
+                                        <div style="font-weight: 700; font-size: 1.25rem; color: #15803d;">${patient.user_id}</div>
+                                    </div>
+                                </div>
+                                <button onclick="assignPatientToMe(${patient.user_id}, this)" 
+                                    style="background: var(--success); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem; margin-top: 0.5rem; font-weight: bold;">
+                                    Assign to Me
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        };
+
+        // 2. Assign Patient Function
+        async function assignPatientToMe(patientId, btn) {
+            try {
+                btn.disabled = true;
+                btn.innerText = 'Assigning...';
+                
+                const res = await fetch(apiURL(`/profile/patients/assign/${patientId}`), {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to assign patient');
+                
+                const resultDiv = document.getElementById('gp-search-result');
+                resultDiv.innerHTML = `
+                    <div style="background: #dcfce7; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #22c55e; margin-top: 1rem;">
+                        <strong style="color: #166534;">Patient assigned successfully!</strong>
+                    </div>
+                `;
+                
+                if (typeof loadMyPatients === 'function') {
+                    await loadMyPatients();
+                }
+                document.getElementById('gp-search-email').value = '';
+                
+            } catch (err) {
+                alert('Error: ' + err.message);
+                btn.disabled = false;
+                btn.innerText = 'Assign to Me';
+            }
+        }
+
+        // 3. GP Workspace - Patient History Lookup (With Double-Encode Fix)
+        document.getElementById('gp-lookup-btn').onclick = async () => {
+            const patientId = document.getElementById('gp-patient-id').value;
+            const resultDiv = document.getElementById('gp-history-result');
+            
+            if (!patientId) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter a patient ID.</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(apiURL(`/profile/patients/${patientId}/history`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to fetch patient history');
+                const data = await res.json();
+                const historyItems = data.history || [];
+                
+                const filteredLogs = historyItems.filter(log => {
+                    if (log.field_name === 'password_hash') return false;
+                    
+                    if (log.field_name === 'current_meds') {
+                        try {
+                            // Fix for double-encoded JSON strings from the DB
+                            let oldStr = log.old_value || '[]';
+                            let newStr = log.new_value || '[]';
+                            
+                            let oldMeds = JSON.parse(oldStr);
+                            let newMeds = JSON.parse(newStr);
+                            
+                            if (typeof oldMeds === 'string') oldMeds = JSON.parse(oldMeds);
+                            if (typeof newMeds === 'string') newMeds = JSON.parse(newMeds);
+
+                            if (Array.isArray(oldMeds) && Array.isArray(newMeds)) {
+                                const oldSorted = oldMeds.sort().join(',');
+                                const newSorted = newMeds.sort().join(',');
+                                if (oldSorted === newSorted) return false;
+                            }
+                        } catch (e) {
+                            return true; // Render if parsing fails
+                        }
+                    }
+                    return true;
+                });
+                
+                if (filteredLogs.length === 0) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<p style="color:#64748b">No significant profile changes found for this patient.</p>';
+                    return;
+                }
+
+                const groupedLogs = {};
+                filteredLogs.forEach(log => {
+                    const dateKey = new Date(log.changed_at).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    if (!groupedLogs[dateKey]) groupedLogs[dateKey] = [];
+                    groupedLogs[dateKey].push(log);
+                });
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="margin-top: 1rem;">
+                        <h4 style="margin-bottom: 1rem; color: #0f172a;">Patient: ${data.full_name} (ID: ${data.user_id})</h4>
+                        <div style="position: relative; padding-left: 2rem;">
+                            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--border);"></div>
+                            ${Object.entries(groupedLogs).map(([timestamp, logs]) => `
+                                <div style="position: relative; margin-bottom: 2rem;">
+                                    <div style="position: absolute; left: -32px; top: -28px; font-size: 0.75rem; color: #64748b; font-weight: 600;">
+                                        ${timestamp}
+                                    </div>
+                                    <div style="position: absolute; left: -28px; top: -16px; width: 10px; height: 10px; background: var(--primary); border-radius: 50%; border: 3px solid white;"></div>
+                                    <div style="background: var(--bg); padding: 1.25rem; border-radius: 0.5rem; border-left: 3px solid var(--primary);">
+                                        <div style="display: grid; gap: 0.75rem;">
+                                            ${logs.map(log => {
+                                                const fieldName = log.field_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                                return `
+                                                    <div style="font-size: 0.875rem;">
+                                                        <strong style="color: #0f172a;">${fieldName}:</strong>
+                                                        <span style="color: #dc2626; background: #fee2e2; padding: 0.1rem 0.4rem; border-radius: 0.25rem;">${log.old_value ?? 'null'}</span>
+                                                        <span style="margin: 0 0.5rem; color: #64748b;">➔</span>
+                                                        <span style="color: #16a34a; background: #dcfce7; padding: 0.1rem 0.4rem; border-radius: 0.25rem;">${log.new_value ?? 'null'}</span>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        };
+
+// Load Videos
+        async function loadVideos() {
+            try {
+                const klFilter = document.getElementById('video-filter-kl')?.value || '';
+                const categoryFilter = document.getElementById('video-filter-category')?.value || '';
+                
+                // FIX: Added trailing slash to prevent 307 redirect
+                let url = apiURL('/videos/');
+                const params = new URLSearchParams();
+                if (klFilter) params.append('kl_grade', klFilter);
+                if (categoryFilter) params.append('category', categoryFilter);
+                if (params.toString()) url += `?${params.toString()}`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) {
+                    console.error('Failed to load videos:', res.status, res.statusText);
+                    document.getElementById('videos-list').innerHTML = '<p style="color:var(--danger)">Failed to load videos. Please try again.</p>';
+                    return;
+                }
+                
+                const videos = await res.json();
+                const list = document.getElementById('videos-list');
+                
+                if (!videos || videos.length === 0) {
+                    list.innerHTML = '<p style="color:#64748b">No videos available at the moment.</p>';
+                    return;
+                }
+                
+                list.innerHTML = videos.map(v => `
+                    <div class="video-card">
+                        <!-- Replaced the static SVG with an actual HTML5 video player -->
+                        <video 
+                            width="100%" 
+                            height="180" 
+                            controls 
+                            preload="metadata"
+                            ${v.thumbnail_url ? `poster="${v.thumbnail_url}"` : ''} 
+                            style="object-fit: cover; background: #000; display: block;"
+                        >
+                            <source src="${v.s3_url}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        
+                        <div class="video-info">
+                            <h4 style="margin:0 0 0.5rem">${v.title || 'Untitled'}</h4>
+                            <p style="font-size:0.875rem; color:#64748b; margin:0 0 0.5rem">${v.description || 'No description'}</p>
+                            <div style="display:flex; gap:0.5rem; font-size:0.75rem; color:#64748b; flex-wrap: wrap;">
+                                <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">KL: ${v.kl_grade_min || 0}-${v.kl_grade_max || 4}</span>
+                                <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">${v.category || 'General'}</span>
+                                <!-- Fixed to show seconds for short videos -->
+                                <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">${v.duration_seconds ? v.duration_seconds + ' sec' : '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading videos:', err);
+                document.getElementById('videos-list').innerHTML = '<p style="color:var(--danger)">Error loading videos: ' + err.message + '</p>';
+            }
+        }
+
+
+        
+        // Load My Patients
+        async function loadMyPatients() {
+            try {
+                const res = await fetch(apiURL('/profile/patients/mine'), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to load assigned patients');
+                const patients = await res.json();
+                
+                const listDiv = document.getElementById('my-patients-list');
+                const emptyDiv = document.getElementById('my-patients-empty');
+                const tbody = document.getElementById('my-patients-tbody');
+                
+                if (patients.length === 0) {
+                    listDiv.style.display = 'none';
+                    emptyDiv.style.display = 'block';
+                    // Clear dropdowns
+                    document.getElementById('gp-upload-patient-select').innerHTML = '<option value="">-- No Patients Assigned --</option>';
+                    document.getElementById('gp-reports-patient-select').innerHTML = '<option value="">-- No Patients Assigned --</option>';
+                    document.getElementById('gp-history-patient-select').innerHTML = '<option value="">-- No Patients Assigned --</option>';
+                    return;
+                }
+                
+                listDiv.style.display = 'block';
+                emptyDiv.style.display = 'none';
+                
+                tbody.innerHTML = patients.map(patient => `
+                    <tr>
+                        <td><strong>${patient.user_id}</strong></td>
+                        <td>${patient.full_name}</td>
+                        <td>${patient.email}</td>
+                        <td>
+                            <button onclick="document.getElementById('gp-patient-id').value = '${patient.user_id}'; document.getElementById('gp-patient-id').scrollIntoView({behavior: 'smooth'})" 
+                                style="background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem;">
+                                Load Profile
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                // Populate dropdowns
+                const uploadSelect = document.getElementById('gp-upload-patient-select');
+                const reportsSelect = document.getElementById('gp-reports-patient-select');
+                const historySelect = document.getElementById('gp-history-patient-select');
+                
+                const options = patients.map(p => `<option value="${p.user_id}">${p.full_name} (ID: ${p.user_id})</option>`).join('');
+                
+                uploadSelect.innerHTML = '<option value="">-- Select a Patient --</option>' + options;
+                reportsSelect.innerHTML = '<option value="">-- Select a Patient --</option>' + options;
+                historySelect.innerHTML = '<option value="">-- Select a Patient --</option>' + options;
+                
+            } catch (err) {
+                console.error('Error loading patients:', err);
+            }
+        }
+
+        // GP Diagnostic Upload Function
+        document.getElementById('gp-upload-btn').onclick = async () => {
+            const patientId = document.getElementById('gp-upload-patient-id').value;
+            const fileInput = document.getElementById('gp-xray-upload');
+            const resultDiv = document.getElementById('gp-upload-result');
+            
+            if (!patientId) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter a Patient ID.</p>';
+                return;
+            }
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please select an X-ray image file.</p>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:#64748b">Uploading and analyzing... Please wait.</p>';
+                
+                // Step 1: Upload the image
+                const uploadRes = await fetch(apiURL('/upload/'), {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` },
+                    body: formData
+                });
+                
+                if (!uploadRes.ok) throw new Error('File upload failed');
+                const uploadData = await uploadRes.json();
+
+                // Step 2: Trigger analysis with patient_id context
+                const analyzeRes = await fetch(apiURL('/diagnostic/analyze'), {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        image_id: uploadData.image_id,
+                        patient_id: parseInt(patientId)
+                    })
+                });
+                
+                if (!analyzeRes.ok) throw new Error('Analysis failed');
+                const report = await analyzeRes.json();
+                
+                // Render the report result
+                resultDiv.innerHTML = `
+                    <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #22c55e;">
+                        <h3 style="margin-top: 0; color: #166534;">Analysis Complete!</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0;">
+                            <div>
+                                <strong style="font-size: 1.5rem; color: #166534;">KL Grade ${report.kl_grade}</strong>
+                                <span style="margin-left: 1rem; background: #e0f2fe; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; color: #0369a1;">
+                                    Confidence: ${(report.confidence * 100).toFixed(1)}%
+                                </span>
+                            </div>
+                        </div>
+                        <p style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+                            <strong>Diagnosis:</strong><br>${report.diagnosis_summary || 'No summary available'}
+                        </p>
+                        <button onclick="document.getElementById('gp-reports-patient-id').value = '${patientId}'; document.getElementById('gp-reports-btn').click()" 
+                            style="background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">
+                            View All Patient Reports
+                        </button>
+                    </div>
+                `;
+                
+                // Refresh the reports list
+                await loadPatientReports(patientId);
+                
+            } catch (err) {
+                console.error('Analysis error:', err);
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        };
+
+        // Load Patient Reports Function
+        async function loadPatientReports(patientId) {
+            try {
+                const res = await fetch(apiURL(`/diagnostic/reports?user_id=${patientId}`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to load patient reports');
+                const reports = await res.json();
+                
+                const resultDiv = document.getElementById('gp-reports-result');
+                
+                if (!reports || reports.length === 0) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<p style="color:#64748b">No diagnostic reports found for this patient.</p>';
+                    return;
+                }
+                
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                        ${reports.map((r, index) => `
+                            <div class="report-card" onclick="toggleReportCard(this)" data-index="${index}">
+                                <div style="display:flex; justify-content:space-between; align-items:center">
+                                    <div>
+                                        <strong>Grade ${r.kl_grade}</strong>
+                                        <div style="font-size:0.8rem; color:#64748b; margin-top:0.25rem">${r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown Date'}</div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:1rem">
+                                        <span class="kl-badge">Confidence: ${r.confidence ? ((r.confidence * 100).toFixed(1)) + '%' : 'N/A'}</span>
+                                        <span class="toggle-icon">▼</span>
+                                    </div>
+                                </div>
+                                <div class="summary-text" style="margin-top:0.75rem">
+                                    ${r.diagnosis_summary ? r.diagnosis_summary.substring(0, 150) + (r.diagnosis_summary.length > 150 ? '...' : '') : 'No summary available'}
+                                </div>
+                                <div class="report-details">
+                                    <div class="detail-section">
+                                        <h4>Diagnosis Summary</h4>
+                                        <p style="font-size:0.9rem; line-height:1.6">${r.diagnosis_summary || 'No summary available'}</p>
+                                    </div>
+                                    <div class="detail-section">
+                                        <h4>Recommendation</h4>
+                                        <p style="font-style:italic; border-left:3px solid var(--primary); padding-left:1rem; font-size:0.9rem; line-height:1.6">
+                                            ${r.recommendation || 'No recommendations available'}
+                                        </p>
+                                    </div>
+                                    ${r.warnings && r.warnings.length > 0 ? `
+                                        <div class="detail-section">
+                                            <h4>Clinical Warnings</h4>
+                                            ${r.warnings.map(w => `
+                                                <div class="warning-item ${w.level}" style="margin-bottom: 0.5rem;">
+                                                    ${w.message}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    ${r.lifestyle_plan && r.lifestyle_plan.length > 0 ? `
+                                        <div class="detail-section">
+                                            <h4>Lifestyle Recommendations</h4>
+                                            <div style="display: grid; gap: 0.75rem; margin-top: 0.75rem;">
+                                                ${r.lifestyle_plan.map(item => `
+                                                    <div class="lifestyle-item">
+                                                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                                                            <div style="flex: 1;">
+                                                                <div style="font-weight: 600; margin-bottom: 0.25rem;">${item.action || 'No action specified'}</div>
+                                                                <div class="meta" style="font-size: 0.75rem; color: #64748b;">
+                                                                    ${item.category ? `<span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem; margin-right: 0.5rem;">${item.category}</span>` : ''}
+                                                                    ${item.evidence_level ? `<span style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">Evidence: ${item.evidence_level}</span>` : ''}
+                                                                </div>
+                                                            </div>
+                                                            <div style="text-align: right; font-size: 0.875rem; color: #475569;">
+                                                                ${item.frequency ? `<div>Frequency: ${item.frequency}</div>` : ''}
+                                                                ${item.duration_min ? `<div>Duration: ${item.duration_min} min</div>` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ${item.contraindications && item.contraindications.length > 0 ? `
+                                                            <div class="meta" style="margin-top: 0.5rem; color: #ef4444; font-size: 0.75rem;">
+                                                                ⚠️ Contraindications: ${item.contraindications.join(', ')}
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                console.error('Error loading patient reports:', err);
+                const resultDiv = document.getElementById('gp-reports-result');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        }
+
+        // GP Reports Button Click Handler
+        document.getElementById('gp-reports-btn').onclick = async () => {
+            const patientId = document.getElementById('gp-reports-patient-id').value;
+            const resultDiv = document.getElementById('gp-reports-result');
+            
+            if (!patientId) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter a Patient ID.</p>';
+                return;
+            }
+            
+            await loadPatientReports(patientId);
+        };
+
+        // GP Workspace - Find Patient Search with Assign
+        document.getElementById('gp-search-btn').onclick = async () => {
+            const email = document.getElementById('gp-search-email').value.trim();
+            const resultDiv = document.getElementById('gp-search-result');
+            
+            if (!email) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter an email address.</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(apiURL(`/profile/patients/search?email=${encodeURIComponent(email)}`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to search for patients');
+                const patients = await res.json();
+                
+                if (patients.length === 0) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<p style="color:#64748b">No patients found matching that email.</p>';
+                    return;
+                }
+
+                // Render search results
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                        ${patients.map(patient => `
+                            <div style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #22c55e;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 1rem; color: #166534;">${patient.full_name}</div>
+                                        <div style="font-size: 0.875rem; color: #15803d; margin-top: 0.25rem;">${patient.email}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 0.75rem; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Patient ID</div>
+                                        <div style="font-weight: 700; font-size: 1.25rem; color: #15803d;">${patient.user_id}</div>
+                                    </div>
+                                </div>
+                                <button onclick="assignPatientToMe(${patient.user_id}, this)" 
+                                    style="background: var(--success); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem; margin-top: 0.5rem;">
+                                    Assign to Me
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        };
+
+        // Assign Patient to GP
+        async function assignPatientToMe(patientId, btn) {
+            try {
+                btn.disabled = true;
+                btn.innerText = 'Assigning...';
+                
+                const res = await fetch(apiURL(`/profile/patients/assign/${patientId}`), {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to assign patient');
+                
+                // Show success message
+                const resultDiv = document.getElementById('gp-search-result');
+                resultDiv.innerHTML = `
+                    <div style="background: #dcfce7; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #22c55e; margin-top: 1rem;">
+                        <strong style="color: #166534;">Patient assigned successfully!</strong>
+                    </div>
+                `;
+                
+                // Refresh the my patients list
+                await loadMyPatients();
+                
+                // Clear the search input
+                document.getElementById('gp-search-email').value = '';
+                
+            } catch (err) {
+                alert('Error: ' + err.message);
+                btn.disabled = false;
+                btn.innerText = 'Assign to Me';
+            }
+        }
+
+        // 1. GP Workspace - Find & Assign Patient
+        document.getElementById('gp-search-btn').onclick = async () => {
+            const email = document.getElementById('gp-search-email').value.trim();
+            const resultDiv = document.getElementById('gp-search-result');
+            
+            if (!email) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter an email address.</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(apiURL(`/profile/patients/search?email=${encodeURIComponent(email)}`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to search for patients');
+                const patients = await res.json();
+                
+                if (patients.length === 0) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<p style="color:#64748b">No patients found matching that email.</p>';
+                    return;
+                }
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                        ${patients.map(patient => `
+                            <div style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #22c55e;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 1rem; color: #166534;">${patient.full_name}</div>
+                                        <div style="font-size: 0.875rem; color: #15803d; margin-top: 0.25rem;">${patient.email}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 0.75rem; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Patient ID</div>
+                                        <div style="font-weight: 700; font-size: 1.25rem; color: #15803d;">${patient.user_id}</div>
+                                    </div>
+                                </div>
+                                <button onclick="assignPatientToMe(${patient.user_id}, this)" 
+                                    style="background: var(--success); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem; margin-top: 0.5rem; font-weight: bold;">
+                                    Assign to Me
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        };
+        // GP Workspace - Patient History Lookup
+        document.getElementById('gp-lookup-btn').onclick = async () => {
+            const patientId = document.getElementById('gp-patient-id').value;
+            const resultDiv = document.getElementById('gp-history-result');
+            
+            if (!patientId) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter a patient ID.</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(apiURL(`/profile/patients/${patientId}/history`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to fetch patient history');
+                const data = await res.json();
+                
+                // Filter and process history logs
+                const historyItems = data.history || [];
+                
+                // Filter out password_hash and false positive current_meds changes
+                const filteredLogs = historyItems.filter(log => {
+                    // Skip password_hash changes
+                    if (log.field_name === 'password_hash') return false;
+                    
+                    // Skip current_meds if the actual medication lists are the same
+                    if (log.field_name === 'current_meds') {
+                        try {
+                            const oldMeds = JSON.parse(log.old_value || '[]');
+                            const newMeds = JSON.parse(log.new_value || '[]');
+                            // Compare sorted arrays
+                            const oldSorted = oldMeds.sort().join(',');
+                            const newSorted = newMeds.sort().join(',');
+                            if (oldSorted === newSorted) return false;
+                        } catch (e) {
+                            // If parsing fails, show the log
+                            return true;
+                        }
+                    }
+                    return true;
+                });
+                
+                if (filteredLogs.length === 0) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<p style="color:#64748b">No significant profile changes found for this patient.</p>';
+                    return;
+                }
+
+                // Group logs by timestamp
+                const groupedLogs = {};
+                filteredLogs.forEach(log => {
+                    const dateKey = new Date(log.changed_at).toLocaleString();
+                    if (!groupedLogs[dateKey]) {
+                        groupedLogs[dateKey] = [];
+                    }
+                    groupedLogs[dateKey].push(log);
+                });
+
+                // Render grouped timeline
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="margin-top: 1rem;">
+                        <h4 style="margin-bottom: 1rem;">Patient: ${data.full_name} (ID: ${data.user_id})</h4>
+                        <div style="position: relative; padding-left: 2rem;">
+                            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--border);"></div>
+                            ${Object.entries(groupedLogs).map(([timestamp, logs]) => `
+                                <div style="position: relative; margin-bottom: 2rem;">
+                                    <div style="position: absolute; left: -32px; top: -24px; font-size: 0.75rem; color: #64748b; font-weight: 600;">
+                                        ${timestamp}
+                                    </div>
+                                    <div style="position: absolute; left: -28px; top: -16px; width: 10px; height: 10px; background: var(--primary); border-radius: 50%; border: 3px solid white;"></div>
+                                    <div style="background: var(--bg); padding: 1.25rem; border-radius: 0.5rem; border-left: 3px solid var(--primary);">
+                                        <div style="display: grid; gap: 0.75rem;">
+                                            ${logs.map(log => {
+                                                const fieldName = log.field_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                                return `
+                                                    <div style="font-size: 0.875rem;">
+                                                        <strong style="color: #0f172a;">${fieldName}:</strong>
+                                                        <span style="color: #dc2626;">${log.old_value ?? 'null'}</span>
+                                                        <span style="margin: 0 0.5rem; color: #64748b;">➔</span>
+                                                        <span style="color: #16a34a;">${log.new_value ?? 'null'}</span>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+            }
+        };
+
+        // GP Dashboard - Generate Clinical Recommendation
+        document.getElementById('gp-recommend-btn').onclick = async () => {
+            const klGrade = document.getElementById('gp-kl-grade').value;
+            const painLevel = document.getElementById('gp-pain-level').value;
+            const mobilityLevel = document.getElementById('gp-mobility-level').value;
+            const resultDiv = document.getElementById('gp-recommendation-result');
+            
+            if (!klGrade || klGrade < 0 || klGrade > 4) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color:var(--danger)">Please enter a valid KL Grade (0-4).</p>';
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({ kl_grade: klGrade });
+                if (painLevel !== '') params.append('pain_level', painLevel);
+                if (mobilityLevel) params.append('mobility_level', mobilityLevel);
+
+                const res = await fetch(apiURL(`/recommendation/?${params.toString()}`), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to generate recommendation');
+                const data = await res.json();
+                
+                // Build warnings HTML
+                let warningsHtml = '';
+                if (data.warnings && data.warnings.length > 0) {
+                    warningsHtml = `
+                        <div style="margin-top: 1.5rem;">
+                            <h3 style="margin-bottom: 0.5rem;">Clinical Warnings</h3>
+                            ${data.warnings.map(w => `
+                                <div class="warning-item ${w.level}" style="margin-bottom: 0.5rem;">
+                                    ${w.message}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                // Build lifestyle plan HTML
+                let lifestyleHtml = '';
+                if (data.lifestyle_plan && data.lifestyle_plan.length > 0) {
+                    lifestyleHtml = `
+                        <div style="margin-top: 1.5rem;">
+                            <h3 style="margin-bottom: 0.5rem;">Lifestyle Recommendations</h3>
+                            <div style="display: grid; gap: 0.75rem;">
+                                ${data.lifestyle_plan.map(item => `
+                                    <div class="lifestyle-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                                            <div style="flex: 1;">
+                                                <div style="font-weight: 600; margin-bottom: 0.25rem;">${item.action || 'No action specified'}</div>
+                                                <div class="meta" style="font-size: 0.75rem; color: #64748b;">
+                                                    ${item.category ? `<span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 0.25rem; margin-right: 0.5rem;">${item.category}</span>` : ''}
+                                                    ${item.evidence_level ? `<span style="background: #f3f4f6; padding: 0.2rem 0.5rem; border-radius: 0.25rem;">Evidence: ${item.evidence_level}</span>` : ''}
+                                                </div>
+                                            </div>
+                                            <div style="text-align: right; font-size: 0.875rem; color: #475569;">
+                                                ${item.frequency ? `<div>Frequency: ${item.frequency}</div>` : ''}
+                                                ${item.duration_min ? `<div>Duration: ${item.duration_min} min</div>` : ''}
+                                            </div>
+                                        </div>
+                                        ${item.contraindications && item.contraindications.length > 0 ? `
+                                            <div class="meta" style="margin-top: 0.5rem; color: #ef4444; font-size: 0.75rem;">
+                                                ⚠️ Contraindications: ${item.contraindications.join(', ')}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Build medications HTML
+                let medicationsHtml = '';
+                if (data.medications && data.medications.length > 0) {
+                    medicationsHtml = `
+                        <div style="margin-top: 1.5rem;">
+                            <h3 style="margin-bottom: 0.5rem;">Recommended Medications</h3>
+                            <div style="display: grid; gap: 0.5rem;">
+                                ${data.medications.map(med => `
+                                    <div class="medication-item">
+                                        <div style="font-weight: 600; margin-bottom: 0.25rem;">${med.name || 'Unknown'}</div>
+                                        <div style="font-size: 0.875rem; color: #475569;">
+                                            ${med.dosage ? `<div>Dosage: ${med.dosage}</div>` : ''}
+                                            ${med.frequency ? `<div>Frequency: ${med.frequency}</div>` : ''}
+                                            ${med.instructions ? `<div style="margin-top: 0.25rem; color: #64748b;">Instructions: ${med.instructions}</div>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #22c55e; margin-bottom: 1.5rem;">
+                        <strong>Treatment Plan Generated for KL Grade ${klGrade}</strong>
+                    </div>
+                    ${warningsHtml}
+                    ${lifestyleHtml}
+                    ${medicationsHtml}
+                `;
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
             }
         };
 
@@ -1187,12 +2731,29 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${tab}`).classList.add('active');
             
-            if (tab === 'admin') {
-                loadAdminAnalytics();
-            } else if (tab === 'medications') {
-                loadMedications();
+            if (tab === 'gp') {
+                checkUserRole();
+                loadMyPatients();
             }
         }
+
+        // Sync dropdown selection with manual input fields
+        document.addEventListener('DOMContentLoaded', function() {
+            // Upload section
+            document.getElementById('gp-upload-patient-select').addEventListener('change', function() {
+                document.getElementById('gp-upload-patient-id').value = this.value;
+            });
+            
+            // Reports section
+            document.getElementById('gp-reports-patient-select').addEventListener('change', function() {
+                document.getElementById('gp-reports-patient-id').value = this.value;
+            });
+            
+            // History section
+            document.getElementById('gp-history-patient-select').addEventListener('change', function() {
+                document.getElementById('gp-patient-id').value = this.value;
+            });
+        });
 
         // Logout
         function logout() {

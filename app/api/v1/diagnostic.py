@@ -211,6 +211,7 @@ def get_my_reports(
             recommendation=r.recommendation,
             lifestyle_plan=json.loads(r.lifestyle_plan) if r.lifestyle_plan else [],
             warnings=json.loads(r.warnings) if r.warnings else [],
+            medications=json.loads(r.medications) if r.medications else [],
             exercise_video_urls=json.loads(r.exercise_video_urls)
             if r.exercise_video_urls
             else [],
@@ -247,6 +248,7 @@ def get_report(
         recommendation=report.recommendation,
         lifestyle_plan=json.loads(report.lifestyle_plan) if report.lifestyle_plan else [],
         warnings=json.loads(report.warnings) if report.warnings else [],
+        medications=json.loads(report.medications) if report.medications else [],
         exercise_video_urls=json.loads(report.exercise_video_urls)
         if report.exercise_video_urls
         else [],

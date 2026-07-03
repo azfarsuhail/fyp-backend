@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.report_schema import ExerciseVideoOut, LifestyleItem, Warning
+from app.schemas.base_schemas import ExerciseVideoOut, LifestyleItem, Warning
 
 
 class Medication(BaseModel):

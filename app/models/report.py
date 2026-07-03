@@ -20,6 +20,7 @@ class Report(Base):
     recommendation = Column(Text, nullable=True)         # Legacy text summary
     lifestyle_plan = Column(Text, nullable=True)         # JSON: structured parametric recommendations
     warnings = Column(Text, nullable=True)               # JSON: grade-specific warnings
+    medications = Column(Text, nullable=True)            # JSON: structured medication recommendations
     exercise_video_urls = Column(Text, nullable=True)    # JSON string of S3 video URLs
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

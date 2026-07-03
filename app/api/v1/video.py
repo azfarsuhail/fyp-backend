@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app.core.dependencies import get_db, RoleChecker, get_current_user
 from app.models.library import ExerciseVideo
-from app.services.s3_service import upload_file_to_s3
+from app.services.s3_service import upload_file_to_s3, generate_presigned_url
 
 router = APIRouter()
 
@@ -97,7 +97,26 @@ def list_videos(
     if category:
         query = query.filter(ExerciseVideo.category == category)
 
-    return query.all()
+    videos = query.all()
+    
+    # Transform the raw S3 keys into playable presigned URLs
+    formatted_videos = []
+    for v in videos:
+        formatted_videos.append({
+            "video_id": v.video_id,
+            "title": v.title,
+            "description": v.description,
+            "s3_url": generate_presigned_url(v.s3_url) if v.s3_url else None,
+            # If your thumbnails are also stored in S3, wrap them too:
+            "thumbnail_url": generate_presigned_url(v.thumbnail_url) if getattr(v, 'thumbnail_url', None) else None,
+            "kl_grade_min": v.kl_grade_min,
+            "kl_grade_max": v.kl_grade_max,
+            "category": v.category,
+            "difficulty": v.difficulty,
+            "duration_seconds": v.duration_seconds
+        })
+        
+    return formatted_videos
 
 
 @router.get("/{video_id}", response_model=VideoOut)

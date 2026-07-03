@@ -133,12 +133,24 @@ Medical Image Analysis API for Knee Osteoarthritis Detection and Management. The
 - ✅ **Zero-Trust Security Audit**: Comprehensive review of JWT validation, error handling, and abuse vectors completed
 - ✅ **Production Ready**: All security fixes verified and deployed
 
-## Latest Maintenance Update (2026-07-02)
-- ✅ **Medication Catalog Added**: Introduced structured `Medication` schema and `MedicationModel` table for recommendation filtering and admin maintenance
-- ✅ **Medication API Routes**: Added public `GET /api/v1/medications/` and admin-only `POST /api/v1/admin/medications/` endpoints
-- ✅ **Recommendation Output Updated**: `RecommendationResult` now includes `medications` as a structured list for the clinical RAG layer
-- ✅ **Admin UI Added**: Created `static/admin-medications-upload.html` and linked it from the main admin dashboard
-- ✅ **Alembic Support**: Added migration scaffold for the `MEDICATION` table with KL grade constraints
+## Latest Maintenance Update (2026-07-03)
+- ✅ **GP Workspace Implemented**: Complete clinical hub for General Practitioners with patient assignment, history lookup, and diagnostic tools
+- ✅ **GP-Patient Linking**: Added `primary_gp_id` column to `User` model for patient-to-GP assignment relationships
+- ✅ **New GP Endpoints**:
+  - `POST /profile/patients/assign/{patient_id}` - Assign patient to GP (GP role required)
+  - `GET /profile/patients/mine` - Get all patients assigned to current GP (GP role required)
+  - `GET /profile/patients/search?email=...` - Search patients by email (GP role required)
+- ✅ **Bug Fix: Invalid Date Display**: Added `created_at: datetime` to `ReportOut` Pydantic schema and updated frontend date parsing with fallback
+- ✅ **UX Improvements**:
+  - Mobile-responsive CSS for dashboard (collapsible sidebar, adaptive grids)
+  - Locked email input field in profile form (readonly with visual indication)
+  - GP Workspace as default tab for GP users
+  - Removed "Analyze Image" and "Reports" tabs for GPs (centralized in GP Workspace)
+- ✅ **Frontend Cleanup**: Removed Admin dashboard tabs from main UI (moved to separate portal)
+- ✅ **Clinical Workflow Enhancement**: GP can now upload X-rays for patients, view patient reports, and check profile history from unified workspace
+- ✅ **Alembic Migration**: Applied `2026_07_03_ddaa5d75d15f_add_primary_gp_id_to_user.py` to add `primary_gp_id` column
+
+## Previous Maintenance Updates
 
 ## Previous Maintenance Updates
 

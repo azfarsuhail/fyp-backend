@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+
+from app.schemas.base_schemas import ExerciseVideoOut, LifestyleItem, Warning
 
 
 class DiagnosticRequest(BaseModel):
@@ -15,38 +19,6 @@ class DiagnosticResult(BaseModel):
     kl_grade: int = Field(..., ge=0, le=4, description="Kellgren-Lawrence grade 0-4")
     confidence: float = Field(..., ge=0.0, le=1.0)
     diagnosis_summary: str
-
-
-# ── Parametric RAG Output Schemas ─────────────────────────────────────────────
-
-class LifestyleItem(BaseModel):
-    """A single structured recommendation — no free-text, no hallucination."""
-    id: str = Field(..., description="Unique record ID e.g. EX-001")
-    category: str = Field(..., description="exercise | nutrition | pain_management | lifestyle | flexibility")
-    action: str = Field(..., description="The specific recommendation")
-    evidence_level: str = Field(..., description="strong | moderate | emerging")
-    source: str = Field(..., description="Guideline or study citation")
-    frequency: Optional[str] = None
-    duration_min: Optional[int] = None
-    intensity: Optional[str] = None
-    contraindications: Optional[List[str]] = None
-    modifier_note: Optional[str] = Field(None, description="Note if parameters were adjusted for pain/mobility")
-
-
-class Warning(BaseModel):
-    """A grade-specific clinical warning."""
-    level: str = Field(..., description="info | caution | warning")
-    message: str
-
-
-class ExerciseVideoOut(BaseModel):
-    """Structured exercise video metadata."""
-    video_id: int
-    title: str
-    s3_url: str
-    category: str
-    difficulty: str
-    duration_seconds: Optional[int] = None
 
 
 class RecommendationResult(BaseModel):
@@ -74,5 +46,11 @@ class ReportOut(BaseModel):
     recommendation: Optional[str] = None
     lifestyle_plan: Optional[List[LifestyleItem]] = None
     warnings: Optional[List[Warning]] = None
+    medications: Optional[List["Medication"]] = None
     exercise_video_urls: Optional[List[str]] = []
     created_at: datetime
+
+
+# Late import to resolve forward references for Pydantic
+from app.schemas.recommendation_schema import Medication
+ReportOut.model_rebuild(_types_namespace={'Medication': Medication})
