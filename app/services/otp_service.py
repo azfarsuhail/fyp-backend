@@ -154,13 +154,13 @@ def verify_otp_and_increment_attempts(
     if verify_otp_code(otp_code, otp_record.code_hash):
         # OTP is valid - mark as verified
         otp_record.is_verified = 1
-    
-    try:
-        db.commit()
-        return True, "success"
-    except Exception:
-        db.rollback()
-        raise
+        
+        try:
+            db.commit()
+            return True, "success"
+        except Exception:
+            db.rollback()
+            raise
     
     # OTP is invalid - increment attempts
     otp_record.attempts += 1
@@ -176,6 +176,7 @@ def verify_otp_and_increment_attempts(
             db.rollback()
             raise
     
+    # Not at max attempts yet
     try:
         db.commit()
         remaining_attempts = MAX_ATTEMPTS - otp_record.attempts

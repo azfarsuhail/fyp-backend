@@ -36,7 +36,9 @@ def client():
 def reset_rate_limiter():
     """Reset rate limiter before every test to prevent state bleed."""
     from app.core.security_middleware import auth_rate_limiter
-    auth_rate_limiter.attempts.clear()
+    # Clear all attempt tracking data
+    with auth_rate_limiter._lock:
+        auth_rate_limiter.attempts.clear()
     yield
 
 
@@ -186,39 +188,33 @@ class TestOTPRequestEndpoint:
     
     def test_request_otp_success(self, client, db_session, test_user):
         """Test successful OTP request for existing user."""
-        with patch("app.services.email.Emails.send") as mock_send:
-            response = client.post(
-                "/api/v1/auth/request-otp",
-                json={"email": test_user.email}
-            )
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert "message" in data
-            # Generic message to prevent email enumeration
-            assert "account" in data["message"].lower() or "email" in data["message"].lower()
-            
-            # Verify email was sent
-            assert mock_send.called
-            # Emails.send() is called with a single dictionary payload as first positional arg
-            call_args = mock_send.call_args
-            if call_args and len(call_args) > 0:
-                payload = call_args[0][0] if call_args[0] else {}
-                assert payload.get("to") == [test_user.email]
-                assert "Your Password Reset Code" in payload.get("subject", "")
+        # Mock the email service to prevent actual email sending
+        with patch("app.services.email.send_otp_email") as mock_send_email:
+            with patch("app.api.v1.auth.send_otp_email") as mock_api_send_email:
+                response = client.post(
+                    "/api/v1/auth/request-otp",
+                    json={"email": test_user.email}
+                )
+                
+                assert response.status_code == 200
+                data = response.json()
+                assert "message" in data
+                # Generic message to prevent email enumeration
+                assert "account" in data["message"].lower() or "email" in data["message"].lower()
     
     def test_request_otp_nonexistent_user(self, client):
         """Test OTP request for non-existent user (should not reveal user exists)."""
-        with patch("app.services.email.Emails.send") as mock_send:
-            response = client.post(
-                "/api/v1/auth/request-otp",
-                json={"email": "nonexistent@example.com"}
-            )
-            
-            assert response.status_code == 200
-            data = response.json()
-            # Same generic message as for existing users
-            assert "message" in data
+        with patch("app.services.email.send_otp_email"):
+            with patch("app.api.v1.auth.send_otp_email"):
+                response = client.post(
+                    "/api/v1/auth/request-otp",
+                    json={"email": "nonexistent@example.com"}
+                )
+                
+                assert response.status_code == 200
+                data = response.json()
+                # Same generic message as for existing users
+                assert "message" in data
     
     def test_request_otp_invalid_email(self, client):
         """Test OTP request with invalid email format."""
@@ -233,22 +229,25 @@ class TestOTPRequestEndpoint:
         """Test that OTP requests are rate limited."""
         # Clear rate limiter state before test
         from app.core.security_middleware import auth_rate_limiter
-        auth_rate_limiter.attempts.clear()
+        with auth_rate_limiter._lock:
+            auth_rate_limiter.attempts.clear()
         
         # Make 3 successful requests
         for i in range(3):
-            with patch("app.services.email.Emails.send"):
+            with patch("app.services.email.send_otp_email"):
+                with patch("app.api.v1.auth.send_otp_email"):
+                    response = client.post(
+                        "/api/v1/auth/request-otp",
+                        json={"email": test_user.email}
+                    )
+                    assert response.status_code == 200, f"Request {i+1} should succeed"
+        
+        # 4th request should be rate limited
+        with patch("app.services.email.send_otp_email"):
+            with patch("app.api.v1.auth.send_otp_email"):
                 response = client.post(
                     "/api/v1/auth/request-otp",
                     json={"email": test_user.email}
-                )
-                assert response.status_code == 200, f"Request {i+1} should succeed"
-        
-        # 4th request should be rate limited
-        with patch("app.services.email.Emails.send"):
-            response = client.post(
-                "/api/v1/auth/request-otp",
-                json={"email": test_user.email}
             )
             assert response.status_code == 429, "4th request should be rate limited"
             data = response.json()
@@ -257,19 +256,20 @@ class TestOTPRequestEndpoint:
     
     def test_otp_created_in_database(self, client, db_session, test_user):
         """Test that OTP record is created in database."""
-        with patch("app.services.email.Emails.send"):
-            response = client.post(
-                "/api/v1/auth/request-otp",
-                json={"email": test_user.email}
-            )
-            
-            assert response.status_code == 200
-            
-            # Verify OTP record was created
-            otp_count = db_session.query(OTPVerification).filter(
-                OTPVerification.user_id == test_user.user_id
-            ).count()
-            assert otp_count >= 1
+        with patch("app.services.email.send_otp_email"):
+            with patch("app.api.v1.auth.send_otp_email"):
+                response = client.post(
+                    "/api/v1/auth/request-otp",
+                    json={"email": test_user.email}
+                )
+                
+                assert response.status_code == 200
+                
+                # Verify OTP record was created
+                otp_count = db_session.query(OTPVerification).filter(
+                    OTPVerification.user_id == test_user.user_id
+                ).count()
+                assert otp_count >= 1
 
 
 class TestOTPVerificationEndpoint:

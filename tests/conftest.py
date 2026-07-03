@@ -14,7 +14,14 @@ from sqlalchemy.pool import StaticPool
 
 # ── Import ALL models BEFORE creating engine to ensure they're registered ────
 # This is critical for SQLite in-memory databases to recognize all tables
-from app.models import User, Image, Report, ExerciseVideo, MedicationModel, ProfileLog, OTPVerification
+# Import each model individually to ensure they're all registered with Base
+from app.models.user import User
+from app.models.image import Image
+from app.models.report import Report
+from app.models.library import ExerciseVideo
+from app.models.medication import MedicationModel
+from app.models.profile_log import ProfileLog
+from app.models.otp_verification import OTPVerification
 from app.core.config import Base
 from app.core.dependencies import get_db
 from app.core.security import get_password_hash, create_access_token
@@ -41,8 +48,29 @@ def setup_test_database():
     Create all tables once at the start of the test session.
     This is critical for SQLite in-memory databases which are connection-specific.
     """
+    # Ensure all models are imported before creating tables
+    # (Already done at module level above)
     Base.metadata.create_all(bind=engine)
     yield
+
+# ── Global fixture to reset rate limiter state between tests ──────────────────
+@pytest.fixture(autouse=True, scope="function")
+def reset_rate_limiter():
+    """
+    Reset rate limiter state before every test to prevent state bleed.
+    This clears all attempt tracking data across all endpoints.
+    """
+    from app.core.security_middleware import auth_rate_limiter
+    
+    # Clear all attempt tracking data
+    with auth_rate_limiter._lock:
+        auth_rate_limiter.attempts.clear()
+    
+    yield
+    
+    # Cleanup after test (clear again to ensure clean state)
+    with auth_rate_limiter._lock:
+        auth_rate_limiter.attempts.clear()
 
 # ── Database Session Fixture with Nested Transaction (Savepoint) ──────────────
 @pytest.fixture(scope="function")
