@@ -12,6 +12,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
+# ── Import ALL models BEFORE creating engine to ensure they're registered ────
+# This is critical for SQLite in-memory databases to recognize all tables
+from app.models import User, Image, Report, ExerciseVideo, MedicationModel, ProfileLog, OTPVerification
 from app.core.config import Base
 from app.core.dependencies import get_db
 from app.core.security import get_password_hash, create_access_token
@@ -26,6 +29,20 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 
+# ── Create tables at module level (runs once when conftest is loaded) ─────────
+# This ensures all tables exist before any tests run
+Base.metadata.create_all(bind=engine)
+
+
+# ── Session-scoped fixture to ensure tables are created once per test session ─
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_database():
+    """
+    Create all tables once at the start of the test session.
+    This is critical for SQLite in-memory databases which are connection-specific.
+    """
+    Base.metadata.create_all(bind=engine)
+    yield
 
 # ── Database Session Fixture with Nested Transaction (Savepoint) ──────────────
 @pytest.fixture(scope="function")
@@ -47,9 +64,6 @@ def db():
     
     # Create session bound to the connection
     session = Session(bind=connection)
-    
-    # Create tables if they don't exist (first time setup)
-    Base.metadata.create_all(bind=engine)
     
     # Begin nested transaction (savepoint)
     session.begin_nested()
