@@ -12,6 +12,8 @@
             --text: #0f172a;
             --border: #e2e8f0;
             --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
         }
 
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -42,6 +44,8 @@
         }
         .btn:hover { background: var(--primary-hover); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #dc2626; }
         
         .input-group { margin-bottom: 1rem; }
         label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
@@ -68,10 +72,58 @@
         }
 
         .hidden { display: none !important; }
+
+        /* Password Reset Styles */
+        .reset-link { text-align: center; margin-top: 1rem; font-size: 0.875rem; }
+        .reset-link a { color: var(--primary); text-decoration: none; cursor: pointer; }
+        .reset-link a:hover { text-decoration: underline; }
+
+        .register-link { text-align: center; margin-top: 1rem; font-size: 0.875rem; }
+        .register-link a { color: var(--primary); text-decoration: none; cursor: pointer; }
+        .register-link a:hover { text-decoration: underline; }
+
+        /* OTP Modal */
+        .modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 400px;
+        }
+
+        /* Video Card */
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+        .video-card { background: white; border-radius: 0.75rem; overflow: hidden; border: 1px solid var(--border); }
+        .video-thumbnail { width: 100%; height: 180px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; }
+        .video-info { padding: 1rem; }
+
+        /* Analytics Dashboard */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.875rem; color: #64748b; margin-top: 0.5rem; }
+
+        /* Messages */
+        .message { padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+        .message.success { background: #dcfce7; color: #166534; }
+        .message.error { background: #fee2e2; color: #991b1b; }
+
+        /* Medication Table */
+        .medication-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .medication-table th, .medication-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .medication-table th { background: var(--bg); font-weight: 600; }
+        .medication-table tr:hover { background: var(--bg); }
+
+        /* Admin Medication Form */
+        .medication-form { background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); margin-bottom: 1rem; }
+        .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .form-row .input-group { flex: 1; }
     </style>
 </head>
 <body>
 
+    <!-- Auth Overlay -->
     <div id="auth-overlay">
         <div class="auth-card">
             <h2 style="margin-top:0">Knee OA Portal</h2>
@@ -86,10 +138,95 @@
                     <input type="password" id="password" required placeholder="admin">
                 </div>
                 <button type="submit" class="btn">Login</button>
+                <div class="reset-link">
+                    <a onclick="showForgotPassword()">Forgot Password?</a>
+                </div>
+                <div class="register-link">
+                    <a onclick="showRegister()">Don't have an account? Register</a>
+                </div>
             </form>
         </div>
     </div>
 
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Create Account</h3>
+            <p style="color:#64748b; font-size: 0.9rem">Register as a Patient or GP</p>
+            <form id="register-form">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="reg-name" required placeholder="John Doe">
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="reg-email" required placeholder="you@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Role</label>
+                    <select id="reg-role" required>
+                        <option value="patient">Patient</option>
+                        <option value="gp">GP (General Practitioner)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" required placeholder="Min 8 chars with uppercase, lowercase, number, special char">
+                </div>
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="reg-confirm-password" required placeholder="Re-enter password">
+                </div>
+                <button type="submit" class="btn">Register</button>
+                <button type="button" class="btn btn-outline" style="margin-top: 0.5rem" onclick="closeRegister()">Cancel</button>
+            </form>
+            <div id="register-msg" style="margin-top: 1rem; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Reset Password</h3>
+            <p style="color:#64748b; font-size: 0.9rem">Enter your email to receive a 6-digit OTP code.</p>
+            <form id="forgot-password-form">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="reset-email" required placeholder="you@example.com">
+                </div>
+                <button type="submit" class="btn">Send OTP Code</button>
+                <button type="button" class="btn btn-outline" style="margin-top: 0.5rem" onclick="closeForgotPassword()">Cancel</button>
+            </form>
+            <div id="forgot-password-msg" style="margin-top: 1rem; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal -->
+    <div id="otp-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Reset Password</h3>
+            <p style="color:#64748b; font-size: 0.9rem">Enter the 6-digit code sent to your email and set your new password.</p>
+            <form id="otp-form">
+                <div class="input-group">
+                    <label>OTP Code (6 digits)</label>
+                    <input type="text" id="otp-code" required placeholder="123456" maxlength="6" pattern="[0-9]{6}">
+                </div>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <input type="password" id="new-password" required placeholder="Minimum 8 characters">
+                </div>
+                <div class="input-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirm-password" required placeholder="Re-enter new password">
+                </div>
+                <button type="submit" class="btn">Reset Password</button>
+                <button type="button" class="btn btn-outline" style="margin-top: 0.5rem" onclick="closeOtpModal()">Cancel</button>
+            </form>
+            <div id="otp-msg" style="margin-top: 1rem; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
     <div id="dashboard" class="dashboard">
         <nav class="sidebar">
             <h3 style="color:var(--primary)">KneeSafe AI</h3>
@@ -98,6 +235,9 @@
                 <button class="btn btn-outline" onclick="showTab('upload')">Analyze Image</button>
                 <button class="btn btn-outline" onclick="showTab('reports')">Reports</button>
                 <button class="btn btn-outline" onclick="showTab('profile')">My Profile</button>
+                <button class="btn btn-outline" onclick="showTab('videos')">Video Library</button>
+                <button class="btn btn-outline" id="admin-btn" onclick="showTab('admin')" style="display:none">Admin Dashboard</button>
+                <button class="btn btn-outline" id="medications-btn" onclick="showTab('medications')" style="display:none">Medications</button>
             </div>
             <div style="position:absolute; bottom:1.5rem; width:calc(100% - 3rem)">
                 <div id="user-display" style="font-size:0.8rem; margin-bottom:1rem; color:#64748b"></div>
@@ -106,6 +246,7 @@
         </nav>
 
         <main class="main-content">
+            <!-- Upload Tab -->
             <section id="tab-upload" class="tab-content active">
                 <h1>Diagnostic Analysis</h1>
                 <p>Upload a weight-bearing knee X-ray for KL grade prediction.</p>
@@ -126,16 +267,18 @@
                 </div>
             </section>
 
+            <!-- Reports Tab -->
             <section id="tab-reports" class="tab-content">
                 <h1>Historical Reports</h1>
                 <div id="reports-list"></div>
             </section>
 
+            <!-- Profile Tab -->
             <section id="tab-profile" class="tab-content">
                 <h1>My Profile</h1>
                 <p>Manage your medical context for better RAG recommendations.</p>
                 
-                <form id="profile-form" style="background:white; padding:2rem; border-radius:1rem; border:1px solid var(--border); max-width: 500px;">
+                <form id="profile-form" style="background:white; padding:2rem; border-radius:1rem; border:1px solid var(--border); max-width: 600px;">
                     <div class="input-group">
                         <label>Full Name</label>
                         <input type="text" id="prof-name" required>
@@ -167,28 +310,213 @@
                         <label style="margin: 0;">I have personal/family support</label>
                     </div>
                     
+                    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Advanced Clinical Context</h3>
+                    
+                    <div class="input-group">
+                        <label>Kinesiophobia (Fear of Movement)</label>
+                        <select id="prof-kinesiophobia">
+                            <option value="">Not specified</option>
+                            <option value="low">Low</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Occupation Type</label>
+                        <select id="prof-occupation">
+                            <option value="">Not specified</option>
+                            <option value="sedentary">Sedentary (desk job)</option>
+                            <option value="light_manual">Light Manual (occasional lifting)</option>
+                            <option value="heavy_manual">Heavy Manual (frequent lifting)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="prof-stairs" style="width: auto;">
+                        <label style="margin: 0;">I have stairs at home/work</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Current Medications (comma-separated)</label>
+                        <input type="text" id="prof-meds" placeholder="e.g., Ibuprofen, Aspirin">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Sleep Quality</label>
+                        <select id="prof-sleep">
+                            <option value="">Not specified</option>
+                            <option value="poor">Poor</option>
+                            <option value="fair">Fair</option>
+                            <option value="good">Good</option>
+                        </select>
+                    </div>
+
                     <button type="submit" class="btn" style="margin-top: 1rem;">Save Changes</button>
                     <div id="prof-msg" style="margin-top: 1rem; font-size: 0.875rem; color: var(--success); display: none;">Profile updated successfully!</div>
                 </form>
+
+                <h2 style="margin-top: 2rem;">Change Password</h2>
+                <form id="change-password-form" style="background:white; padding:2rem; border-radius:1rem; border:1px solid var(--border); max-width: 400px; margin-top: 1rem;">
+                    <div class="input-group">
+                        <label>Current Password</label>
+                        <input type="password" id="current-password" required>
+                    </div>
+                    <div class="input-group">
+                        <label>New Password</label>
+                        <input type="password" id="new-password-change" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Confirm New Password</label>
+                        <input type="password" id="confirm-new-password" required>
+                    </div>
+                    <button type="submit" class="btn">Change Password</button>
+                    <div id="change-password-msg" style="margin-top: 1rem; display: none;"></div>
+                </form>
+            </section>
+
+            <!-- Video Library Tab -->
+            <section id="tab-videos" class="tab-content">
+                <h1>Exercise Video Library</h1>
+                <p>Evidence-based exercise videos tailored to your condition.</p>
+                
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                    <select id="video-filter-kl" onchange="loadVideos()">
+                        <option value="">All KL Grades</option>
+                        <option value="0">KL Grade 0 (None)</option>
+                        <option value="1">KL Grade 1 (Doubtful)</option>
+                        <option value="2">KL Grade 2 (Minimal)</option>
+                        <option value="3">KL Grade 3 (Moderate)</option>
+                        <option value="4">KL Grade 4 (Severe)</option>
+                    </select>
+                    <select id="video-filter-category" onchange="loadVideos()">
+                        <option value="">All Categories</option>
+                        <option value="strengthening">Strengthening</option>
+                        <option value="flexibility">Flexibility</option>
+                        <option value="low-impact">Low Impact</option>
+                    </select>
+                </div>
+                
+                <div id="videos-list" class="video-grid"></div>
+            </section>
+
+            <!-- Admin Dashboard Tab -->
+            <section id="tab-admin" class="tab-content">
+                <h1>Admin Analytics Dashboard</h1>
+                
+                <div id="admin-stats" class="stats-grid">
+                    <!-- Stats will be loaded dynamically -->
+                </div>
+
+                <h2 style="margin-top: 2rem;">Recent Reports</h2>
+                <div id="admin-recent-reports"></div>
+            </section>
+
+            <!-- Medication Management Tab (Admin Only) -->
+            <section id="tab-medications" class="tab-content">
+                <h1>Medication Management</h1>
+                <p>Manage the medication catalog for clinical recommendations.</p>
+                
+                <!-- Add Medication Form (Admin Only) -->
+                <div id="admin-medication-section" style="display:none;">
+                    <h2 style="margin-top: 0;">Add New Medication</h2>
+                    <form id="add-medication-form" class="medication-form">
+                        <div class="input-group">
+                            <label>Medication Name</label>
+                            <input type="text" id="med-name" required placeholder="e.g., Ibuprofen">
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label>Dosage</label>
+                                <input type="text" id="med-dosage" required placeholder="e.g., 400mg">
+                            </div>
+                            <div class="input-group">
+                                <label>Frequency</label>
+                                <input type="text" id="med-frequency" required placeholder="e.g., 3 times daily">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Instructions</label>
+                            <input type="text" id="med-instructions" placeholder="e.g., Take with food">
+                        </div>
+                        <div class="input-group">
+                            <label>Contraindications</label>
+                            <input type="text" id="med-contraindications" placeholder="e.g., Peptic ulcer disease">
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label>KL Grade Min</label>
+                                <input type="number" id="med-kl-min" min="0" max="4" value="0" placeholder="0-4">
+                            </div>
+                            <div class="input-group">
+                                <label>KL Grade Max</label>
+                                <input type="number" id="med-kl-max" min="0" max="4" value="4" placeholder="0-4">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Add Medication</button>
+                        <div id="medication-msg" style="margin-top: 1rem; display: none;"></div>
+                    </form>
+                </div>
+
+                <!-- Medication List -->
+                <h2 style="margin-top: 2rem;">Medication Catalog</h2>
+                <div id="medications-list" style="background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <!-- Medications will be loaded here -->
+                </div>
             </section>
         </main>
     </div>
 
     <script>
-        const API_BASE = "http://localhost:8000/api/v1"; // Update as needed
+        // Detect if running through nginx (production) or directly (development)
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const API_BASE = isProduction ? "/api/v1" : "http://localhost:8000/api/v1";
         let TOKEN = localStorage.getItem('oa_token');
+        let currentResetEmail = '';
+        let currentOtpToken = '';
 
-        // Logic to toggle between login and dashboard
-        function init() {
-            if (TOKEN) {
-                document.getElementById('auth-overlay').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                fetchUser();
-                loadReports();
+        // Helper function to build API URL
+        function apiURL(endpoint) {
+            if (API_BASE.startsWith('http')) {
+                return `${API_BASE}${endpoint}`;
+            } else {
+                return API_BASE.replace(/\/+$/, '') + endpoint;
             }
         }
 
-        // Authentication POST
+        // Initialize
+        function init() {
+            console.log('Initializing app, TOKEN exists:', !!TOKEN);
+            if (TOKEN) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                
+                // Load data with error handling
+                fetchUser().catch(err => console.error('fetchUser error:', err));
+                loadReports().catch(err => console.error('loadReports error:', err));
+                loadVideos().catch(err => console.error('loadVideos error:', err));
+                loadMedications().catch(err => console.error('loadMedications error:', err));
+                checkAdminRole();
+            } else {
+                console.log('No token found, showing auth overlay');
+            }
+        }
+
+        // Check if user is admin
+        function checkAdminRole() {
+            try {
+                const payload = JSON.parse(atob(TOKEN.split('.')[1]));
+                if (payload.role === 'admin') {
+                    document.getElementById('admin-btn').style.display = 'block';
+                    document.getElementById('medications-btn').style.display = 'block';
+                    document.getElementById('admin-medication-section').style.display = 'block';
+                }
+            } catch (e) {
+                console.error('Error parsing token:', e);
+            }
+        }
+
+        // Login
         document.getElementById('login-form').onsubmit = async (e) => {
             e.preventDefault();
             const body = new URLSearchParams();
@@ -196,7 +524,7 @@
             body.append('password', document.getElementById('password').value);
 
             try {
-                const res = await fetch(`${API_BASE}/auth/login`, {
+                const res = await fetch(apiURL('/auth/login'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: body
@@ -211,10 +539,176 @@
             }
         };
 
-        // Fetch User Profile (UPDATED to populate form)
+        // Show Register Modal
+        function showRegister() {
+            document.getElementById('register-modal').classList.add('active');
+        }
+
+        // Close Register Modal
+        function closeRegister() {
+            document.getElementById('register-modal').classList.remove('active');
+            document.getElementById('register-msg').style.display = 'none';
+        }
+
+        // Register
+        document.getElementById('register-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-confirm-password').value;
+
+            if (password !== confirmPassword) {
+                const msg = document.getElementById('register-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = 'Passwords do not match';
+                return;
+            }
+
+            const body = {
+                full_name: document.getElementById('reg-name').value,
+                email: document.getElementById('reg-email').value,
+                password: password,
+                role: document.getElementById('reg-role').value
+            };
+
+            try {
+                const res = await fetch(apiURL('/auth/register'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Registration failed');
+                }
+
+                alert('Registration successful! Please login with your credentials.');
+                closeRegister();
+                location.reload();
+
+            } catch (err) {
+                const msg = document.getElementById('register-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = err.message || 'Registration failed';
+            }
+        };
+
+        // Show Forgot Password Modal
+        function showForgotPassword() {
+            document.getElementById('forgot-password-modal').classList.add('active');
+        }
+
+        // Close Forgot Password Modal
+        function closeForgotPassword() {
+            document.getElementById('forgot-password-modal').classList.remove('active');
+            document.getElementById('forgot-password-msg').style.display = 'none';
+        }
+
+        // Forgot Password - Request OTP
+        document.getElementById('forgot-password-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reset-email').value;
+
+            try {
+                const res = await fetch(apiURL('/auth/request-otp'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.detail || 'Failed to send OTP code');
+
+                // Store email and show OTP modal
+                currentResetEmail = email;
+                showOtpModal();
+
+            } catch (err) {
+                const msg = document.getElementById('forgot-password-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = err.message;
+            }
+        };
+
+        // Show OTP Modal
+        function showOtpModal() {
+            document.getElementById('otp-modal').classList.add('active');
+        }
+
+        // Close OTP Modal
+        function closeOtpModal() {
+            document.getElementById('otp-modal').classList.remove('active');
+            document.getElementById('otp-msg').style.display = 'none';
+        }
+
+        // Verify OTP and Reset Password (Combined)
+        document.getElementById('otp-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const otpCode = document.getElementById('otp-code').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                const msg = document.getElementById('otp-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = 'Passwords do not match';
+                return;
+            }
+
+            // Validate password length
+            if (newPassword.length < 8) {
+                const msg = document.getElementById('otp-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = 'Password must be at least 8 characters';
+                return;
+            }
+
+            try {
+                const res = await fetch(apiURL('/auth/verify-otp-and-reset'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: currentResetEmail,
+                        otp_code: otpCode,
+                        new_password: newPassword
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.detail || 'OTP verification failed');
+
+                // OTP verified and password reset successful
+                closeOtpModal();
+                alert('Password reset successfully! Please login with your new password.');
+                location.reload();
+
+            } catch (err) {
+                const msg = document.getElementById('otp-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = err.message;
+            }
+        };
+
+        // Close OTP Modal
+        function closeOtpModal() {
+            document.getElementById('otp-modal').classList.remove('active');
+            document.getElementById('otp-msg').style.display = 'none';
+        }
+
+        // Fetch User Profile
         async function fetchUser() {
             try {
-                const res = await fetch(`${API_BASE}/profile/me`, {
+                const res = await fetch(apiURL('/profile/me'), {
                     headers: { 'Authorization': `Bearer ${TOKEN}` }
                 });
                 if (!res.ok) throw new Error("Session expired");
@@ -233,17 +727,32 @@
                     document.getElementById('prof-mobility').value = data.mobility_level;
                 }
                 document.getElementById('prof-support').checked = data.has_support || false;
+                
+                // New fields (April 2026)
+                if (data.kinesiophobia) {
+                    document.getElementById('prof-kinesiophobia').value = data.kinesiophobia;
+                }
+                if (data.occupation_type) {
+                    document.getElementById('prof-occupation').value = data.occupation_type;
+                }
+                document.getElementById('prof-stairs').checked = data.has_stairs || false;
+                if (data.current_meds && Array.isArray(data.current_meds)) {
+                    document.getElementById('prof-meds').value = data.current_meds.join(', ');
+                }
+                if (data.sleep_quality) {
+                    document.getElementById('prof-sleep').value = data.sleep_quality;
+                }
 
             } catch (err) {
                 logout();
             }
         }
 
-        // Profile Update Handler (NEW)
+        // Profile Update
         document.getElementById('profile-form').onsubmit = async (e) => {
             e.preventDefault();
             
-            const btn = e.target.querySelector('button');
+            const btn = e.target.querySelector('button[type="submit"]');
             btn.innerText = "Saving...";
             btn.disabled = true;
 
@@ -251,13 +760,18 @@
                 full_name: document.getElementById('prof-name').value,
                 email: document.getElementById('prof-email').value,
                 age: parseInt(document.getElementById('prof-age').value) || null,
-                pain_level: parseInt(document.getElementById('prof-pain').value) || 0,
+                pain_level: parseInt(document.getElementById('prof-pain').value) || null,
                 mobility_level: document.getElementById('prof-mobility').value,
-                has_support: document.getElementById('prof-support').checked
+                has_support: document.getElementById('prof-support').checked,
+                kinesiophobia: document.getElementById('prof-kinesiophobia').value || null,
+                occupation_type: document.getElementById('prof-occupation').value || null,
+                has_stairs: document.getElementById('prof-stairs').checked,
+                current_meds: document.getElementById('prof-meds').value.split(',').map(m => m.trim()).filter(m => m),
+                sleep_quality: document.getElementById('prof-sleep').value || null
             };
 
             try {
-                const res = await fetch(`${API_BASE}/profile/me`, {
+                const res = await fetch(apiURL('/profile/me'), {
                     method: 'PUT',
                     headers: { 
                         'Authorization': `Bearer ${TOKEN}`,
@@ -281,6 +795,51 @@
             }
         };
 
+        // Change Password
+        document.getElementById('change-password-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password-change').value;
+            const confirmPassword = document.getElementById('confirm-new-password').value;
+
+            if (newPassword !== confirmPassword) {
+                const msg = document.getElementById('change-password-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = 'Passwords do not match';
+                return;
+            }
+
+            try {
+                const res = await fetch(apiURL('/profile/change-password'), {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                if (!res.ok) throw new Error('Failed to change password');
+                
+                const msg = document.getElementById('change-password-msg');
+                msg.style.display = 'block';
+                msg.className = 'message success';
+                msg.textContent = 'Password changed successfully!';
+                
+                document.getElementById('change-password-form').reset();
+            } catch (err) {
+                const msg = document.getElementById('change-password-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = err.message;
+            }
+        };
+
         // Handle File Selection
         document.getElementById('file-input').onchange = (e) => {
             const file = e.target.files[0];
@@ -290,10 +849,17 @@
             }
         };
 
-        // Analysis Pipeline (Upload -> Analyze)
+        // Analysis Pipeline (Gatekeeper + CNN + RAG)
         document.getElementById('analyze-btn').onclick = async () => {
             const btn = document.getElementById('analyze-btn');
-            const file = document.getElementById('file-input').files[0];
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput?.files[0];
+            
+            if (!file) {
+                alert('Please select an image file first.');
+                return;
+            }
+
             const formData = new FormData();
             formData.append('file', file);
 
@@ -301,62 +867,334 @@
             btn.innerText = "Analyzing...";
 
             try {
-                const res = await fetch(`${API_BASE}/diagnostic/analyze`, {
+                const res = await fetch(apiURL('/diagnostic/analyze'), {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${TOKEN}` },
                     body: formData
                 });
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+                    throw new Error(errorData.detail || 'Analysis failed');
+                }
+                
                 const report = await res.json();
+                console.log('Analysis result:', report);
                 renderResult(report);
             } catch (err) {
-                alert("Analysis failed. Ensure server is running.");
+                console.error('Analysis error:', err);
+                alert('Analysis failed: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Start AI Inference";
             }
         };
 
+        // Render Result
         function renderResult(report) {
             const div = document.getElementById('results');
             div.classList.remove('hidden');
+            
+            if (!report) {
+                div.innerHTML = '<p style="color:var(--danger)">Error: Invalid response from server</p>';
+                return;
+            }
+
+            let medicationsHtml = '';
+            if (report.medications && Array.isArray(report.medications) && report.medications.length > 0) {
+                medicationsHtml = `
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 0.5rem;">Recommended Medications</h3>
+                        <ul style="list-style-type: disc; padding-left: 1.5rem;">
+                            ${report.medications.map(med => `
+                                <li><strong>${med.name || 'Unknown'}</strong> - ${med.dosage || 'N/A'} (${med.frequency || 'N/A'})${med.instructions ? `<br><small>${med.instructions}</small>` : ''}</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center">
-                    <h2 style="margin:0">KL Grade ${report.kl_grade}</h2>
-                    <span class="kl-badge">Confidence: ${(report.confidence * 100).toFixed(1)}%</span>
+                    <h2 style="margin:0">KL Grade ${report.kl_grade ?? 'N/A'}</h2>
+                    <span class="kl-badge">Confidence: ${report.confidence ? ((report.confidence * 100).toFixed(1)) + '%' : 'N/A'}</span>
                 </div>
                 <p style="background:var(--bg); padding:1rem; border-radius:0.5rem; margin:1.5rem 0">
-                    <strong>Diagnosis Summary:</strong><br>${report.diagnosis_summary}
+                    <strong>Diagnosis Summary:</strong><br>${report.diagnosis_summary || 'No summary available'}
                 </p>
                 <h3>Recommended Action Plan</h3>
-                <div style="font-style:italic; border-left:4px solid var(--primary); padding-left:1rem">
-                    ${report.recommendation}
+                <div style="font-style:italic; border-left:4px solid var(--primary); padding-left:1rem; margin-bottom: 1.5rem;">
+                    ${report.recommendation || 'No recommendations available'}
                 </div>
+                ${medicationsHtml}
             `;
             loadReports(); // Refresh history
         }
 
+        // Load Reports
         async function loadReports() {
-            const res = await fetch(`${API_BASE}/diagnostic/reports`, {
-                headers: { 'Authorization': `Bearer ${TOKEN}` }
-            });
-            const reports = await res.json();
-            const list = document.getElementById('reports-list');
-            list.innerHTML = reports.map(r => `
-                <div class="report-card">
-                    <div style="display:flex; justify-content:space-between">
-                        <strong>Grade ${r.kl_grade}</strong>
-                        <span style="font-size:0.8rem; color:#64748b">${new Date(r.created_at).toLocaleDateString()}</span>
+            try {
+                const res = await fetch(apiURL('/diagnostic/reports'), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) {
+                    console.error('Failed to load reports:', res.status, res.statusText);
+                    document.getElementById('reports-list').innerHTML = '<p style="color:var(--danger)">Failed to load reports. Please try again.</p>';
+                    return;
+                }
+                
+                const reports = await res.json();
+                const list = document.getElementById('reports-list');
+                
+                if (!reports || reports.length === 0) {
+                    list.innerHTML = '<p style="color:#64748b">No reports yet. Upload an image to get started.</p>';
+                    return;
+                }
+                
+                list.innerHTML = reports.map(r => `
+                    <div class="report-card">
+                        <div style="display:flex; justify-content:space-between">
+                            <strong>Grade ${r.kl_grade}</strong>
+                            <span style="font-size:0.8rem; color:#64748b">${new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p style="font-size:0.9rem; margin-top:0.5rem">${r.diagnosis_summary.substring(0, 100)}...</p>
                     </div>
-                    <p style="font-size:0.9rem; margin-top:0.5rem">${r.diagnosis_summary.substring(0, 100)}...</p>
-                </div>
-            `).join('');
+                `).join('');
+            } catch (err) {
+                console.error('Error loading reports:', err);
+                document.getElementById('reports-list').innerHTML = '<p style="color:var(--danger)">Error loading reports: ' + err.message + '</p>';
+            }
         }
 
+        // Load Videos
+        async function loadVideos() {
+            try {
+                const klFilter = document.getElementById('video-filter-kl')?.value || '';
+                const categoryFilter = document.getElementById('video-filter-category')?.value || '';
+                
+                let url = apiURL('/videos');
+                const params = new URLSearchParams();
+                if (klFilter) params.append('kl_grade', klFilter);
+                if (categoryFilter) params.append('category', categoryFilter);
+                if (params.toString()) url += `?${params.toString()}`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) {
+                    console.error('Failed to load videos:', res.status, res.statusText);
+                    document.getElementById('videos-list').innerHTML = '<p style="color:var(--danger)">Failed to load videos. Please try again.</p>';
+                    return;
+                }
+                
+                const videos = await res.json();
+                const list = document.getElementById('videos-list');
+                
+                if (!videos || videos.length === 0) {
+                    list.innerHTML = '<p style="color:#64748b">No videos available at the moment.</p>';
+                    return;
+                }
+                
+                list.innerHTML = videos.map(v => `
+                    <div class="video-card">
+                        <div class="video-thumbnail">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+                                <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+                                <path d="M10 8l6 4-6 4V8z"/>
+                            </svg>
+                        </div>
+                        <div class="video-info">
+                            <h4 style="margin:0 0 0.5rem">${v.title || 'Untitled'}</h4>
+                            <p style="font-size:0.875rem; color:#64748b; margin:0 0 0.5rem">${v.description || 'No description'}</p>
+                            <div style="display:flex; gap:0.5rem; font-size:0.75rem; color:#64748b">
+                                <span>KL: ${v.kl_grade_min || 0}-${v.kl_grade_max || 4}</span>
+                                <span>${v.category || 'General'}</span>
+                                <span>${v.duration_seconds ? Math.round(v.duration_seconds / 60) + 'min' : '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading videos:', err);
+                document.getElementById('videos-list').innerHTML = '<p style="color:var(--danger)">Error loading videos: ' + err.message + '</p>';
+            }
+        }
+
+        // Load Admin Analytics
+        async function loadAdminAnalytics() {
+            try {
+                const res = await fetch(apiURL('/admin/analytics/dashboard'), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                
+                if (!res.ok) {
+                    document.getElementById('admin-btn').style.display = 'none';
+                    showTab('upload');
+                    return;
+                }
+                
+                const data = await res.json();
+                const statsContainer = document.getElementById('admin-stats');
+                
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${data.total_users}</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.users_by_role.patient || 0}</div>
+                        <div class="stat-label">Patients</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.users_by_role.gp || 0}</div>
+                        <div class="stat-label">GPs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.users_by_role.admin || 0}</div>
+                        <div class="stat-label">Admins</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.total_reports}</div>
+                        <div class="stat-label">Total Reports</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.new_users_this_week}</div>
+                        <div class="stat-label">New Users (Week)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.avg_confidence.toFixed(2)}</div>
+                        <div class="stat-label">Avg Confidence</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.recent_reports_count}</div>
+                        <div class="stat-label">Recent Reports</div>
+                    </div>
+                `;
+                
+                // Recent reports
+                const reportsContainer = document.getElementById('admin-recent-reports');
+                reportsContainer.innerHTML = data.recent_reports.map(r => `
+                    <div class="report-card">
+                        <div style="display:flex; justify-content:space-between">
+                            <strong>Patient ID: ${r.user_id}</strong>
+                            <span style="font-size:0.8rem; color:#64748b">${new Date(r.created_at).toLocaleString()}</span>
+                        </div>
+                        <div style="margin-top: 0.5rem;">
+                            <span class="kl-badge">KL Grade ${r.kl_grade}</span>
+                            <span style="font-size:0.8rem; color:#64748b">Confidence: ${(r.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                        <p style="font-size:0.875rem; margin-top: 0.5rem">${r.diagnosis_summary}</p>
+                    </div>
+                `).join('');
+                
+            } catch (err) {
+                console.error('Error loading analytics:', err);
+            }
+        }
+
+        // Load Medications
+        async function loadMedications() {
+            try {
+                const res = await fetch(apiURL('/medications/'), {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                const medications = await res.json();
+                const list = document.getElementById('medications-list');
+                
+                if (medications.length === 0) {
+                    list.innerHTML = '<p>No medications in catalog.</p>';
+                    return;
+                }
+                
+                list.innerHTML = `
+                    <table class="medication-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Dosage</th>
+                                <th>Frequency</th>
+                                <th>Instructions</th>
+                                <th>Contraindications</th>
+                                <th>KL Range</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${medications.map(med => `
+                                <tr>
+                                    <td><strong>${med.name}</strong></td>
+                                    <td>${med.dosage}</td>
+                                    <td>${med.frequency}</td>
+                                    <td>${med.instructions || '-'}</td>
+                                    <td>${med.contraindications || '-'}</td>
+                                    <td>${med.kl_grade_min}-${med.kl_grade_max}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (err) {
+                console.error('Error loading medications:', err);
+            }
+        }
+
+        // Add Medication (Admin Only)
+        document.getElementById('add-medication-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const body = {
+                name: document.getElementById('med-name').value,
+                dosage: document.getElementById('med-dosage').value,
+                frequency: document.getElementById('med-frequency').value,
+                instructions: document.getElementById('med-instructions').value || null,
+                contraindications: document.getElementById('med-contraindications').value || null,
+                kl_grade_min: parseInt(document.getElementById('med-kl-min').value),
+                kl_grade_max: parseInt(document.getElementById('med-kl-max').value)
+            };
+
+            try {
+                const res = await fetch(apiURL('/admin/medications/'), {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (!res.ok) throw new Error('Failed to add medication');
+                
+                const msg = document.getElementById('medication-msg');
+                msg.style.display = 'block';
+                msg.className = 'message success';
+                msg.textContent = 'Medication added successfully!';
+                
+                document.getElementById('add-medication-form').reset();
+                loadMedications(); // Refresh list
+                
+                setTimeout(() => msg.style.display = 'none', 3000);
+            } catch (err) {
+                const msg = document.getElementById('medication-msg');
+                msg.style.display = 'block';
+                msg.className = 'message error';
+                msg.textContent = err.message;
+            }
+        };
+
+        // Show Tab
         function showTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            if (tab === 'admin') {
+                loadAdminAnalytics();
+            } else if (tab === 'medications') {
+                loadMedications();
+            }
         }
 
+        // Logout
         function logout() {
             localStorage.removeItem('oa_token');
             location.reload();
