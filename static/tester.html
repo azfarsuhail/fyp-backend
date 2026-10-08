@@ -747,12 +747,9 @@
     </div>
 
     <script>
-        // Detect if running through nginx (production) or directly (development)
-        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        
-        // FIX: Use relative path for production (inherits https:// automatically)
-        // or explicitly write https://kneeoa.online/api/v1
-        const API_BASE = isProduction ? "/api/v1" : "http://localhost:8000/api/v1";
+        // Served by nginx (production or the offline stack) → same-origin /api/v1.
+        // Opened straight from disk (file://) → a local uvicorn on :8000.
+        const API_BASE = window.location.protocol === 'file:' ? "http://localhost:8000/api/v1" : "/api/v1";
         let TOKEN = localStorage.getItem('oa_token');
         let currentResetEmail = '';
         let currentOtpToken = '';
