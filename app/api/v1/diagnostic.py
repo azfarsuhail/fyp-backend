@@ -12,7 +12,6 @@ Orchestrates the full diagnostic pipeline:
 """
 
 import json
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session, joinedload
@@ -26,7 +25,7 @@ from app.agents.diagnostic_agent import predict_kl_grade
 from app.agents.recommendation_agent import generate_recommendation
 from app.agents.validation_agent import validate_image
 from app.services.image_processor import get_processed_image_bytes
-from app.services.s3_service import upload_bytes_to_s3, generate_presigned_url
+from app.services.s3_service import upload_bytes_to_s3, download_bytes_from_s3
 
 router = APIRouter()
 
@@ -76,11 +75,7 @@ async def analyze_xray(
 
     # ── 2. Download image bytes from S3 ──────────────────────────────────
     try:
-        presigned = generate_presigned_url(image.s3_url)
-        async with httpx.AsyncClient() as client:
-            response = await client.get(presigned, timeout=30.0)
-        response.raise_for_status()
-        image_bytes = response.content
+        image_bytes = await run_in_threadpool(download_bytes_from_s3, image.s3_url)
     except Exception as e:
         raise HTTPException(
             status_code=500,

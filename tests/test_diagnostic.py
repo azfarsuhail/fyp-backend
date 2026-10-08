@@ -4,7 +4,7 @@ Tests for /api/v1/diagnostic — Analyze, Reports
 
 import json
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 
 
 class TestAnalyzeXray:
@@ -14,22 +14,14 @@ class TestAnalyzeXray:
     @patch("app.api.v1.diagnostic.generate_recommendation")
     @patch("app.api.v1.diagnostic.predict_kl_grade")
     @patch("app.api.v1.diagnostic.get_processed_image_bytes")
-    @patch("httpx.AsyncClient.get", new_callable=AsyncMock)
-    @patch("app.api.v1.diagnostic.generate_presigned_url", return_value="https://bucket.s3.amazonaws.com/xrays/test.png")
+    @patch("app.api.v1.diagnostic.download_bytes_from_s3", return_value=b"\x89PNG" + b"\x00" * 100)
     @patch("app.api.v1.diagnostic.validate_image")
     def test_analyze_success(
-        self, mock_validate, mock_presigned, mock_httpx_get, mock_proc, mock_predict, mock_rec, mock_s3,
+        self, mock_validate, mock_download, mock_proc, mock_predict, mock_rec, mock_s3,
         client, patient_headers, seed_image,
     ):
         # Mock validation agent - accept the image
         mock_validate.return_value = True
-        
-        # Mock S3 download - httpx.AsyncClient.get returns a response object
-        mock_response = MagicMock()
-        mock_response.content = b"\x89PNG" + b"\x00" * 100
-        mock_response.raise_for_status = MagicMock()
-        mock_httpx_get.return_value.__aenter__.return_value = mock_response
-        mock_httpx_get.return_value.__aexit__.return_value = None
 
         # Mock CNN prediction
         mock_predict.return_value = (2, 0.87, "Grade 2 — Minimal OA")
@@ -67,6 +59,7 @@ class TestAnalyzeXray:
         assert "Stay active" in data["recommendation"]
         assert len(data["exercise_video_urls"]) == 1
         assert data["image_id"] == seed_image.image_id
+        mock_download.assert_called_once_with(seed_image.s3_url)
         # Verify parametric fields
         assert len(data["lifestyle_plan"]) == 1
         assert data["lifestyle_plan"][0]["id"] == "EX-001"
