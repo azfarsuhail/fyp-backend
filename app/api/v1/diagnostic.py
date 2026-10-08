@@ -92,6 +92,8 @@ async def analyze_xray(
                 status_code=400,
                 detail="Image validation failed. Please upload a clear, weight-bearing knee X-ray.",
             )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
