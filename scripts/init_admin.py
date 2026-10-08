@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
-from app.core.config import engine, SessionLocal
+from app.core.config import Base, engine, SessionLocal
 from app.models.user import User
 from app.core.security import get_password_hash
 
@@ -24,6 +24,10 @@ from app.core.security import get_password_hash
 def init_default_admin():
     """Create default admin account if it doesn't exist."""
     
+    # Create any missing tables (fresh/offline DB; alembic/versions is not tracked).
+    # No-op for tables that already exist. app.models registers every model on Base.
+    Base.metadata.create_all(bind=engine)
+
     # Database setup
     db = SessionLocal()
     
