@@ -4,7 +4,7 @@ import json
 import asyncio
 from pathlib import Path
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
+from app.core.config import SessionLocal
 from app.models.library import ExerciseVideo
 from app.services.s3_service import upload_bytes_to_s3
 
