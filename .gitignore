@@ -85,3 +85,6 @@ alembic/versions/
 # --- Misc ---
 *.old
 *.orig
+
+# Offline stack secrets (see .env.offline.example)
+.env.offline

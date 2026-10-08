@@ -1,0 +1,100 @@
+# Offline / local stack: Postgres + MinIO-compatible object storage + API + NGINX.
+# CPU only, no internet needed at runtime. See docs/docker/OFFLINE_SETUP.md.
+#
+#   docker compose -f docker-compose.offline.yml up -d --build
+#   docker compose -f docker-compose.offline.yml exec api python scripts/init_admin.py
+name: knee_oa_offline
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env.offline
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # MinIO's official images were removed from Docker Hub (Sep 2026); pgsty/silo is
+  # the community MinIO fork: same S3 API, MINIO_* env vars and on-disk format.
+  minio:
+    image: pgsty/silo:RELEASE.2026-09-16T00-00-00Z
+    command: server /data --console-address ":9001"
+    env_file: .env.offline
+    ports:
+      - "127.0.0.1:9000:9000"   # S3 API (presigned URLs point here)
+      - "127.0.0.1:9001:9001"   # web console
+    volumes:
+      - miniodata:/data
+    restart: unless-stopped
+
+  # One-shot: create the private bucket, then exit.
+  minio-init:
+    image: pgsty/silo:RELEASE.2026-09-16T00-00-00Z
+    env_file: .env.offline
+    depends_on:
+      - minio
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mcli alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do sleep 1; done
+        mcli mb --ignore-existing "local/$$S3_BUCKET_NAME"
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        BASE_IMAGE: tensorflow/tensorflow:2.15.0   # CPU variant, no CUDA layers
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cpu   # CPU torch, no nvidia-* wheels
+    image: knee_oa_api:offline
+    env_file: .env.offline
+    environment:
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - USE_TF=0
+      - HF_HUB_OFFLINE=1         # models are baked into the image; fail fast, never download
+      - TRANSFORMERS_OFFLINE=1
+      - CUDA_VISIBLE_DEVICES=-1  # CPU only
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:80:80"
+    volumes:
+      - ./nginx/nginx.offline.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/usr/share/nginx/html:ro
+      - ./download:/usr/share/nginx/downloads:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  miniodata:

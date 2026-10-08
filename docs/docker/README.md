@@ -12,6 +12,9 @@ Complete Docker configuration audit with issues found and fixes applied.
 ### [DOCKER_QUICKREF.md](./DOCKER_QUICKREF.md)
 Quick reference guide for Docker commands and best practices.
 
+### [OFFLINE_SETUP.md](./OFFLINE_SETUP.md)
+Offline/local stack: local Postgres + MinIO-compatible storage, CPU only, no internet at runtime.
+
 ## ✅ Docker Configuration Status
 
 | Component | Status |
