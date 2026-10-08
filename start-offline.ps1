@@ -2,11 +2,15 @@
 Starts the offline stack and wires the Android emulator to it.
 
   powershell -ExecutionPolicy Bypass -File .\start-offline.ps1           # full start
+  powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -Build   # rebuild the API image after code changes
   powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -AdbOnly  # after an emulator restart
+
+First run: creates .env.offline with random secrets, builds the API image (needs internet
+once), then creates the default admin / GP / patient accounts. Later runs need no internet.
 
 See docs/docker/OFFLINE_SETUP.md.
 #>
-param([switch]$AdbOnly)
+param([switch]$AdbOnly, [switch]$Build)
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
@@ -47,17 +51,33 @@ if ($AdbOnly) {
 }
 
 if (-not (Test-Path ".env.offline")) {
-    throw ".env.offline missing - copy .env.offline.example to .env.offline and set the secrets."
+    # Each distinct "change-me..." placeholder gets its own random secret; repeats of the
+    # same placeholder (e.g. the DB password inside DATABASE_URL) get the same value.
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $secrets = @{}
+    $envText = [regex]::Replace((Get-Content ".env.offline.example" -Raw), "(?<=[=:])change-me[\w-]*", {
+        param($m)
+        if (-not $secrets.ContainsKey($m.Value)) {
+            $bytes = New-Object byte[] 24
+            $rng.GetBytes($bytes)
+            $secrets[$m.Value] = -join ($bytes | ForEach-Object { $_.ToString("x2") })
+        }
+        $secrets[$m.Value]
+    })
+    [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot ".env.offline"), $envText, (New-Object System.Text.UTF8Encoding $false))
+    Write-Host "[env] Created .env.offline with random secrets" -ForegroundColor Green
 }
 
-Write-Host "[docker] Starting offline stack (first API start takes 1-3 min)..." -ForegroundColor Cyan
-& docker @compose up -d --wait --wait-timeout 600
+$upArgs = @("up", "-d", "--wait", "--wait-timeout", "600")
+if ($Build) { $upArgs += "--build" }
+Write-Host "[docker] Starting offline stack (first run builds the API image: ~15 min)..." -ForegroundColor Cyan
+& docker @compose @upArgs
 if ($LASTEXITCODE -ne 0) {
     & docker @compose ps
     throw "docker compose up failed - check: docker compose -f docker-compose.offline.yml logs api"
 }
 
-# Idempotent: creates missing tables and the admin account only on first run
+# Idempotent: creates missing tables and the default accounts only on first run
 & docker @compose exec -T api python scripts/init_admin.py
 if ($LASTEXITCODE -ne 0) { throw "init_admin.py failed" }
 
@@ -65,6 +85,11 @@ Connect-Emulators
 
 Write-Host ""
 Write-Host "Ready:" -ForegroundColor Green
-Write-Host "  API      http://localhost/api/v1"
+Write-Host "  API      http://localhost/api/v1   (docs: http://localhost/docs)"
 Write-Host "  Admin    http://localhost/admin-login.html"
 Write-Host "  Storage  http://localhost:9001"
+Write-Host ""
+Write-Host "Default accounts (see docs/docker/OFFLINE_SETUP.md):" -ForegroundColor Green
+Write-Host "  Admin    admin                 / admin"
+Write-Host "  GP       gp@kneeoa.online      / gp123456"
+Write-Host "  Patient  patient@kneeoa.online / patient123"

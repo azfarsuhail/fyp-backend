@@ -22,48 +22,64 @@ Files: [docker-compose.offline.yml](../../docker-compose.offline.yml),
 
 ---
 
-## 1. One-time prep (needs internet)
+## 1. Start: `start-offline.ps1`
+
+One script does everything, first run included:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-offline.ps1           # start everything
+powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -Build    # after code changes: rebuild the API image
+powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -AdbOnly  # re-forward ports after an emulator restart
+```
+
+It:
+
+1. Creates `.env.offline` from `.env.offline.example` if missing, with a random secret for every
+   `change-me` value (DB password, storage password, JWT `SECRET_KEY`).
+2. Runs `docker compose up -d --wait`: builds `knee_oa_api:offline` if it doesn't exist yet and
+   blocks until every service is healthy.
+3. Runs `scripts/init_admin.py`: creates all tables and the [default accounts](#2-default-accounts).
+   Idempotent, so existing accounts and data are never touched.
+4. Runs `adb reverse` for ports 80 and 9000 on every connected emulator/device (`adb` from PATH or
+   `%LOCALAPPDATA%\Android\Sdk\platform-tools`; skipped with a warning if none is running).
+
+**Internet is needed only on the very first run** (pulling `postgres` / `pgsty/silo` / `nginx`
+and building the API image, ~15 min). The build is CPU-only: base `tensorflow/tensorflow:2.15.0`
+(build arg `BASE_IMAGE`), CPU torch wheels from `https://download.pytorch.org/whl/cpu`
+(build arg `TORCH_INDEX_URL`), and the HuggingFace models (`all-MiniLM-L6-v2`,
+`openai/clip-vit-base-patch32`) baked into the image. Production keeps the GPU defaults.
+After that, every start works with the network unplugged.
+
+To pre-fetch on a machine with internet and then start offline elsewhere:
 
 ```bash
-cp .env.offline.example .env.offline     # then replace every "change-me" value
 docker compose -f docker-compose.offline.yml pull postgres minio nginx
 docker compose -f docker-compose.offline.yml build api
 ```
 
-The offline build is CPU-only: base `tensorflow/tensorflow:2.15.0` (build arg `BASE_IMAGE`)
-and CPU torch wheels from `https://download.pytorch.org/whl/cpu` (build arg `TORCH_INDEX_URL`).
-Production keeps the GPU defaults. It also downloads the HuggingFace models (`all-MiniLM-L6-v2`, `openai/clip-vit-base-patch32`)
-into the image. After this step nothing else is fetched.
+## 2. Default accounts
 
-## Quick start: `start-offline.ps1`
+Created automatically by `start-offline.ps1` (via `scripts/init_admin.py`):
 
-After step 1, this one script does steps 2, 3 and the emulator part of step 5:
+| Role | Login (email field) | Password | Notes |
+|------|---------------------|----------|-------|
+| Admin | `admin` | `admin` | Admin dashboard: `http://localhost/admin-login.html` |
+| GP | `gp@kneeoa.online` | `gp123456` | Sees the demo patient under assigned patients |
+| Patient | `patient@kneeoa.online` | `patient123` | Assigned to the demo GP; profile pre-filled (age 58, pain 5/10, moderate mobility) |
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start-offline.ps1           # start stack + init DB + adb reverse
-powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -AdbOnly  # re-forward ports after an emulator restart
-```
+The GP and patient are created only when `SEED_DEMO_USERS=1`, which `docker-compose.offline.yml`
+sets. Production never gets them. **These passwords are public: change them if the machine is
+shared or reachable from a network.**
 
-It runs `docker compose up -d --wait` (blocks until the API is healthy), then `init_admin.py`
-(idempotent), then `adb reverse` for ports 80 and 9000 on every connected emulator/device.
-It finds `adb` on PATH or at `%LOCALAPPDATA%\Android\Sdk\platform-tools`, and skips this step
-with a warning if no emulator is running.
+Storage console (`http://localhost:9001`): user `kneeoa-admin`, password = `MINIO_ROOT_PASSWORD`
+in your `.env.offline` (random, generated on first run).
 
-## 2. Start (offline from here on)
+## 3. Manual start (without the script)
 
 ```bash
-docker compose -f docker-compose.offline.yml up -d
-docker compose -f docker-compose.offline.yml ps          # api becomes "healthy" after ~1-3 min
-```
-
-## 3. First run only: create tables + admin
-
-```bash
+docker compose -f docker-compose.offline.yml up -d --wait
 docker compose -f docker-compose.offline.yml exec api python scripts/init_admin.py
 ```
-
-Creates all tables (`Base.metadata.create_all`) and the `admin` / `admin` account.
-**Change the admin password after first login.**
 
 ## 4. URLs
 
@@ -76,7 +92,10 @@ Creates all tables (`Base.metadata.create_all`) and the `admin` / `admin` accoun
 | API tester | `http://localhost/tester.html` |
 | Storage console | `http://localhost:9001` (login = `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`) |
 
-`/docs` and `/redoc` are proxied, but Swagger/ReDoc load their JS from a CDN, so they only render online.
+| API docs | `http://localhost/docs` (Swagger UI), `http://localhost/redoc` |
+
+Every page loads its JS, CSS, fonts and images from `static/` (`static/vendor/`, `static/images/`),
+so nothing needs a CDN.
 
 ## 5. Mobile app (same PC)
 
@@ -108,8 +127,7 @@ Point the app's base URL at **`http://localhost/api/v1`**.
 
 - **Email** (OTP / password reset via Resend): skipped when `RESEND_API_KEY` is unset.
   Users can't reset passwords; an admin can re-create the account.
-- **Landing page styling** (`index.html` uses Tailwind/Font Awesome/AOS CDNs): it renders unstyled.
-  The admin dashboard's Chart.js is vendored in `static/vendor/`, so its charts work.
+- **External links** on the landing page (GitHub repos) only open online.
 
 ## 8. Operations
 
@@ -129,9 +147,8 @@ docker compose -f docker-compose.offline.yml exec postgres psql -U kneeoa knee_o
 # Backup DB
 docker compose -f docker-compose.offline.yml exec postgres pg_dump -U kneeoa knee_oa > backup.sql
 
-# Run tests (SQLite + mocks, no services needed)
-docker run --rm -v "$PWD:/code" knee_oa_api:offline pytest -q
+# Run tests (SQLite + mocks, no services or network needed)
+docker run --rm --network none -e TESTING=1 -e DATABASE_URL=sqlite:////tmp/test.db   -e SECRET_KEY=test-secret-key-at-least-32-characters-long -e AWS_ACCESS_KEY_ID=x -e AWS_SECRET_ACCESS_KEY=y   -v "$PWD/tests:/code/tests:ro" -v "$PWD/pytest.ini:/code/pytest.ini:ro"   knee_oa_api:offline python -m pytest -q -p no:cacheprovider
 ```
 
-Code changes need `docker compose -f docker-compose.offline.yml up -d --build api`.
-The image doesn't bind-mount the source.
+Code changes need `.\start-offline.ps1 -Build`. The image doesn't bind-mount the source.

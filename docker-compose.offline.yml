@@ -1,6 +1,7 @@
 # Offline / local stack: Postgres + MinIO-compatible object storage + API + NGINX.
 # CPU only, no internet needed at runtime. See docs/docker/OFFLINE_SETUP.md.
 #
+#   powershell -ExecutionPolicy Bypass -File .\start-offline.ps1   (does everything below)
 #   docker compose -f docker-compose.offline.yml up -d --build
 #   docker compose -f docker-compose.offline.yml exec api python scripts/init_admin.py
 name: knee_oa_offline
