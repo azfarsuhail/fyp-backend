@@ -4,6 +4,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 # Load environment variables early
@@ -25,7 +27,9 @@ app = FastAPI(
     title="Medical Image Analysis API",
     description="Backend for Knee OA Detection and Management",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url=None,   # served below from local assets, so they render offline
+    redoc_url=None,
 )
 
 # ── CORS Configuration Setup ──────────────────────────────────────────────────
@@ -104,6 +108,30 @@ app.include_router(video.router, prefix="/api/v1/videos", tags=["Video Library"]
 app.include_router(mobile_sync.router, prefix="/api/v1/mobile", tags=["Mobile Sync"])
 app.include_router(admin_analytics.router, prefix="/api/v1/admin", tags=["Admin Analytics"])
 app.include_router(medications.router, prefix="/api/v1", tags=["Medication Management"])
+
+# ── API Docs (Swagger UI / ReDoc from static/vendor, no CDN) ──────────────────
+# Mounted here too so /docs also works when uvicorn runs without NGINX.
+app.mount("/vendor", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "static", "vendor")), name="vendor")
+
+@app.get("/docs", include_in_schema=False)
+def swagger_ui():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - Swagger UI",
+        swagger_js_url="/vendor/swagger-ui/swagger-ui-bundle.js",
+        swagger_css_url="/vendor/swagger-ui/swagger-ui.css",
+        swagger_favicon_url="/vendor/favicon.png",
+    )
+
+@app.get("/redoc", include_in_schema=False)
+def redoc():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - ReDoc",
+        redoc_js_url="/vendor/redoc/redoc.standalone.js",
+        redoc_favicon_url="/vendor/favicon.png",
+        with_google_fonts=False,
+    )
 
 @app.get("/")
 def root():
