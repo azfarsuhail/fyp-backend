@@ -27,21 +27,26 @@ Files: [docker-compose.offline.yml](../../docker-compose.offline.yml),
 One script does everything, first run included:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\start-offline.ps1           # start everything
+powershell -ExecutionPolicy Bypass -File .\start-offline.ps1           # start everything + Expo web
 powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -Build    # after code changes: rebuild the API image
+powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -NoApp    # backend only, no Expo
 powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -AdbOnly  # re-forward ports after an emulator restart
 ```
 
 It:
 
-1. Creates `.env.offline` from `.env.offline.example` if missing, with a random secret for every
+1. Starts Docker Desktop if the Docker engine isn't running (waits up to 5 min).
+2. Creates `.env.offline` from `.env.offline.example` if missing, with a random secret for every
    `change-me` value (DB password, storage password, JWT `SECRET_KEY`).
-2. Runs `docker compose up -d --wait`: builds `knee_oa_api:offline` if it doesn't exist yet and
+3. Runs `docker compose up -d --wait`: builds `knee_oa_api:offline` if it doesn't exist yet and
    blocks until every service is healthy.
-3. Runs `scripts/init_admin.py`: creates all tables and the [default accounts](#2-default-accounts).
+4. Runs `scripts/init_admin.py`: creates all tables and the [default accounts](#2-default-accounts).
    Idempotent, so existing accounts and data are never touched.
-4. Runs `adb reverse` for ports 80 and 9000 on every connected emulator/device (`adb` from PATH or
+5. Runs `adb reverse` for ports 80 and 9000 on every connected emulator/device (`adb` from PATH or
    `%LOCALAPPDATA%\Android\Sdk\platform-tools`; skipped with a warning if none is running).
+6. Opens the Expo app on web at `http://localhost:8081`, pointed at `http://localhost`. The app
+   repo must sit next to this one (`..\FYP_MIA-KneeOA-App-`, or pass `-AppDir <path>`); its npm
+   packages are installed on the first run. Ctrl+C stops Expo only; the stack keeps running.
 
 **Internet is needed only on the very first run** (pulling `postgres` / `pgsty/silo` / `nginx`
 and building the API image, ~15 min). The build is CPU-only: base `tensorflow/tensorflow:2.15.0`
@@ -101,7 +106,9 @@ so nothing needs a CDN.
 
 Point the app's base URL at **`http://localhost/api/v1`**.
 
-- **Expo web:** works as is (`localhost:8081` / `localhost:19006` are in `ALLOWED_ORIGINS`).
+- **Expo web:** started by `start-offline.ps1` (`localhost:8081` / `localhost:19006` are in
+  `ALLOWED_ORIGINS`). The app accepts a plain `http://` base URL only when
+  `EXPO_PUBLIC_API_ENV=development`.
 - **Android emulator:** forward the host ports into the emulator so `localhost` works there too
   (repeat after every emulator restart):
 

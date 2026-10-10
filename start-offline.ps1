@@ -1,20 +1,66 @@
 <#
-Starts the offline stack and wires the Android emulator to it.
+Starts the offline stack, wires the Android emulator to it, and opens the Expo app on web.
 
-  powershell -ExecutionPolicy Bypass -File .\start-offline.ps1           # full start
+  powershell -ExecutionPolicy Bypass -File .\start-offline.ps1           # full start + Expo web
   powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -Build   # rebuild the API image after code changes
+  powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -NoApp   # backend only, no Expo
   powershell -ExecutionPolicy Bypass -File .\start-offline.ps1 -AdbOnly  # after an emulator restart
 
-First run: creates .env.offline with random secrets, builds the API image (needs internet
-once), then creates the default admin / GP / patient accounts. Later runs need no internet.
+First run: starts Docker Desktop if needed, creates .env.offline with random secrets, builds
+the API image and installs the app's npm packages (needs internet once), then creates the
+default admin / GP / patient accounts. Later runs need no internet.
+
+The Expo app is expected next to this repo (..\FYP_MIA-KneeOA-App-); override with -AppDir.
 
 See docs/docker/OFFLINE_SETUP.md.
 #>
-param([switch]$AdbOnly, [switch]$Build)
+param([switch]$AdbOnly, [switch]$Build, [switch]$NoApp, [string]$AppDir = (Join-Path $PSScriptRoot "..\FYP_MIA-KneeOA-App-"))
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 $compose = @("compose", "-f", "docker-compose.offline.yml")
+
+function Start-DockerEngine {
+    # "Continue": in Windows PowerShell 5.1, redirecting a native command's stderr under
+    # "Stop" turns any stderr line into a terminating error.
+    $ErrorActionPreference = "Continue"
+    docker info *> $null
+    if ($LASTEXITCODE -eq 0) { return }
+
+    $desktop = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
+    if (-not (Test-Path $desktop)) { throw "Docker is not running and Docker Desktop was not found at $desktop" }
+    Write-Host "[docker] Starting Docker Desktop..." -ForegroundColor Cyan
+    Start-Process $desktop
+    $deadline = (Get-Date).AddMinutes(5)
+    do {
+        Start-Sleep -Seconds 3
+        docker info *> $null
+    } while ($LASTEXITCODE -ne 0 -and (Get-Date) -lt $deadline)
+    if ($LASTEXITCODE -ne 0) { throw "Docker Desktop did not come up within 5 minutes" }
+}
+
+function Start-ExpoWeb {
+    if (-not (Test-Path (Join-Path $AppDir "package.json"))) {
+        Write-Warning "Expo app not found at $AppDir - skipping (pass -AppDir <path>)."
+        return
+    }
+    Push-Location $AppDir
+    try {
+        if (-not (Test-Path "node_modules")) {
+            Write-Host "[expo] Installing npm packages (first run only)..." -ForegroundColor Cyan
+            & npm.cmd install
+            if ($LASTEXITCODE -ne 0) { throw "npm install failed in $AppDir" }
+        }
+        # Process env wins over the app's .env (production URL), so this targets local NGINX.
+        $env:EXPO_PUBLIC_API_ENV = "development"
+        $env:EXPO_PUBLIC_API_BASE_URL_DEV = "http://localhost"
+        Write-Host "[expo] Starting web app on http://localhost:8081 (Ctrl+C to stop; the stack keeps running)" -ForegroundColor Cyan
+        # Blocks while Metro runs; --clear so a previous production bundle's inlined URL is not reused
+        & npx.cmd expo start --web --clear
+    } finally {
+        Pop-Location
+    }
+}
 
 function Connect-Emulators {
     # adb on PATH, else the Android Studio default SDK location
@@ -68,6 +114,8 @@ if (-not (Test-Path ".env.offline")) {
     Write-Host "[env] Created .env.offline with random secrets" -ForegroundColor Green
 }
 
+Start-DockerEngine
+
 $upArgs = @("up", "-d", "--wait", "--wait-timeout", "600")
 if ($Build) { $upArgs += "--build" }
 Write-Host "[docker] Starting offline stack (first run builds the API image: ~15 min)..." -ForegroundColor Cyan
@@ -93,3 +141,7 @@ Write-Host "Default accounts (see docs/docker/OFFLINE_SETUP.md):" -ForegroundCol
 Write-Host "  Admin    admin                 / admin"
 Write-Host "  GP       gp@kneeoa.online      / gp123456"
 Write-Host "  Patient  patient@kneeoa.online / patient123"
+Write-Host ""
+Write-Host "Stop the stack: docker compose -f docker-compose.offline.yml down"
+
+if (-not $NoApp) { Start-ExpoWeb }
