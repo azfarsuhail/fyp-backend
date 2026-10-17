@@ -44,7 +44,9 @@ It:
    Idempotent, so existing accounts and data are never touched.
 5. Runs `adb reverse` for ports 80 and 9000 on every connected emulator/device (`adb` from PATH or
    `%LOCALAPPDATA%\Android\Sdk\platform-tools`; skipped with a warning if none is running).
-6. Opens the Expo app on web at `http://localhost:8081`, pointed at `http://localhost`. The app
+6. Opens the Expo app on web at `http://localhost:8081`, pointed at `http://localhost`: the
+   `EXPO_PUBLIC_*` API URL variables are injected into Expo's process (overriding the app's
+   production `.env`) and written to the app's `.env.local`, which is overwritten on every run. The app
    repo must sit next to this one (`..\FYP_MIA-KneeOA-App-`, or pass `-AppDir <path>`); its npm
    packages are installed on the first run. Ctrl+C stops Expo only; the stack keeps running.
 

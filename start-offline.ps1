@@ -18,7 +18,18 @@ param([switch]$AdbOnly, [switch]$Build, [switch]$NoApp, [string]$AppDir = (Join-
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
-$compose = @("compose", "-f", "docker-compose.offline.yml")
+# --env-file: compose interpolation reads the offline env, never the production .env
+$compose = @("compose", "--env-file", ".env.offline", "-f", "docker-compose.offline.yml")
+
+# Injected into Expo's process (beats the app's tracked .env, which points at production) and
+# mirrored to the app's .env.local for Expo runs started by hand. Every URL variable is set so
+# none of .env's production values can be picked.
+$appEnv = [ordered]@{
+    EXPO_PUBLIC_API_ENV          = "development"
+    EXPO_PUBLIC_API_BASE_URL_DEV = "http://localhost"
+    EXPO_PUBLIC_API_BASE_URL     = "http://localhost"
+    EXPO_PUBLIC_BACKEND_URL      = "http://localhost"
+}
 
 function Start-DockerEngine {
     # "Continue": in Windows PowerShell 5.1, redirecting a native command's stderr under
@@ -56,9 +67,14 @@ function Start-ExpoWeb {
         if (-not (Select-String -Path "src\config\apiConfig.js" -Pattern "isAllowedUrl" -Quiet)) {
             throw "The app in $AppDir only accepts https:// API URLs, so it would use https://kneeoa.online. Check out its feat/offline-local-backend branch (run.ps1 does this), or pass -NoApp."
         }
-        # Process env wins over the app's .env (production URL), so this targets local NGINX.
-        $env:EXPO_PUBLIC_API_ENV = "development"
-        $env:EXPO_PUBLIC_API_BASE_URL_DEV = "http://localhost"
+        $lines = @("# Written by fyp-backend\start-offline.ps1 on every run - edits are overwritten.",
+                   "# Points the app at the offline stack (NGINX on :80) instead of https://kneeoa.online.")
+        foreach ($k in $appEnv.Keys) {
+            Set-Item "env:$k" $appEnv[$k]
+            $lines += "$k=$($appEnv[$k])"
+        }
+        [System.IO.File]::WriteAllText((Join-Path $AppDir ".env.local"), ($lines -join "`n") + "`n", (New-Object System.Text.UTF8Encoding $false))
+        Write-Host "[expo] API base URL: $($appEnv.EXPO_PUBLIC_API_BASE_URL_DEV) (env injected + .env.local)" -ForegroundColor Green
         Write-Host "[expo] Starting web app on http://localhost:8081 (Ctrl+C to stop; the stack keeps running)" -ForegroundColor Cyan
         # Blocks while Metro runs; --clear so a previous production bundle's inlined URL is not reused
         & npx.cmd expo start --web --clear
