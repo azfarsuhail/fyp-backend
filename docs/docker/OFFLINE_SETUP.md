@@ -106,8 +106,9 @@ so nothing needs a CDN.
 
 Point the app's base URL at **`http://localhost/api/v1`**.
 
-- **Expo web:** started by `start-offline.ps1` (`localhost:8081` / `localhost:19006` are in
-  `ALLOWED_ORIGINS`). The app accepts a plain `http://` base URL only when
+- **Expo web:** started by `start-offline.ps1`. `ALLOWED_ORIGINS` (set in
+  `docker-compose.offline.yml`) covers `localhost` / `127.0.0.1` on ports 8081-8084 and 19006, so
+  CORS still works when 8081 is busy and Expo moves to the next port. The app accepts a plain `http://` base URL only when
   `EXPO_PUBLIC_API_ENV=development`.
 - **Android emulator:** forward the host ports into the emulator so `localhost` works there too
   (repeat after every emulator restart):

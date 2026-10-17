@@ -64,6 +64,9 @@ services:
       - TRANSFORMERS_OFFLINE=1
       - CUDA_VISIBLE_DEVICES=-1  # CPU only
       - SEED_DEMO_USERS=1        # init_admin.py also creates the demo GP + patient
+      # CORS: set here, not in .env.offline, so PCs with an older generated file get it too.
+      # Expo web takes the next free port when 8081 is busy and may be opened via 127.0.0.1.
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:8084,http://localhost:19006,http://127.0.0.1,http://127.0.0.1:8081,http://127.0.0.1:8082,http://127.0.0.1:8083,http://127.0.0.1:8084,http://127.0.0.1:19006
     depends_on:
       postgres:
         condition: service_healthy
