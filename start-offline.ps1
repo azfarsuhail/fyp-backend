@@ -51,6 +51,11 @@ function Start-ExpoWeb {
             & npm.cmd install
             if ($LASTEXITCODE -ne 0) { throw "npm install failed in $AppDir" }
         }
+        # Older app code (e.g. upstream main) drops any http:// URL and silently falls back to
+        # https://kneeoa.online - stop here instead of running against production.
+        if (-not (Select-String -Path "src\config\apiConfig.js" -Pattern "isAllowedUrl" -Quiet)) {
+            throw "The app in $AppDir only accepts https:// API URLs, so it would use https://kneeoa.online. Check out its feat/offline-local-backend branch (run.ps1 does this), or pass -NoApp."
+        }
         # Process env wins over the app's .env (production URL), so this targets local NGINX.
         $env:EXPO_PUBLIC_API_ENV = "development"
         $env:EXPO_PUBLIC_API_BASE_URL_DEV = "http://localhost"
