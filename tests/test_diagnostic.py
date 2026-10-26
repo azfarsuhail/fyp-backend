@@ -74,6 +74,24 @@ class TestAnalyzeXray:
         assert len(data["warnings"]) == 1
         assert data["warnings"][0]["level"] == "caution"
 
+    @patch("app.api.v1.diagnostic.predict_kl_grade")
+    @patch("httpx.AsyncClient.get", new_callable=AsyncMock)
+    @patch("app.api.v1.diagnostic.generate_presigned_url", return_value="https://bucket.s3.amazonaws.com/xrays/test.png")
+    @patch("app.api.v1.diagnostic.validate_image", return_value=False)
+    def test_analyze_rejected_by_gatekeeper(
+        self, mock_validate, mock_presigned, mock_httpx_get, mock_predict,
+        client, patient_headers, seed_image,
+    ):
+        """A non-knee image should get a 400, not be wrapped into a 500."""
+        response = client.post(
+            "/api/v1/diagnostic/analyze",
+            json={"image_id": seed_image.image_id},
+            headers=patient_headers,
+        )
+        assert response.status_code == 400
+        assert "weight-bearing knee X-ray" in response.json()["detail"]
+        mock_predict.assert_not_called()
+
     def test_analyze_image_not_found(self, client, patient_headers, seed_patient):
         response = client.post(
             "/api/v1/diagnostic/analyze",

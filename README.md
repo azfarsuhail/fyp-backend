@@ -97,54 +97,109 @@ The system supports three distinct user roles with different capabilities:
 
 ## 📐 System Architecture
 
+```mermaid
+flowchart LR
+    client["Mobile App<br/>(Client)"]
+
+    subgraph proxy["NGINX Reverse Proxy"]
+        direction TB
+        nginx["SSL/TLS Termination (Let's Encrypt)<br/>HTTP → HTTPS redirect<br/>Rate Limiting on /api/ (10r/s, burst=20)<br/>Proxy Headers (X-Forwarded-For, X-Real-IP)"]
+        static["Static landing page<br/>+ APK download"]
+    end
+
+    subgraph app["FastAPI Application Layer"]
+        direction TB
+        middleware["Middleware<br/>CORS · Security Headers (CSP, X-Frame-Options, etc.)<br/>Auth Rate Limiting"]
+
+        subgraph routers["API Routers — /api/v1"]
+            direction TB
+            auth["Auth<br/>/auth/*"]
+            upload["Upload<br/>/upload/"]
+            diagnostic["Diagnostic<br/>/diagnostic/*"]
+            recommendation["Recommendation<br/>/recommendation/"]
+            profile["Profile<br/>/profile/*"]
+            video["Video Library<br/>/videos/*"]
+            medications["Medications<br/>/medications/ · /admin/medications/"]
+            mobile["Mobile Sync<br/>/mobile/*"]
+            analytics["Admin Analytics<br/>/admin/analytics/*"]
+        end
+
+        core["Core: JWT Auth + RBAC + DB Session"]
+        middleware --> routers --> core
+    end
+
+    subgraph agents["AI Agents"]
+        direction TB
+        gatekeeper["Gatekeeper Agent<br/>CLIP zero-shot<br/>(openai/clip-vit-base-patch32)"]
+        diagAgent["Diagnostic Agent<br/>CNN.keras (TensorFlow)"]
+        recAgent["Recommendation Agent<br/>Parametric RAG"]
+        vectors["Sentence-Transformers<br/>(all-MiniLM-L6-v2)<br/>+ vector store files"]
+        recAgent --> vectors
+    end
+
+    neon[("Neon DB<br/>PostgreSQL + SQLAlchemy")]
+    s3[("AWS S3<br/>X-rays + Videos<br/>(private, presigned URLs)")]
+    resend["Resend<br/>(email)"]
+
+    client -->|"HTTPS / JSON"| nginx
+    nginx -->|"/api/, /redoc,<br/>/openapi.json, /.well-known/"| middleware
+
+    core --> neon
+    upload & video & diagnostic --> s3
+    auth -->|"reset link / OTP"| resend
+    diagnostic --> gatekeeper & diagAgent & recAgent
+    recommendation --> recAgent
+    recAgent -->|"videos + medications<br/>by KL grade"| neon
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Mobile App (Client)                          │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │  HTTPS / JSON
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                      NGINX Reverse Proxy                            │
-│                                                                     │
-│  • Rate Limiting (10r/s, burst=20)                                  │
-│  • Security Headers (CSP, X-Frame-Options, etc.)                    │
-│  • SSL/TLS Termination (Let's Encrypt)                              │
-│  • Proxy Headers (X-Forwarded-For, X-Real-IP)                       │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     FastAPI Application Layer                       │
-│                                                                     │
-│  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌─────────┐ ┌─────────┐   │
-│  │  Auth    │ │  Upload  │ │ Diagnostic │ │ Recomm. │ │  Video  │   │
-│  │ /auth/*  │ │ /upload/ │ │ /diagnos./*│ │ /recom./│ │ /videos │   │
-│  │ /admin/* │ │ /mobile/*│ │ /profile/* │         │         │   │
-│  └────┬─────┘ └────┬─────┘ └─────┬──────┘ └────┬────┘ └────┬────┘ └────┬────┘
-│       │             │             │              │           │           │
-│  ┌────▼─────────────▼─────────────▼──────────────▼───────────▼────┐ │
-│  │              Core: JWT Auth + RBAC + DB Session                │ │
-│  └────────────────────────────────────────────────────────────────┘ │
-└──────────┬──────────┬──────────────┬──────────────┬────────────────┘
-           │          │              │              │           │
-           ▼          ▼              ▼              ▼           ▼
-      ┌─────────┐ ┌────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
-      │ Neon DB │ │ AWS S3 │ │ Diagnostic │ │ Recommend. │ │   Admin    │
-      │ (Postgres││(Images │ │   Agent    │ │   Agent    │
-      │  + ORM) │ │+Videos)│ │  (CNN)     │ │   (RAG)    │ │ Analytics  │
-      └─────────┘ └────────┘ └──────┬─────┘ └──────┬─────┘ └────────┘
-                                    │               │           │
-                              ┌─────▼─────┐  ┌──────▼──────┐ ┌──────┐
-                              │ Gatekeeper│  │ Sentence    │ │  Data  │
-                              │   CLIP    │  │ Transformers│ │ Export │
-                              │(Zero-Shot)│  │ + VectorDB  │ └──────┘
-                              └──────┬────┘  └─────────────┘
-                                     │
-                              ┌──────▼──────┐
-                              │  CNN.keras  │
-                              │ TF Model    │
-                              |  (256×256)  │
-                              └─────────────┘
+
+### Request Middleware Order
+
+Starlette runs the last-added middleware first, so every request passes through the layers in this order (see `app/main.py`):
+
+```mermaid
+flowchart LR
+    request(["Request<br/>(from NGINX)"])
+    cors["CORSMiddleware<br/>answers OPTIONS preflight"]
+    rate{"RateLimitAuthMiddleware<br/>POST login, register,<br/>forgot-password, request-otp:<br/>over the limit for this client IP?"}
+    limited(["429 Too Many Requests<br/>+ Retry-After"])
+    headers["SecurityHeadersMiddleware"]
+    router["Router + dependencies<br/>get_current_user · RoleChecker"]
+    response(["Response with X-Frame-Options, CSP,<br/>X-Content-Type-Options, Referrer-Policy"])
+
+    request --> cors --> rate
+    rate -->|yes| limited
+    rate -->|no| headers --> router
+    router -->|"response passes back through<br/>SecurityHeadersMiddleware"| response
+```
+
+The client IP comes from the first `X-Forwarded-For` entry set by NGINX, or the socket address when the API is called directly.
+
+### Deployment Topology
+
+```mermaid
+flowchart LR
+    users["Mobile App / Browser"]
+
+    subgraph host["AWS EC2 host — docker compose"]
+        direction LR
+        subgraph nginxBox["knee_oa_nginx (nginx:alpine)"]
+            nginx["Port 80 → 301 to HTTPS<br/>Port 443 TLS (Let's Encrypt)<br/>Serves static/ + APK download"]
+        end
+        subgraph apiBox["knee_oa_api (Dockerfile runtime stage)"]
+            api["uvicorn app.main:app on :8000<br/>Non-root appuser<br/>Limits 3.5 CPU / 14G · 1 NVIDIA GPU"]
+        end
+        nginx -->|"proxy_pass http://api:8000"| api
+        nginx -.->|"depends_on: service_healthy<br/>(GET /health)"| api
+    end
+
+    neon[("Neon DB")]
+    s3[("AWS S3")]
+    resend["Resend"]
+
+    users -->|"HTTPS"| nginx
+    api --> neon
+    api --> s3
+    api --> resend
 ```
 
 ### Multi-Agent Design
@@ -201,14 +256,14 @@ knee_oa_backend/
 │   │   └── profile_schema.py      # ProfileUpdate, ProfileOut, PasswordChange
 │   ├── services/
 │   │   ├── email.py               # Email service (Resend integration, password reset emails)
-│   │   ├── image_processor.py     # Grayscale → ROI → Resize → CLAHE → Normalise
+│   │   ├── image_processor.py     # RGB → Centre-crop ROI → Resize 224×224 → DenseNet preprocessing
 │   │   ├── s3_service.py          # S3 upload/download/presigned URL helpers
 │   │   ├── medication_service.py  # Medication catalog queries and serialization
 │   │   └── mobile_sync.py         # Mobile sync data export and aggregation
 │   └── ml_assets/
 │       ├── cnn_weights/
 │       │   └── CNN.keras           # Diagnostic CNN model (KL grading)
-│       └── vector_store/           # RAG embeddings (auto-generated on first run)
+│       └── vector_store/           # RAG knowledge base + embeddings (built by scripts/generate_embeddings.py)
 ├── alembic/
 │   ├── env.py                     # Alembic config (loads all models for autogenerate)
 │   ├── script.py.mako             # Migration template
@@ -244,26 +299,83 @@ knee_oa_backend/
 
 ### JWT Token Flow
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant S as Server (FastAPI)
+    participant DB as Neon DB
+
+    Note over C,DB: Registration
+    C->>S: POST /auth/register<br/>{email, password, full_name, role}
+    S->>S: Reject admin role + validate password strength
+    S->>S: Hash password (bcrypt)
+    S->>DB: Store user
+    S-->>C: Return UserOut
+
+    Note over C,DB: Login
+    C->>S: POST /auth/login<br/>{username, password}
+    S->>DB: Look up user by email
+    S->>S: Verify password (bcrypt)
+    S->>DB: Update last_login
+    S->>S: Generate JWT (sub = email, role)
+    S-->>C: Return {access_token, token_type}
+
+    Note over C,DB: Authenticated request
+    C->>S: GET /profile/me<br/>Authorization: Bearer #lt;JWT#gt;
+    S->>S: Decode JWT → extract email + role
+    S->>DB: Load user by email
+    S-->>C: Return profile
 ```
-Client                          Server
-  │                               │
-  │  POST /auth/register          │
-  │  {email, password, name}      │
-  │──────────────────────────────►│──► Hash password (bcrypt)
-  │                               │──► Store in Neon DB
-  │◄──────────────────────────────│    Return UserOut
-  │                               │
-  │  POST /auth/login             │
-  │  {username, password}         │
-  │──────────────────────────────►│──► Verify password
-  │                               │──► Generate JWT (email + role)
-  │◄──────────────────────────────│    Return {access_token}
-  │                               │
-  │  GET /profile/me              │
-  │  Authorization: Bearer <JWT>  │
-  │──────────────────────────────►│──► Decode JWT
-  │                               │──► Extract email + role
-  │◄──────────────────────────────│    Return profile
+
+### OTP Password Reset Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant S as Server (FastAPI)
+    participant DB as Neon DB
+    participant E as Resend (email)
+
+    Note over C,E: Request a code (rate-limited to 3 per hour per IP)
+    C->>S: POST /auth/request-otp {email}
+    S->>DB: Look up user by email
+    opt user exists
+        S->>S: Generate 6-digit code (secrets) + bcrypt hash
+        S->>DB: Insert otp_verification (expires_at = now + 5 min)
+        S-)E: Send OTP email (background task)
+    end
+    S-->>C: Generic success message (prevents email enumeration)
+
+    Note over C,E: Verify the code and reset the password
+    C->>S: POST /auth/verify-otp-and-reset<br/>{email, otp_code, new_password}
+    S->>DB: Look up user by email
+    S->>S: Validate new password strength
+    S->>DB: Fetch latest active OTP (pending, not expired)
+    alt code matches
+        S->>DB: Mark verified, update password_hash,<br/>add PROFILE_LOG entry, delete user's OTP records
+        S-->>C: 200 Password reset
+    else no active OTP
+        S-->>C: 400 Invalid or expired OTP code
+    else wrong code
+        S->>DB: attempts += 1 (locked at 3)
+        S-->>C: 400 Attempts remaining / OTP locked
+    end
+```
+
+### OTP Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending : POST /auth/request-otp<br/>is_verified = 0, attempts = 0
+    Pending --> Pending : wrong code<br/>(attempts below 3)
+    Pending --> Verified : correct code<br/>is_verified = 1
+    Pending --> Locked : 3rd wrong code<br/>is_verified = 2
+    Pending --> Expired : 5 minutes pass<br/>(ignored by active-OTP lookup)
+    Verified --> [*] : password updated,<br/>OTP records deleted
+    Locked --> [*]
+    Expired --> [*]
 ```
 
 ### Role-Based Access Control (RBAC)
@@ -304,68 +416,76 @@ Client                          Server
 
 ## 🤖 Diagnostic Pipeline (CNN)
 
+### X-ray Upload
+
+An X-ray must be uploaded before it can be analysed:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant S as Server (FastAPI)
+    participant S3 as AWS S3
+    participant DB as Neon DB
+
+    C->>S: POST /upload/ (multipart file)<br/>Authorization: Bearer #lt;JWT#gt;
+    S->>S: RoleChecker (patient or gp)
+    alt content type not PNG, JPEG or DICOM
+        S-->>C: 400 Invalid file type
+    else allowed type
+        S->>S3: Put object at xrays/{uuid}.{ext} (private)
+        S3-->>S: Object key
+        S->>DB: Insert IMAGE row (s3_url = object key)
+        S->>S: Sign presigned URL for the key
+        S-->>C: 201 ImageUploadResponse (presigned s3_url)
+    end
+```
+
+### Analysis Pipeline
+
 When a user calls `POST /diagnostic/analyze`, the following pipeline executes:
 
-```
-Raw X-ray bytes (PNG/JPEG)
-        │
-        ▼
-┌─────────────────────────┐
-│  Gatekeeper Agent       │
-│                         │
-│  CLIP Zero-Shot         │
-│  (Image Validation)     │
-│                         │
-│  • Natural language     │
-│    labels               │
-│  • Checks OOD images    │
-│  • Rejects garbage      │
-└────────────┬────────────┘
-             │ (if valid)
-             ▼
-┌─────────────────────────┐
-│   Image Processor       │
-│                         │
-│  1. Load from bytes     │
-│  2. Convert to grayscale│
-│  3. Centre-crop ROI     │
-│  4. Resize to 256×256   │
-│  5. CLAHE enhancement   │
-│  6. Normalise [0, 1]    │
-│  7. Reshape (1,256,256,1│)
-└────────────┬────────────┘
-             │
-             ▼
-┌─────────────────────────┐
-│   Diagnostic Agent      │
-│                         │
-│  CNN.keras model        │
-│  (Singleton loaded once)│
-│                         │
-│  model.predict() →      │
-│  softmax over 5 classes │
-└────────────┬────────────┘
-             │
-             ▼
-   KL Grade (0-4) + Confidence Score
-             │
-             ▼
-┌─────────────────────────┐
-│  Recommendation Agent   │
-│                         │
-│  1. Embed user context  │
-│  2. Cosine similarity   │
-│     against knowledge   │
-│     base embeddings     │
-│  3. KL-grade boosting   │
-│  4. Top-k retrieval     │
-│  5. Compose advice text │
-│  6. Fetch exercise      │
-│     videos from DB      │
-└────────────┬────────────┘
-             │
-             ▼
-   Full Report (saved to DB)
+```mermaid
+flowchart TD
+    start(["POST /diagnostic/analyze<br/>{image_id, pain_level, mobility_level}"])
+    checks{"Image exists, caller may analyse it,<br/>and no report exists yet?"}
+    download["Download raw X-ray bytes from S3<br/>(presigned URL + httpx.AsyncClient)"]
+
+    gatekeeper{"Gatekeeper Agent<br/>CLIP zero-shot (image validation)<br/>Top label is 'a knee x-ray'<br/>with score > 0.5?"}
+
+    subgraph diagnostic["Diagnostic Agent"]
+        direction TB
+        processor["Image Processor<br/>1. Load from bytes (EXIF orientation, RGB)<br/>2. Centre-crop square ROI<br/>3. Resize to 224×224<br/>4. DenseNet preprocess_input<br/>5. Reshape (1, 224, 224, 3)"]
+        cnn["CNN.keras model<br/>(singleton, loaded once)<br/>model.predict() → softmax over 5 classes"]
+        processor --> cnn
+    end
+
+    grade[/"KL Grade (0–4) + Confidence Score"/]
+    processed["Upload processed image to S3<br/>(non-critical, failures ignored)"]
+
+    subgraph recommendation["Recommendation Agent (Parametric RAG)"]
+        direction TB
+        filters["1. Hard filter by KL grade, pain, mobility<br/>2. Profile filters: kinesiophobia, occupation,<br/>medication conflicts, stairs"]
+        rank["3. Embed user context (all-MiniLM-L6-v2)<br/>4. Cosine similarity → top-k (6) records<br/>5. Apply pain/mobility modifiers"]
+        compose["6. Format lifestyle plan + KL-grade warnings<br/>7. Fetch exercise videos + medications from DB<br/>8. Compose advice text"]
+        filters --> rank --> compose
+    end
+
+    fallback["Fallback: 'Recommendation service<br/>temporarily unavailable'"]
+    save[("Full Report saved to DB")]
+    reject(["Request rejected"])
+
+    start --> checks
+    checks -->|yes| download
+    checks -->|no| reject
+    download --> gatekeeper
+    gatekeeper -->|valid| processor
+    gatekeeper -->|invalid| reject
+    cnn --> grade
+    grade --> processed --> filters
+    compose --> save
+    recommendation -.->|on error| fallback
+    fallback --> save
 ```
 
 ### Kellgren-Lawrence Grading Scale
@@ -382,62 +502,121 @@ Raw X-ray bytes (PNG/JPEG)
 
 ## 💡 Recommendation Agent (RAG)
 
-The Recommendation Agent uses **retrieval-only RAG** (no LLM generation) to keep advice deterministic and avoid hallucinated medical content.
+The Recommendation Agent uses **parametric, retrieval-only RAG** (no LLM generation) to keep advice deterministic and avoid hallucinated medical content. The knowledge base is a table of structured advice records (category, action, frequency, duration, intensity, evidence level), and the agent returns those records as typed JSON rather than generated text.
 
 **How it works:**
 
-1. A built-in knowledge base of lifestyle advice passages is embedded using `all-MiniLM-L6-v2` (384-dim sentence embeddings)
-2. At query time, the user's context (KL grade, pain level, mobility) is encoded into a natural-language query
-3. Cosine similarity retrieves the top-k most relevant passages
-4. Documents matching the exact KL grade receive a **relevance boost** (+0.15)
-5. Matching exercise videos are fetched from the `EXERCISE_VIDEO` table
-6. A structured recommendation is composed with a medical disclaimer
+1. Records are hard-filtered by KL grade range, pain threshold, and mobility requirement
+2. Profile filters then remove records that conflict with the patient's kinesiophobia, occupation type, current medications, or stair access — all before ranking, so ranking always has the full candidate set
+3. The user's context (KL grade, pain level, mobility) is encoded into a natural-language query with `all-MiniLM-L6-v2` (384-dim sentence embeddings)
+4. Cosine similarity against the surviving records' embeddings selects the top-k (6) most relevant records
+5. Pain and mobility modifiers adjust intensity and frequency, and grade-specific warnings are attached
+6. Matching exercise videos and medications are fetched from the `EXERCISE_VIDEO` and `MEDICATION` tables by KL grade range
+7. A text summary with a medical disclaimer is composed for backward compatibility
 
-The vector store is auto-generated on first run and cached as `embeddings.npy` + `documents.json`.
+The vector store is committed under `app/ml_assets/vector_store/` as `parametric_knowledge.json` + `parametric_embeddings.npy`. If you change the knowledge base, regenerate the embeddings with `python scripts/generate_embeddings.py` — the agent raises an error on first use if the two files are missing or their record counts differ.
 
 ---
 
 ## 🗄️ Database Schema (Neon DB)
 
+```mermaid
+erDiagram
+    USER ||--o{ IMAGE : uploads
+    USER ||--o{ REPORT : owns
+    IMAGE ||--o| REPORT : "analysed into"
+    USER ||--o{ PROFILE_LOG : "change history"
+    USER ||--o{ OTP_VERIFICATION : "password reset"
+
+    USER {
+        int user_id PK
+        string email UK
+        string password_hash
+        string full_name
+        string role "patient, gp, admin"
+        int age
+        int pain_level "0-10"
+        string mobility_level
+        boolean has_support
+        string kinesiophobia
+        string occupation_type
+        boolean has_stairs
+        string current_meds "JSON array"
+        string sleep_quality
+        datetime created_at
+        datetime last_login
+        int primary_gp_id "GP user_id, no FK"
+    }
+
+    IMAGE {
+        int image_id PK
+        int user_id FK
+        string s3_url "S3 object key"
+        string processed_s3_url
+        string file_name
+        string content_type
+        datetime uploaded_at
+    }
+
+    REPORT {
+        int report_id PK
+        int image_id FK
+        int user_id FK
+        int kl_grade "0-4"
+        float confidence
+        text diagnosis_summary
+        text recommendation
+        text lifestyle_plan "JSON"
+        text warnings "JSON"
+        text medications "JSON"
+        text exercise_video_urls "JSON"
+        datetime created_at
+    }
+
+    PROFILE_LOG {
+        int log_id PK
+        int user_id FK
+        string field_name
+        text old_value
+        text new_value
+        datetime changed_at
+    }
+
+    OTP_VERIFICATION {
+        int id PK
+        int user_id FK
+        string code_hash "bcrypt"
+        datetime expires_at
+        int attempts
+        int is_verified "0 pending, 1 verified, 2 expired or locked"
+    }
+
+    EXERCISE_VIDEO {
+        int video_id PK
+        string title
+        text description
+        string s3_url
+        string thumbnail_url
+        int kl_grade_min
+        int kl_grade_max
+        string category
+        string difficulty
+        int duration_seconds
+    }
+
+    MEDICATION {
+        int id PK
+        string name
+        string dosage
+        string frequency
+        text instructions
+        text contraindications
+        int kl_grade_min "0-4"
+        int kl_grade_max "0-4"
+    }
 ```
-┌──────────────┐       ┌──────────────┐       ┌──────────────────┐
-│    USER      │       │    IMAGE     │       │     REPORT       │
-├──────────────┤       ├──────────────┤       ├──────────────────┤
-│ user_id (PK) │◄──┐   │ image_id (PK)│◄──┐   │ report_id (PK)   │
-│ email        │   │   │ user_id (FK) │───┘   │ image_id (FK)    │──►IMAGE
-│ password_hash│   │   │ s3_url       │       │ user_id (FK)     │──►USER
-│ full_name    │   │   │ processed_url│       │ kl_grade (0-4)   │
-│ role         │   │   │ file_name    │       │ confidence       │
-│ age          │   │   │ content_type │       │ diagnosis_summary│
-│ pain_level   │   │   │ uploaded_at  │       │ recommendation   │
-│ mobility_lev │   │   └──────────────┘       │ lifestyle_plan   │
-│ has_support  │   │                          │ warnings         │
-│ kinesiophobia│   │   ┌──────────────────┐   │ video_urls (JSON)│
-│ occupation_  │   │   │ PROFILE_LOG      │   │ created_at       │
-│ has_stairs   │───┼─▶├──────────────────┤   └──────────────────┘
-│ current_meds │   │   │ log_id (PK)      │
-│ sleep_qual   │   │   │ user_id (FK)     │
-│ created_at   │   │   │ field_name       │
-│ last_login   │   │   │ old_value        │
-└──────────────┘   │   │ new_value        │
-                   │   │ changed_at       │
-                   │   └──────────────────┘
-                   │
-                   │   ┌──────────────────┐
-                   │   │ EXERCISE_VIDEO   │
-                   │   ├──────────────────┤
-                   │   │ video_id (PK)    │
-                   │   │ title            │
-                   │   │ description      │
-                   └──▶│ s3_url           │
-                       │ thumbnail_url    │
-                       │ kl_grade_min     │
-                       │ kl_grade_max     │
-                       │ category         │
-                       │ difficulty       │
-                       │ duration_seconds │
-                       └──────────────────┘
-```
+
+> `EXERCISE_VIDEO` and `MEDICATION` have no foreign keys; the Recommendation Agent matches them to a report by KL grade range (`kl_grade_min ≤ grade ≤ kl_grade_max`).
 
 ### Table Descriptions
 
@@ -686,6 +865,31 @@ git push origin main
 
 This tags the image as `latest`.
 
+```mermaid
+flowchart TD
+    push(["Push to main<br/>or tag v*.*.*"])
+
+    subgraph testJob["Job: test (ubuntu-latest)"]
+        direction TB
+        t1["Checkout + Python 3.11"] --> t2["Set test env<br/>(SQLite DATABASE_URL, TESTING=1)"]
+        t2 --> t3["pip install -r requirements.txt"] --> t4{"pytest tests/<br/>passes?"}
+    end
+
+    subgraph buildJob["Job: build (needs: test)"]
+        direction TB
+        b1["Checkout + free runner disk space"] --> b2["Set up Buildx + log in to Docker Hub"]
+        b2 --> b3["Docker metadata: choose tags"] --> b4["Build runtime stage + push"]
+    end
+
+    push --> t1
+    t4 -->|no| stopped(["Workflow fails, no image pushed"])
+    t4 -->|yes| b1
+    b4 -->|"push to main"| latest["knee-oa-api:latest"]
+    b4 -->|"tag v1.2.3"| semver["knee-oa-api:1.2.3"]
+```
+
+To push to `main` without running this workflow (e.g. documentation-only changes), include `[skip ci]` in the head commit message.
+
 ---
 
 ## 🧪 Testing
@@ -734,7 +938,7 @@ pytest tests/ --cov=app --cov-report=term-missing
 | **Storage** | AWS S3 + boto3 | X-ray images and exercise video hosting |
 | **ML Inference** | TensorFlow (CPU) | CNN model for KL grade prediction |
 | **Image Validation** | CLIP (openai/clip-vit-base-patch32) | Zero-shot gatekeeper for OOD detection |
-| **Image Processing** | Pillow + NumPy | Grayscale, resize, ROI extraction, normalisation |
+| **Image Processing** | Pillow + NumPy | EXIF orientation, RGB conversion, centre-crop ROI, resize, DenseNet preprocessing |
 | **RAG Embeddings** | Sentence-Transformers | `all-MiniLM-L6-v2` for semantic retrieval |
 | **Containerisation** | Docker + Compose | Reproducible dev/prod environments |
 | **Reverse Proxy** | NGINX | Rate limiting, security headers, SSL termination |

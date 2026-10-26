@@ -92,15 +92,15 @@ async def analyze_xray(
     # Run in threadpool to prevent event loop blocking (CLIP inference is CPU-intensive)
     try:
         is_valid = await run_in_threadpool(validate_image, image_bytes)
-        if not is_valid:
-            raise HTTPException(
-                status_code=400,
-                detail="Image validation failed. Please upload a clear, weight-bearing knee X-ray.",
-            )
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Image validation failed: {e}",
+        )
+    if not is_valid:
+        raise HTTPException(
+            status_code=400,
+            detail="Image validation failed. Please upload a clear, weight-bearing knee X-ray.",
         )
 
     # ── 4. Diagnostic Agent — CNN Inference ──────────────────────────────
